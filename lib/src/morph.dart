@@ -868,12 +868,6 @@ class RenderMorphedDecoratedBox extends RenderMorphed {
   }
 }
 
-extension _MatrixExtension on Matrix4 {
-  Matrix4 get invertedCopy {
-    return Matrix4.inverted(this);
-  }
-}
-
 String debugMatrix(Matrix4 matrix) {
   var translateTest = Offset.zero;
   translateTest = MatrixUtils.transformPoint(matrix, translateTest);
@@ -898,16 +892,6 @@ String debugMatrix(Matrix4 matrix) {
     debug.add('r(${rotation.toStringAsFixed(2)})');
   }
   return debug.isEmpty ? 'Matrix4.identity()' : 'Matrix4(${debug.join(', ')})';
-}
-
-String _debugPrintPath(_Linked<RenderObject> currentPath) {
-  final buffer = StringBuffer();
-  _Linked<RenderObject>? path = currentPath;
-  while (path != null) {
-    buffer.write('${_debugRenderObject(path.current)} -> ');
-    path = path.previous;
-  }
-  return buffer.toString();
 }
 
 String _debugRenderObject(RenderObject object) {
