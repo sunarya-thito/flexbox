@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -144,7 +143,7 @@ class _Linked<T> {
   _Linked(this.current, [this.previous]);
 }
 
-class MorphState {
+class _MorphState {
   final RenderMorph root;
   // final Matrix4 targetTransform;
   final _Linked<RenderObject> parentPath;
@@ -156,7 +155,7 @@ class MorphState {
   final bool isSource;
   final RenderMorphed current;
 
-  MorphState({
+  _MorphState({
     required this.root,
     required this.parentPath,
     required this.path,
@@ -413,8 +412,8 @@ class RenderMorph extends RenderBox
         // final upperTransform = Matrix4.identity();
         // _apply(currentPath, upperTransform);
         if (isSource) {
-          current.replaceMorph(
-            MorphState(
+          current._replaceMorph(
+            _MorphState(
               root: this,
               // targetTransform: Matrix4.inverted(upperTransform) * transform,
               parentPath: currentPath,
@@ -428,8 +427,8 @@ class RenderMorph extends RenderBox
             ),
           );
         } else {
-          current.replaceMorph(
-            MorphState(
+          current._replaceMorph(
+            _MorphState(
               root: this,
               // targetTransform: Matrix4.inverted(upperTransform) * transform,
               parentPath: currentPath,
@@ -571,8 +570,7 @@ class RenderMorphed extends RenderProxyBox {
   Object? debugKey;
   Object tag;
 
-  MorphState? directInterpolation;
-  final List<MorphState> interpolation = [];
+  final List<_MorphState> _interpolation = [];
 
   RenderMorphed(this.tag, {this.debugKey});
 
@@ -590,14 +588,14 @@ class RenderMorphed extends RenderProxyBox {
     throw StateError('RenderMorphed must have a RenderMorph parent.');
   }
 
-  void replaceMorph(MorphState progress) {
-    for (int i = 0; i < interpolation.length; i++) {
-      if (interpolation[i].root == progress.root) {
-        interpolation[i] = progress;
+  void _replaceMorph(_MorphState progress) {
+    for (int i = 0; i < _interpolation.length; i++) {
+      if (_interpolation[i].root == progress.root) {
+        _interpolation[i] = progress;
         return;
       }
     }
-    interpolation.add(progress);
+    _interpolation.add(progress);
   }
 
   bool findMorph(
@@ -647,7 +645,7 @@ class RenderMorphed extends RenderProxyBox {
 
   Matrix4 get computeMorphTransform {
     var transform = Matrix4.identity();
-    for (final entry in interpolation) {
+    for (final entry in _interpolation) {
       Matrix4 result;
       final upperTransform = Matrix4.identity();
       _apply(entry.parentPath, upperTransform);
@@ -735,11 +733,11 @@ class RenderMorphed extends RenderProxyBox {
   }
 
   void disposeMorph(RenderMorph source) {
-    interpolation.removeWhere((p) => p.root == source);
+    _interpolation.removeWhere((p) => p.root == source);
   }
 
   void clearMorphs() {
-    interpolation.clear();
+    _interpolation.clear();
   }
 }
 
@@ -766,7 +764,7 @@ class RenderMorphedDecoratedBox extends RenderMorphed {
 
   Decoration get morphedDecoration {
     Decoration morphedDecoration = decoration;
-    for (final entry in interpolation) {
+    for (final entry in _interpolation) {
       if (entry.isSource) {
         final result = entry.targetDecoration;
         morphedDecoration = Decoration.lerp(
@@ -800,7 +798,7 @@ class RenderMorphedDecoratedBox extends RenderMorphed {
 
   Size get morphedSize {
     var size = this.size;
-    for (final entry in interpolation) {
+    for (final entry in _interpolation) {
       if (entry.isSource) {
         final result = entry.path.applySize(entry.current.tag);
         size = Size.lerp(size, result, entry.root.localInterpolation)!;
