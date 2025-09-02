@@ -392,7 +392,6 @@ This project is licensed under the **BSD 3-Clause License**. See
 **Made with ❤️ for the Flutter community**
 
 [📖 Documentation](https://pub.dev/packages/flexbox) •
-[🐛 Issues](https://github.com/your-repo/flexbox/issues) •
-[💬 Discussions](https://github.com/your-repo/flexbox/discussions)
+[🐛 Issues](https://github.com/sunarya-thito/flexbox/issues) •
 
 </div>

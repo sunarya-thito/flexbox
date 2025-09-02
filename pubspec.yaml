@@ -1,7 +1,7 @@
 name: flexbox
-description: "A new Flutter package project."
+description: "Flexible, two-dimensional layout with per-child sizing and positioning, sticky anchors, bidirectional scrolling, z-ordering, and lightweight morph transitions."
 version: 0.0.1
-homepage:
+homepage: https://github.com/sunarya-thito/flexbox
 
 environment:
   sdk: ^3.9.0
