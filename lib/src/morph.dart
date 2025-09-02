@@ -394,9 +394,6 @@ class RenderMorph extends RenderBox
   ) {
     final current = currentPath.current;
     if (current is RenderMorph) {
-      current.visitActiveChild((child) {
-        _pair(_Linked(child, currentPath), opposite, isSource);
-      });
       return;
     }
     if (current is RenderMorphed) {
@@ -605,22 +602,6 @@ class RenderMorphed extends RenderProxyBox {
     bool isSource,
   ) {
     if (candidate is RenderMorph) {
-      final (source, target) = candidate._findMorph();
-      final sourcePath = SimpleMorphPath(object: candidate);
-      final foundSource = findMorph(root, source, sourcePath, isSource);
-      final targetPath = SimpleMorphPath(object: candidate);
-      final foundTarget = findMorph(root, target, targetPath, isSource);
-      if (foundSource || foundTarget) {
-        final morphingPath = MorphingMorphPath(
-          object: candidate,
-          source: sourcePath.next,
-          target: targetPath.next,
-          interpolation: candidate.localInterpolation,
-          isSource: isSource,
-        );
-        path.next = morphingPath;
-        return true;
-      }
       return false;
     }
     if (candidate is RenderMorphed) {
