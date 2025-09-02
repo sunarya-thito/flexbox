@@ -1,7 +1,7 @@
-import 'package:flexbox/src/foundation.dart';
-import 'package:flexbox/src/morph.dart';
-import 'package:flexbox/src/rendering.dart';
-import 'package:flexbox/src/scrollable.dart';
+import 'package:flexiblebox/src/foundation.dart';
+import 'package:flexiblebox/src/morph.dart';
+import 'package:flexiblebox/src/rendering.dart';
+import 'package:flexiblebox/src/scrollable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';

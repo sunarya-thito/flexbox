@@ -44,7 +44,7 @@ dependencies:
 Then import it in your Dart files:
 
 ```dart
-import 'package:flexbox/flexbox.dart';
+import 'package:flexiblebox/flexbox.dart';
 ```
 
 ## 🔧 Requirements
