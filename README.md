@@ -1,13 +1,13 @@
-# 📦 FlexBox for Flutter
+# 📦 FlexibleBox for Flutter
 
 [![pub package](https://img.shields.io/pub/v/flexbox.svg)](https://pub.dev/packages/flexbox)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
 **Build stunning, flexible layouts with ease!**
 
-FlexBox brings advanced 2D layout capabilities to Flutter with intuitive APIs
-for per-child sizing, positioning, sticky elements, bidirectional scrolling, and
-smooth morphing transitions.
+FlexibleBox brings advanced 2D layout capabilities to Flutter with intuitive
+APIs for per-child sizing, positioning, sticky elements, bidirectional
+scrolling, and smooth morphing transitions.
 
 ---
 

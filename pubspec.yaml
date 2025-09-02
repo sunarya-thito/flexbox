@@ -1,4 +1,4 @@
-name: flexbox
+name: flexiblebox
 description: "Flexible, two-dimensional layout with per-child sizing and positioning, sticky anchors, bidirectional scrolling, z-ordering, and lightweight morph transitions."
 version: 0.0.1
 homepage: https://github.com/sunarya-thito/flexbox
