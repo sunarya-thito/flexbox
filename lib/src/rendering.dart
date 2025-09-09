@@ -519,6 +519,11 @@ class RenderFlexBox extends RenderBox
   @override
   void performLayout() {
     BoxConstraints constraints = this.constraints;
+    // If there are no children, set size and return early
+    if (firstChild == null) {
+      size = constraints.constrain(Size.zero);
+      return;
+    }
     // Count unconstrained children first (needed before constraint override)
     int unconstrainedCount = 0;
     RenderBox? unconstrainedChild = relativeFirstChild;
