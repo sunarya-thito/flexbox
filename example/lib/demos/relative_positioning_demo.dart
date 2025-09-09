@@ -4,12 +4,12 @@ import '../widgets/base_demo_page.dart';
 
 class RelativePositioningDemo extends BaseDemoPage {
   RelativePositioningDemo()
-      : super(
-          title: 'Relative Positioning',
-          description:
-              'BoxPosition.relative() positioning method for percentage-based positioning',
-          color: Colors.indigo,
-        );
+    : super(
+        title: 'Relative Positioning',
+        description:
+            'BoxPosition.relative() positioning method for percentage-based positioning',
+        color: Colors.indigo,
+      );
 
   @override
   Widget buildDemo(BuildContext context) {
@@ -63,7 +63,9 @@ class RelativePositioningDemo extends BaseDemoPage {
                       decoration: BoxDecoration(
                         color: Colors.red[400],
                         borderRadius: BorderRadius.circular(4),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 2),
+                        ],
                       ),
                       child: Center(
                         child: Text(
@@ -91,7 +93,9 @@ class RelativePositioningDemo extends BaseDemoPage {
                       decoration: BoxDecoration(
                         color: Colors.green[400],
                         borderRadius: BorderRadius.circular(4),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 2),
+                        ],
                       ),
                       child: Center(
                         child: Text(
@@ -119,7 +123,9 @@ class RelativePositioningDemo extends BaseDemoPage {
                       decoration: BoxDecoration(
                         color: Colors.purple[400],
                         borderRadius: BorderRadius.circular(4),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 2),
+                        ],
                       ),
                       child: Center(
                         child: Text(
@@ -245,8 +251,12 @@ class RelativePositioningDemo extends BaseDemoPage {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 SizedBox(height: 8),
-                Text('• BoxPosition.fixed(value) - Absolute position in pixels'),
-                Text('• BoxPosition.relative(0.0-1.0) - Percentage of container size'),
+                Text(
+                  '• BoxPosition.fixed(value) - Absolute position in pixels',
+                ),
+                Text(
+                  '• BoxPosition.relative(0.0-1.0) - Percentage of container size',
+                ),
               ],
             ),
           ),

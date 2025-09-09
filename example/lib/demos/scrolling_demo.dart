@@ -23,7 +23,7 @@ class ScrollingDemo extends BaseDemoPage {
         direction: Axis.vertical,
         children: [
           // Content blocks to create scrollable area
-          for (int i = 0; i < 30; i++)
+          for (int i = 0; i < 50; i++)
             FlexBoxChild(
               width: BoxSize.unconstrained(),
               height: BoxSize.fixed(80),

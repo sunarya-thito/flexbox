@@ -4,12 +4,12 @@ import '../widgets/base_demo_page.dart';
 
 class RatioSizingDemo extends BaseDemoPage {
   RatioSizingDemo()
-      : super(
-          title: 'Ratio Sizing',
-          description:
-              'Elements sized based on aspect ratios relative to their container',
-          color: Colors.deepPurple,
-        );
+    : super(
+        title: 'Ratio Sizing',
+        description:
+            'Elements sized based on aspect ratios relative to their container',
+        color: Colors.deepPurple,
+      );
 
   @override
   Widget buildDemo(BuildContext context) {
@@ -105,7 +105,9 @@ class RatioSizingDemo extends BaseDemoPage {
                 children: [
                   FlexBoxChild(
                     width: BoxSize.fixed(200),
-                    height: BoxSize.ratio(0.5), // 2:1 aspect ratio (width:height)
+                    height: BoxSize.ratio(
+                      0.5,
+                    ), // 2:1 aspect ratio (width:height)
                     child: Container(
                       color: Colors.purple[400],
                       child: Center(
@@ -157,7 +159,9 @@ class RatioSizingDemo extends BaseDemoPage {
                 children: [
                   FlexBoxChild(
                     width: BoxSize.fixed(60),
-                    height: BoxSize.ratio(2.0), // 1:2 aspect ratio (width:height)
+                    height: BoxSize.ratio(
+                      2.0,
+                    ), // 1:2 aspect ratio (width:height)
                     child: Container(
                       color: Colors.teal[400],
                       child: Center(

@@ -4,12 +4,12 @@ import '../widgets/base_demo_page.dart';
 
 class AdvancedLayoutDemo extends BaseDemoPage {
   AdvancedLayoutDemo()
-      : super(
-          title: 'Advanced Layout',
-          description:
-              'Spacing, alignment, reverse direction, and scrolling behaviors',
-          color: Colors.brown,
-        );
+    : super(
+        title: 'Advanced Layout',
+        description:
+            'Spacing, alignment, reverse direction, and scrolling behaviors',
+        color: Colors.brown,
+      );
 
   @override
   Widget buildDemo(BuildContext context) {
@@ -269,7 +269,10 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     scrollHorizontalOverflow: true,
                     children: [
                       for (int i = 0; i < 8; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -288,7 +291,10 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     scrollHorizontalOverflow: false,
                     children: [
                       for (int i = 0; i < 8; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -335,10 +341,14 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   child: FlexBox(
                     direction: Axis.horizontal,
                     clipBehavior: Clip.hardEdge,
-                    scrollHorizontalOverflow: false, // Disable scrolling to see clipping
+                    scrollHorizontalOverflow:
+                        false, // Disable scrolling to see clipping
                     children: [
                       for (int i = 0; i < 6; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -356,10 +366,14 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   child: FlexBox(
                     direction: Axis.horizontal,
                     clipBehavior: Clip.none,
-                    scrollHorizontalOverflow: false, // Disable scrolling to see overflow
+                    scrollHorizontalOverflow:
+                        false, // Disable scrolling to see overflow
                     children: [
                       for (int i = 0; i < 6; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -380,7 +394,10 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     scrollHorizontalOverflow: false,
                     children: [
                       for (int i = 0; i < 6; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -401,7 +418,10 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     scrollHorizontalOverflow: true, // Enable scrolling
                     children: [
                       for (int i = 0; i < 8; i++)
-                        _buildBox('${i + 1}', Colors.primaries[i % Colors.primaries.length]),
+                        _buildBox(
+                          '${i + 1}',
+                          Colors.primaries[i % Colors.primaries.length],
+                        ),
                     ],
                   ),
                 ),
@@ -449,7 +469,10 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                       child: Center(
                         child: Text(
                           'Background (Z: 0)',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -548,10 +571,7 @@ class AdvancedLayoutDemo extends BaseDemoPage {
         child: Center(
           child: Text(
             text,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
       ),

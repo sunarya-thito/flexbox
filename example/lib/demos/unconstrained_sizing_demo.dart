@@ -4,19 +4,19 @@ import '../widgets/base_demo_page.dart';
 
 class UnconstrainedSizingDemo extends BaseDemoPage {
   UnconstrainedSizingDemo()
-      : super(
-          title: 'Unconstrained Sizing',
-          description:
-              'Elements that expand to fill remaining space in the container',
-          color: Colors.orange,
-        );
+    : super(
+        title: 'Unconstrained Sizing',
+        description:
+            'Elements that expand to fill remaining space in the container',
+        color: Colors.orange,
+      );
 
   @override
   Widget buildDemo(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildExample(
             'Horizontal Unconstrained',
@@ -402,7 +402,10 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                       width: BoxSize.unconstrained(),
                       height: BoxSize.fixed(60),
                       child: Container(
-                        margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        margin: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -498,9 +501,15 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 SizedBox(height: 8),
-                Text('• RelativeViewport: Fills remaining space within the visible viewport'),
-                Text('• RelativeContent: Fills remaining space within the entire scrollable content area'),
-                Text('• Fixed: Stays in fixed position, unaffected by scrolling'),
+                Text(
+                  '• RelativeViewport: Fills remaining space within the visible viewport',
+                ),
+                Text(
+                  '• RelativeContent: Fills remaining space within the entire scrollable content area',
+                ),
+                Text(
+                  '• Fixed: Stays in fixed position, unaffected by scrolling',
+                ),
                 SizedBox(height: 8),
                 Text(
                   'The key difference: RelativeContent sizing extends to the full content size, while RelativeViewport only considers the visible area.',
@@ -516,7 +525,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
 
   Widget _buildExample(String title, String description, Widget demo) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           title,

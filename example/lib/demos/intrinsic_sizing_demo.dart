@@ -4,12 +4,11 @@ import '../widgets/base_demo_page.dart';
 
 class IntrinsicSizingDemo extends BaseDemoPage {
   IntrinsicSizingDemo()
-      : super(
-          title: 'Intrinsic Sizing',
-          description:
-              'Elements that size themselves based on their content',
-          color: Colors.purple,
-        );
+    : super(
+        title: 'Intrinsic Sizing',
+        description: 'Elements that size themselves based on their content',
+        color: Colors.purple,
+      );
 
   @override
   Widget buildDemo(BuildContext context) {

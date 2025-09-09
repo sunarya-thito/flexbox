@@ -150,6 +150,121 @@ void main() {
         expect(childSize.height, greaterThanOrEqualTo(80.0));
         expect(childSize.height, lessThanOrEqualTo(200.0));
       });
+
+      testWidgets('Unconstrained with flex children acts as biggest flex', (
+        WidgetTester tester,
+      ) async {
+        // SPECIFICATION TEST: This documents the DESIRED behavior
+        // Test case: flex(1), flex(2), unconstrained
+        // Unconstrained should act as if it has flex(2) - the biggest flex value
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 500, // Total width
+                height: 300,
+                child: FlexBox(
+                  direction: Axis.horizontal,
+                  children: [
+                    FlexBoxChild(
+                      width: BoxSize.flex(1.0),
+                      height: BoxSize.fixed(100),
+                      child: Container(
+                        key: Key('flex1Child'),
+                        color: Colors.red,
+                      ),
+                    ),
+                    FlexBoxChild(
+                      width: BoxSize.flex(2.0),
+                      height: BoxSize.fixed(100),
+                      child: Container(
+                        key: Key('flex2Child'),
+                        color: Colors.blue,
+                      ),
+                    ),
+                    FlexBoxChild(
+                      width: BoxSize.unconstrained(),
+                      height: BoxSize.fixed(100),
+                      child: Container(
+                        key: Key('unconstrainedChild'),
+                        width:
+                            80, // Content width - should be ignored in flex calculation
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final flex1Size = tester.getSize(find.byKey(Key('flex1Child')));
+        final flex2Size = tester.getSize(find.byKey(Key('flex2Child')));
+        final unconstrainedSize = tester.getSize(
+          find.byKey(Key('unconstrainedChild')),
+        );
+
+        // Total flex units: 1 + 2 + 2 (unconstrained acts as biggest flex) = 5
+        // Available width: 500px
+        // Expected: flex(1) = 100px, flex(2) = 200px, unconstrained = 200px
+        expect(flex1Size.width, equals(100.0));
+        expect(flex2Size.width, equals(200.0));
+        expect(unconstrainedSize.width, equals(200.0)); // Acts as flex(2)
+      });
+
+      testWidgets('Unconstrained fills remaining space when no flex children', (
+        WidgetTester tester,
+      ) async {
+        // SPECIFICATION TEST: This documents the DESIRED behavior
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 300,
+                child: FlexBox(
+                  direction: Axis.horizontal,
+                  children: [
+                    FlexBoxChild(
+                      width: BoxSize.fixed(100),
+                      height: BoxSize.fixed(100),
+                      child: Container(
+                        key: Key('fixedChild'),
+                        color: Colors.red,
+                      ),
+                    ),
+                    FlexBoxChild(
+                      width: BoxSize.unconstrained(),
+                      height: BoxSize.fixed(100),
+                      child: Container(
+                        key: Key('unconstrainedChild'),
+                        width: 50, // Content width - should be ignored
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final fixedSize = tester.getSize(find.byKey(Key('fixedChild')));
+        final unconstrainedSize = tester.getSize(
+          find.byKey(Key('unconstrainedChild')),
+        );
+
+        expect(fixedSize.width, equals(100.0));
+        expect(
+          unconstrainedSize.width,
+          equals(300.0),
+        ); // 400 - 100 = 300 (fills remaining)
+      });
     });
 
     group('Flex Sizing', () {
