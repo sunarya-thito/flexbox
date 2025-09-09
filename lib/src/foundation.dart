@@ -62,8 +62,7 @@ abstract class BoxSize {
   final double? max;
   const BoxSize({this.min, this.max});
   const factory BoxSize.intrinsic({double? min, double? max}) = IntrinsicSize;
-  const factory BoxSize.fixed(double size, {double? min, double? max}) =
-      FixedSize;
+  const factory BoxSize.fixed(double size) = FixedSize;
   const factory BoxSize.unconstrained({double? min, double? max}) =
       UnconstrainedSize;
   const factory BoxSize.ratio(double ratio, {double? min, double? max}) =
@@ -113,20 +112,17 @@ class IntrinsicSize extends BoxSize {
 class FixedSize extends BoxSize {
   final double size;
 
-  const FixedSize(this.size, {super.min, super.max});
+  const FixedSize(this.size);
 
   @override
   String toString() {
-    return 'FixedSize(size: $size, min: $min, max: $max)';
+    return 'FixedSize(size: $size)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is FixedSize &&
-        other.size == size &&
-        other.min == min &&
-        other.max == max;
+    return other is FixedSize && other.size == size;
   }
 
   @override
@@ -342,6 +338,10 @@ enum BoxPositionType {
   /// Relative position, affected by scrolling
   relative,
 
+  /// Relative position anchored to the viewport instead of the flexbox,
+  /// affected by scrolling but positions are calculated relative to viewport size
+  relativeViewport,
+
   /// Sticky position, affected by scrolling until it goes out of bounds.
   /// It will constrain the position to the viewport bounds.
   sticky,
@@ -351,4 +351,16 @@ enum BoxPositionType {
 
   /// Sticky position, but it will stick to the end (of the main axis) of the parent
   stickyEnd,
+
+  /// Sticky position anchored to viewport, affected by scrolling until it goes out of bounds.
+  /// It will constrain the position to the viewport bounds. Uses viewport dimensions as reference.
+  stickyViewport,
+
+  /// Sticky position anchored to viewport, but it will stick to the start of the viewport.
+  /// Uses viewport dimensions as reference.
+  stickyStartViewport,
+
+  /// Sticky position anchored to viewport, but it will stick to the end of the viewport.
+  /// Uses viewport dimensions as reference.
+  stickyEndViewport,
 }

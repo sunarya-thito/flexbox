@@ -38,7 +38,7 @@ Add FlexBox to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-    flexbox: ^0.0.1
+  flexbox: ^0.0.1
 ```
 
 Then import it in your Dart files:
@@ -259,13 +259,14 @@ BoxPosition.flex(double flex)
 
 Controls how positioned children respond to scrolling.
 
-| Type          | Description                                |
-| ------------- | ------------------------------------------ |
-| `fixed`       | Not affected by scrolling                  |
-| `relative`    | Scrolls with content                       |
-| `sticky`      | Scrolls until viewport edge, then clamps   |
-| `stickyStart` | Sticks to start edge of parent's main axis |
-| `stickyEnd`   | Sticks to end edge of parent's main axis   |
+| Type               | Description                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `fixed`            | Not affected by scrolling                                                                 |
+| `relative`         | Scrolls with content                                                                      |
+| `relativeViewport` | Scrolls with content, but positions are anchored to viewport size instead of flexbox size |
+| `sticky`           | Scrolls until viewport edge, then clamps                                                  |
+| `stickyStart`      | Sticks to start edge of parent's main axis                                                |
+| `stickyEnd`        | Sticks to end edge of parent's main axis                                                  |
 
 ## 🎯 Advanced Usage
 
