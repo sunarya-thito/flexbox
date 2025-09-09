@@ -4,25 +4,164 @@ import '../widgets/base_demo_page.dart';
 
 class UnconstrainedSizingDemo extends BaseDemoPage {
   UnconstrainedSizingDemo()
-    : super(
-        title: 'Unconstrained Sizing',
-        description: 'Dynamic sizing that uses remaining space after anchoring',
-        color: Colors.orange,
-      );
+      : super(
+          title: 'Unconstrained Sizing',
+          description:
+              'Elements that expand to fill remaining space in the container',
+          color: Colors.orange,
+        );
 
   @override
   Widget buildDemo(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Example 1: Horizontal unconstrained with relative positioning
           _buildExample(
-            'Unconstrained Width - Relative Positioning',
-            'FlexBox is 300px wide, left anchor is 30px, remaining space = 270px',
+            'Horizontal Unconstrained',
+            'Unconstrained elements fill remaining horizontal space',
             Container(
-              width: 300,
-              height: 120,
+              height: 100,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: FlexBox(
+                direction: Axis.horizontal,
+                children: [
+                  FlexBoxChild(
+                    width: BoxSize.fixed(80),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.red[300],
+                      child: Center(
+                        child: Text(
+                          'Fixed\n80px',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.unconstrained(),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.green[300],
+                      child: Center(
+                        child: Text(
+                          'UNCONSTRAINED\n(fills remaining space)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.fixed(60),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.blue[300],
+                      child: Center(
+                        child: Text(
+                          'Fixed\n60px',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 24),
+
+          _buildExample(
+            'Vertical Unconstrained',
+            'Unconstrained elements fill remaining vertical space',
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: FlexBox(
+                direction: Axis.vertical,
+                children: [
+                  FlexBoxChild(
+                    width: BoxSize.fixed(200),
+                    height: BoxSize.fixed(50),
+                    child: Container(
+                      color: Colors.purple[300],
+                      child: Center(
+                        child: Text(
+                          'Fixed Height: 50px',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.fixed(200),
+                    height: BoxSize.unconstrained(),
+                    child: Container(
+                      color: Colors.orange[300],
+                      child: Center(
+                        child: Text(
+                          'UNCONSTRAINED HEIGHT\n(fills remaining space)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.fixed(200),
+                    height: BoxSize.fixed(40),
+                    child: Container(
+                      color: Colors.teal[300],
+                      child: Center(
+                        child: Text(
+                          'Fixed Height: 40px',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 24),
+
+          _buildExample(
+            'Multiple Unconstrained Elements',
+            'Multiple unconstrained elements share remaining space equally',
+            Container(
+              height: 100,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
@@ -34,27 +173,66 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
                     child: Container(
-                      color: Colors.grey[300],
+                      color: Colors.indigo[300],
                       child: Center(
                         child: Text(
                           'Fixed\n100px',
                           textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   FlexBoxChild(
-                    left: BoxPosition.fixed(30),
                     width: BoxSize.unconstrained(),
-                    height: BoxSize.fixed(50),
-                    horizontalPosition: BoxPositionType.relative,
+                    height: BoxSize.fixed(80),
                     child: Container(
-                      color: Colors.red[400],
+                      color: Colors.pink[300],
                       child: Center(
                         child: Text(
-                          'Unconstrained\n(uses remaining)',
+                          'Unconstrained 1',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.unconstrained(),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.amber[600],
+                      child: Center(
+                        child: Text(
+                          'Unconstrained 2',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.unconstrained(),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.cyan[600],
+                      child: Center(
+                        child: Text(
+                          'Unconstrained 3',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -66,13 +244,11 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
 
           SizedBox(height: 24),
 
-          // Example 2: Horizontal unconstrained with viewport positioning
           _buildExample(
-            'Unconstrained Width - Viewport Positioning',
-            'Viewport is 300px wide, left anchor is 30px, remaining space = 270px',
+            'Unconstrained with Constraints',
+            'Unconstrained sizing with min/max constraints',
             Container(
-              width: 300,
-              height: 120,
+              height: 100,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
@@ -81,27 +257,55 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                 direction: Axis.horizontal,
                 children: [
                   FlexBoxChild(
-                    width: BoxSize.fixed(50),
+                    width: BoxSize.fixed(80),
                     height: BoxSize.fixed(80),
                     child: Container(
-                      color: Colors.grey[300],
+                      color: Colors.brown[400],
                       child: Center(
-                        child: Text('50px', textAlign: TextAlign.center),
+                        child: Text(
+                          'Fixed\n80px',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   FlexBoxChild(
-                    left: BoxPosition.fixed(30),
-                    width: BoxSize.unconstrained(),
-                    height: BoxSize.fixed(50),
-                    horizontalPosition: BoxPositionType.relativeViewport,
+                    width: BoxSize.unconstrained(min: 150, max: 200),
+                    height: BoxSize.fixed(80),
                     child: Container(
-                      color: Colors.green[400],
+                      color: Colors.deepOrange[400],
                       child: Center(
                         child: Text(
-                          'Viewport Unconstrained\n(uses viewport space)',
+                          'Unconstrained\nMin: 150px\nMax: 200px',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.unconstrained(min: 100),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.deepPurple[400],
+                      child: Center(
+                        child: Text(
+                          'Unconstrained\nMin: 100px',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -113,52 +317,196 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
 
           SizedBox(height: 24),
 
-          // Example 3: Vertical unconstrained
           _buildExample(
-            'Unconstrained Height',
-            'Uses remaining vertical space after top anchor',
+            'Unconstrained Absolute Positioning - RelativeViewport',
+            'Absolutely positioned elements with unconstrained sizing relative to viewport',
             Container(
-              width: 200,
-              height: 250,
+              height: 200,
+              width: 300,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[50],
               ),
               child: FlexBox(
-                direction: Axis.vertical,
+                direction: Axis.horizontal,
                 children: [
+                  // Background content
                   FlexBoxChild(
                     width: BoxSize.fixed(150),
-                    height: BoxSize.fixed(60),
+                    height: BoxSize.fixed(80),
                     child: Container(
-                      color: Colors.grey[300],
+                      margin: EdgeInsets.all(8),
+                      color: Colors.blue[100],
                       child: Center(
                         child: Text(
-                          'Fixed Height\n60px',
+                          'Regular Content\n150x80',
                           textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
                   ),
+
+                  // Absolutely positioned unconstrained element
                   FlexBoxChild(
-                    top: BoxPosition.fixed(30),
-                    left: BoxPosition.fixed(10),
-                    width: BoxSize.fixed(80),
+                    left: BoxPosition.fixed(40),
+                    top: BoxPosition.fixed(20),
+                    width: BoxSize.unconstrained(),
                     height: BoxSize.unconstrained(),
+                    horizontalPosition: BoxPositionType.relativeViewport,
                     verticalPosition: BoxPositionType.relativeViewport,
                     child: Container(
-                      color: Colors.blue[400],
+                      decoration: BoxDecoration(
+                        color: Colors.red[400]!.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[700]!, width: 2),
+                      ),
                       child: Center(
                         child: Text(
-                          'Unconstrained\nHeight',
+                          'Unconstrained\nAbsolute\n(RelativeViewport)\nFills remaining\nviewport space',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+
+          SizedBox(height: 24),
+
+          _buildExample(
+            'Unconstrained Absolute Positioning - RelativeContent',
+            'Absolutely positioned elements with unconstrained sizing relative to scrollable content',
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[50],
+              ),
+              child: FlexBox(
+                direction: Axis.vertical,
+                children: [
+                  // Large scrollable content
+                  for (int i = 0; i < 12; i++)
+                    FlexBoxChild(
+                      width: BoxSize.unconstrained(),
+                      height: BoxSize.fixed(60),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue[100 + (i % 4) * 100]!,
+                              Colors.blue[200 + (i % 4) * 100]!,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Scrollable Content Row ${i + 1}',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Absolutely positioned unconstrained element - RelativeContent
+                  FlexBoxChild(
+                    right: BoxPosition.fixed(20),
+                    top: BoxPosition.fixed(30),
+                    width: BoxSize.unconstrained(),
+                    height: BoxSize.unconstrained(),
+                    horizontalPosition: BoxPositionType.relativeContent,
+                    verticalPosition: BoxPositionType.relativeContent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green[400]!.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green[700]!, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Unconstrained Absolute\n(RelativeContent)\n\nFills remaining space\nof ENTIRE scrollable\ncontent area\n\nScrolls with content',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Fixed positioned for comparison
+                  FlexBoxChild(
+                    left: BoxPosition.fixed(20),
+                    top: BoxPosition.fixed(100),
+                    width: BoxSize.fixed(100),
+                    height: BoxSize.fixed(50),
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.purple[400],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Fixed\nPosition\n(stays put)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 16),
+
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Unconstrained Absolute Positioning:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text('• RelativeViewport: Fills remaining space within the visible viewport'),
+                Text('• RelativeContent: Fills remaining space within the entire scrollable content area'),
+                Text('• Fixed: Stays in fixed position, unaffected by scrolling'),
+                SizedBox(height: 8),
+                Text(
+                  'The key difference: RelativeContent sizing extends to the full content size, while RelativeViewport only considers the visible area.',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ],
             ),
           ),
         ],
@@ -172,7 +520,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
       children: [
         Text(
           title,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 4),
         Text(

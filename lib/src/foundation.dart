@@ -230,7 +230,6 @@ abstract class BoxPosition {
   const BoxPosition();
   const factory BoxPosition.fixed(double value) = FixedPosition;
   const factory BoxPosition.relative(double relative) = RelativePosition;
-  const factory BoxPosition.flex(double flex) = FlexPosition;
   double computePosition(double parentSize);
 
   @override
@@ -304,63 +303,36 @@ class RelativePosition extends BoxPosition {
   }
 }
 
-class FlexPosition extends BoxPosition {
-  final double flex;
-
-  const FlexPosition(this.flex);
-
-  @override
-  double computePosition(double parentSize) {
-    return double.infinity; // Flex position is not directly computable
-  }
-
-  @override
-  String toString() {
-    return 'FlexPosition(flex: $flex)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is FlexPosition && other.flex == flex;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(runtimeType, flex);
-  }
-}
-
 enum BoxPositionType {
   /// Fixed position, not affected by scrolling
   fixed,
 
   /// Relative position, affected by scrolling
-  relative,
+  relativeViewport,
 
   /// Relative position anchored to the viewport instead of the flexbox,
   /// affected by scrolling but positions are calculated relative to viewport size
-  relativeViewport,
+  relativeContent,
 
   /// Sticky position, affected by scrolling until it goes out of bounds.
   /// It will constrain the position to the viewport bounds.
-  sticky,
-
-  /// Sticky position, but it will stick to the start (of the main axis) of the parent
-  stickyStart,
-
-  /// Sticky position, but it will stick to the end (of the main axis) of the parent
-  stickyEnd,
-
-  /// Sticky position anchored to viewport, affected by scrolling until it goes out of bounds.
-  /// It will constrain the position to the viewport bounds. Uses viewport dimensions as reference.
   stickyViewport,
 
-  /// Sticky position anchored to viewport, but it will stick to the start of the viewport.
-  /// Uses viewport dimensions as reference.
+  /// Sticky position, but it will stick to the start (of the main axis) of the parent
   stickyStartViewport,
 
-  /// Sticky position anchored to viewport, but it will stick to the end of the viewport.
-  /// Uses viewport dimensions as reference.
+  /// Sticky position, but it will stick to the end (of the main axis) of the parent
   stickyEndViewport,
+
+  /// Sticky position anchored to content, affected by scrolling until it goes out of bounds.
+  /// It will constrain the position to the content bounds. Uses content dimensions as reference.
+  stickyContent,
+
+  /// Sticky position anchored to content, but it will stick to the start of the content.
+  /// Uses content dimensions as reference.
+  stickyStartContent,
+
+  /// Sticky position anchored to content, but it will stick to the end of the content.
+  /// Uses content dimensions as reference.
+  stickyEndContent,
 }

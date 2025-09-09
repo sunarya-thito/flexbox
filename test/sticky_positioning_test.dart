@@ -4,7 +4,9 @@ import 'package:flexiblebox/flexiblebox.dart';
 
 void main() {
   group('Sticky Positioning Tests', () {
-    testWidgets('Sticky positioning keeps element in view during scroll', (WidgetTester tester) async {
+    testWidgets('Sticky positioning keeps element in view during scroll', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -26,9 +28,12 @@ void main() {
                       left: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.sticky,
-                      verticalPosition: BoxPositionType.sticky,
-                      child: Container(key: Key('stickyChild'), color: Colors.orange),
+                      horizontalPosition: BoxPositionType.stickyViewport,
+                      verticalPosition: BoxPositionType.stickyViewport,
+                      child: Container(
+                        key: Key('stickyChild'),
+                        color: Colors.orange,
+                      ),
                     ),
                     // More content below
                     FlexBoxChild(
@@ -47,7 +52,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyChild')), findsOneWidget);
-      
+
       // Scroll down and verify sticky element adjusts position
       await tester.drag(find.byType(SingleChildScrollView), Offset(0, -300));
       await tester.pumpAndSettle();
@@ -55,7 +60,9 @@ void main() {
       expect(find.byKey(Key('stickyChild')), findsOneWidget);
     });
 
-    testWidgets('StickyStart positioning works correctly', (WidgetTester tester) async {
+    testWidgets('StickyStart positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -77,9 +84,12 @@ void main() {
                       left: BoxPosition.fixed(50),
                       width: BoxSize.fixed(120),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyStart,
-                      verticalPosition: BoxPositionType.stickyStart,
-                      child: Container(key: Key('stickyStartChild'), color: Colors.green),
+                      horizontalPosition: BoxPositionType.stickyStartViewport,
+                      verticalPosition: BoxPositionType.stickyStartViewport,
+                      child: Container(
+                        key: Key('stickyStartChild'),
+                        color: Colors.green,
+                      ),
                     ),
                     // Content after sticky element
                     FlexBoxChild(
@@ -98,14 +108,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyStartChild')), findsOneWidget);
-      
+
       // Verify the element maintains position at start of parent
       final child = tester.getTopLeft(find.byKey(Key('stickyStartChild')));
       expect(child.dx, equals(50.0));
       expect(child.dy, greaterThanOrEqualTo(20.0));
     });
 
-    testWidgets('StickyEnd positioning works correctly', (WidgetTester tester) async {
+    testWidgets('StickyEnd positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -127,9 +139,12 @@ void main() {
                       right: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyEnd,
-                      verticalPosition: BoxPositionType.stickyEnd,
-                      child: Container(key: Key('stickyEndChild'), color: Colors.purple),
+                      horizontalPosition: BoxPositionType.stickyEndViewport,
+                      verticalPosition: BoxPositionType.stickyEndViewport,
+                      child: Container(
+                        key: Key('stickyEndChild'),
+                        color: Colors.purple,
+                      ),
                     ),
                     // Content after sticky element
                     FlexBoxChild(
@@ -148,14 +163,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyEndChild')), findsOneWidget);
-      
+
       // Verify the element positions relative to end of parent
       final child = tester.getTopLeft(find.byKey(Key('stickyEndChild')));
       // Right positioning: containerWidth - childWidth - rightOffset = 400 - 100 - 30 = 270
       expect(child.dx, equals(270.0));
     });
 
-    testWidgets('StickyViewport positioning anchors to viewport', (WidgetTester tester) async {
+    testWidgets('StickyViewport positioning anchors to viewport', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -177,9 +194,12 @@ void main() {
                       left: BoxPosition.fixed(60),
                       width: BoxSize.fixed(120),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyViewport,
-                      verticalPosition: BoxPositionType.stickyViewport,
-                      child: Container(key: Key('stickyViewportChild'), color: Colors.amber),
+                      horizontalPosition: BoxPositionType.stickyContent,
+                      verticalPosition: BoxPositionType.stickyContent,
+                      child: Container(
+                        key: Key('stickyViewportChild'),
+                        color: Colors.amber,
+                      ),
                     ),
                     // More content
                     FlexBoxChild(
@@ -198,14 +218,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyViewportChild')), findsOneWidget);
-      
+
       // StickyViewport should position relative to viewport, not FlexBox content
       final child = tester.getTopLeft(find.byKey(Key('stickyViewportChild')));
       expect(child.dx, equals(60.0));
       expect(child.dy, equals(40.0));
     });
 
-    testWidgets('StickyStartViewport positioning works correctly', (WidgetTester tester) async {
+    testWidgets('StickyStartViewport positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -227,9 +249,12 @@ void main() {
                       left: BoxPosition.fixed(20),
                       width: BoxSize.fixed(140),
                       height: BoxSize.fixed(70),
-                      horizontalPosition: BoxPositionType.stickyStartViewport,
-                      verticalPosition: BoxPositionType.stickyStartViewport,
-                      child: Container(key: Key('stickyStartViewportChild'), color: Colors.lime),
+                      horizontalPosition: BoxPositionType.stickyStartContent,
+                      verticalPosition: BoxPositionType.stickyStartContent,
+                      child: Container(
+                        key: Key('stickyStartViewportChild'),
+                        color: Colors.lime,
+                      ),
                     ),
                     // Additional content
                     FlexBoxChild(
@@ -248,14 +273,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyStartViewportChild')), findsOneWidget);
-      
+
       // Should stick to viewport start, not FlexBox start
-      final child = tester.getTopLeft(find.byKey(Key('stickyStartViewportChild')));
+      final child = tester.getTopLeft(
+        find.byKey(Key('stickyStartViewportChild')),
+      );
       expect(child.dx, equals(20.0));
       expect(child.dy, equals(10.0));
     });
 
-    testWidgets('StickyEndViewport positioning works correctly', (WidgetTester tester) async {
+    testWidgets('StickyEndViewport positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -277,9 +306,12 @@ void main() {
                       right: BoxPosition.fixed(40),
                       width: BoxSize.fixed(110),
                       height: BoxSize.fixed(90),
-                      horizontalPosition: BoxPositionType.stickyEndViewport,
-                      verticalPosition: BoxPositionType.stickyEndViewport,
-                      child: Container(key: Key('stickyEndViewportChild'), color: Colors.indigo),
+                      horizontalPosition: BoxPositionType.stickyEndContent,
+                      verticalPosition: BoxPositionType.stickyEndContent,
+                      child: Container(
+                        key: Key('stickyEndViewportChild'),
+                        color: Colors.indigo,
+                      ),
                     ),
                     // Content after
                     FlexBoxChild(
@@ -298,14 +330,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('stickyEndViewportChild')), findsOneWidget);
-      
+
       // Should position relative to viewport end
-      final child = tester.getTopLeft(find.byKey(Key('stickyEndViewportChild')));
+      final child = tester.getTopLeft(
+        find.byKey(Key('stickyEndViewportChild')),
+      );
       // Right positioning relative to viewport: containerWidth - childWidth - rightOffset
       expect(child.dx, equals(400 - 110 - 40)); // 250
     });
 
-    testWidgets('Mixed sticky positioning types work together', (WidgetTester tester) async {
+    testWidgets('Mixed sticky positioning types work together', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -327,8 +363,8 @@ void main() {
                       left: BoxPosition.fixed(20),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.sticky,
-                      verticalPosition: BoxPositionType.sticky,
+                      horizontalPosition: BoxPositionType.stickyViewport,
+                      verticalPosition: BoxPositionType.stickyViewport,
                       child: Container(key: Key('sticky1'), color: Colors.red),
                     ),
                     FlexBoxChild(
@@ -336,8 +372,8 @@ void main() {
                       left: BoxPosition.fixed(120),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyViewport,
-                      verticalPosition: BoxPositionType.stickyViewport,
+                      horizontalPosition: BoxPositionType.stickyContent,
+                      verticalPosition: BoxPositionType.stickyContent,
                       child: Container(key: Key('sticky2'), color: Colors.blue),
                     ),
                     FlexBoxChild(
@@ -345,9 +381,12 @@ void main() {
                       right: BoxPosition.fixed(20),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyEndViewport,
-                      verticalPosition: BoxPositionType.stickyEndViewport,
-                      child: Container(key: Key('sticky3'), color: Colors.green),
+                      horizontalPosition: BoxPositionType.stickyEndContent,
+                      verticalPosition: BoxPositionType.stickyEndContent,
+                      child: Container(
+                        key: Key('sticky3'),
+                        color: Colors.green,
+                      ),
                     ),
                     // Large content to enable scrolling
                     FlexBoxChild(
@@ -368,7 +407,7 @@ void main() {
       expect(find.byKey(Key('sticky1')), findsOneWidget);
       expect(find.byKey(Key('sticky2')), findsOneWidget);
       expect(find.byKey(Key('sticky3')), findsOneWidget);
-      
+
       // Test that all sticky elements are rendered
       final sticky1 = tester.getTopLeft(find.byKey(Key('sticky1')));
       final sticky2 = tester.getTopLeft(find.byKey(Key('sticky2')));
@@ -379,7 +418,9 @@ void main() {
       expect(sticky3.dx, equals(400 - 80 - 20)); // 300
     });
 
-    testWidgets('Sticky positioning with scrolling behavior', (WidgetTester tester) async {
+    testWidgets('Sticky positioning with scrolling behavior', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -401,9 +442,12 @@ void main() {
                       left: BoxPosition.fixed(50),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.sticky,
-                      verticalPosition: BoxPositionType.sticky,
-                      child: Container(key: Key('scrollStickyChild'), color: Colors.deepPurple),
+                      horizontalPosition: BoxPositionType.stickyViewport,
+                      verticalPosition: BoxPositionType.stickyViewport,
+                      child: Container(
+                        key: Key('scrollStickyChild'),
+                        color: Colors.deepPurple,
+                      ),
                     ),
                     // Bottom spacer
                     FlexBoxChild(
@@ -422,9 +466,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('scrollStickyChild')), findsOneWidget);
-      
+
       // Initial position
-      final initialPosition = tester.getTopLeft(find.byKey(Key('scrollStickyChild')));
+      final initialPosition = tester.getTopLeft(
+        find.byKey(Key('scrollStickyChild')),
+      );
       expect(initialPosition.dx, equals(50.0));
 
       // Scroll down and verify sticky behavior
@@ -432,13 +478,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('scrollStickyChild')), findsOneWidget);
-      
+
       // After scrolling, sticky element should adjust its position
-      final scrolledPosition = tester.getTopLeft(find.byKey(Key('scrollStickyChild')));
-      expect(scrolledPosition.dx, equals(50.0)); // Horizontal position should remain the same
+      final scrolledPosition = tester.getTopLeft(
+        find.byKey(Key('scrollStickyChild')),
+      );
+      expect(
+        scrolledPosition.dx,
+        equals(50.0),
+      ); // Horizontal position should remain the same
     });
 
-    testWidgets('Horizontal and vertical sticky positioning independence', (WidgetTester tester) async {
+    testWidgets('Horizontal and vertical sticky positioning independence', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -461,9 +514,12 @@ void main() {
                         left: BoxPosition.fixed(150),
                         width: BoxSize.fixed(120),
                         height: BoxSize.fixed(80),
-                        horizontalPosition: BoxPositionType.sticky,
-                        verticalPosition: BoxPositionType.stickyViewport,
-                        child: Container(key: Key('mixedStickyChild'), color: Colors.deepOrange),
+                        horizontalPosition: BoxPositionType.stickyViewport,
+                        verticalPosition: BoxPositionType.stickyContent,
+                        child: Container(
+                          key: Key('mixedStickyChild'),
+                          color: Colors.deepOrange,
+                        ),
                       ),
                       FlexBoxChild(
                         width: BoxSize.fixed(800),
@@ -482,7 +538,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('mixedStickyChild')), findsOneWidget);
-      
+
       final position = tester.getTopLeft(find.byKey(Key('mixedStickyChild')));
       expect(position.dx, equals(150.0));
       expect(position.dy, equals(100.0));

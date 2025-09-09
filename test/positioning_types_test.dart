@@ -4,7 +4,9 @@ import 'package:flexiblebox/flexiblebox.dart';
 
 void main() {
   group('Positioning Types Tests', () {
-    testWidgets('Relative positioning works correctly', (WidgetTester tester) async {
+    testWidgets('Relative positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -19,9 +21,12 @@ void main() {
                     left: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    verticalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('relativeChild'), color: Colors.green),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('relativeChild'),
+                      color: Colors.green,
+                    ),
                   ),
                 ],
               ),
@@ -38,7 +43,9 @@ void main() {
       expect(child.dy, equals(50.0));
     });
 
-    testWidgets('Fixed positioning works correctly', (WidgetTester tester) async {
+    testWidgets('Fixed positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -78,7 +85,9 @@ void main() {
       expect(child.dy, equals(20.0));
     });
 
-    testWidgets('RelativeViewport positioning works correctly', (WidgetTester tester) async {
+    testWidgets('RelativeViewport positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -100,9 +109,12 @@ void main() {
                       left: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.relativeViewport,
-                      verticalPosition: BoxPositionType.relativeViewport,
-                      child: Container(key: Key('viewportChild'), color: Colors.purple),
+                      horizontalPosition: BoxPositionType.relativeContent,
+                      verticalPosition: BoxPositionType.relativeContent,
+                      child: Container(
+                        key: Key('viewportChild'),
+                        color: Colors.purple,
+                      ),
                     ),
                   ],
                 ),
@@ -118,7 +130,9 @@ void main() {
       // RelativeViewport positioning should anchor to viewport, not content
     });
 
-    testWidgets('Multiple positioning types can coexist', (WidgetTester tester) async {
+    testWidgets('Multiple positioning types can coexist', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -133,8 +147,8 @@ void main() {
                     left: BoxPosition.fixed(10),
                     width: BoxSize.fixed(80),
                     height: BoxSize.fixed(60),
-                    horizontalPosition: BoxPositionType.relative,
-                    verticalPosition: BoxPositionType.relative,
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relativeViewport,
                     child: Container(key: Key('relative'), color: Colors.red),
                   ),
                   FlexBoxChild(
@@ -151,8 +165,8 @@ void main() {
                     left: BoxPosition.fixed(30),
                     width: BoxSize.fixed(80),
                     height: BoxSize.fixed(60),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relativeContent,
+                    verticalPosition: BoxPositionType.relativeContent,
                     child: Container(key: Key('viewport'), color: Colors.green),
                   ),
                 ],
@@ -169,7 +183,9 @@ void main() {
       expect(find.byKey(Key('viewport')), findsOneWidget);
     });
 
-    testWidgets('Left and right positioning work correctly', (WidgetTester tester) async {
+    testWidgets('Left and right positioning work correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -183,15 +199,21 @@ void main() {
                     left: BoxPosition.fixed(50),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('leftChild'), color: Colors.orange),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('leftChild'),
+                      color: Colors.orange,
+                    ),
                   ),
                   FlexBoxChild(
                     right: BoxPosition.fixed(50),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('rightChild'), color: Colors.cyan),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('rightChild'),
+                      color: Colors.cyan,
+                    ),
                   ),
                 ],
               ),
@@ -210,7 +232,9 @@ void main() {
       expect(rightChild.dx, equals(250.0));
     });
 
-    testWidgets('Top and bottom positioning work correctly', (WidgetTester tester) async {
+    testWidgets('Top and bottom positioning work correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -224,15 +248,18 @@ void main() {
                     top: BoxPosition.fixed(40),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    verticalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relativeViewport,
                     child: Container(key: Key('topChild'), color: Colors.lime),
                   ),
                   FlexBoxChild(
                     bottom: BoxPosition.fixed(40),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    verticalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('bottomChild'), color: Colors.pink),
+                    verticalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('bottomChild'),
+                      color: Colors.pink,
+                    ),
                   ),
                 ],
               ),
@@ -251,7 +278,9 @@ void main() {
       expect(bottomChild.dy, equals(180.0));
     });
 
-    testWidgets('Center positioning works with BoxPosition.relative(0.5)', (WidgetTester tester) async {
+    testWidgets('Center positioning works with BoxPosition.relative(0.5)', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -262,13 +291,20 @@ void main() {
                 direction: Axis.vertical,
                 children: [
                   FlexBoxChild(
-                    left: BoxPosition.relative(0.25), // Center - half width percentage
-                    top: BoxPosition.relative(0.37), // Approximate center - half height percentage
+                    left: BoxPosition.relative(
+                      0.25,
+                    ), // Center - half width percentage
+                    top: BoxPosition.relative(
+                      0.37,
+                    ), // Approximate center - half height percentage
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    verticalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('centeredChild'), color: Colors.teal),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('centeredChild'),
+                      color: Colors.teal,
+                    ),
                   ),
                 ],
               ),
@@ -286,7 +322,9 @@ void main() {
       expect(child.dy, equals(300 * 0.37)); // 111
     });
 
-    testWidgets('Relative percentage positioning works correctly', (WidgetTester tester) async {
+    testWidgets('Relative percentage positioning works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -301,9 +339,12 @@ void main() {
                     top: BoxPosition.relative(0.5), // 50% of height
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    verticalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('percentChild'), color: Colors.indigo),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('percentChild'),
+                      color: Colors.indigo,
+                    ),
                   ),
                 ],
               ),
@@ -320,7 +361,9 @@ void main() {
       expect(child.dy, equals(300 * 0.5)); // 150
     });
 
-    testWidgets('Mixed horizontal and vertical positioning types work', (WidgetTester tester) async {
+    testWidgets('Mixed horizontal and vertical positioning types work', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -335,9 +378,12 @@ void main() {
                     top: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
+                    horizontalPosition: BoxPositionType.relativeViewport,
                     verticalPosition: BoxPositionType.fixed,
-                    child: Container(key: Key('mixedChild'), color: Colors.brown),
+                    child: Container(
+                      key: Key('mixedChild'),
+                      color: Colors.brown,
+                    ),
                   ),
                 ],
               ),
@@ -355,7 +401,9 @@ void main() {
       expect(child.dy, equals(30.0)); // Fixed to viewport
     });
 
-    testWidgets('Positioning without constraints works correctly', (WidgetTester tester) async {
+    testWidgets('Positioning without constraints works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -370,9 +418,12 @@ void main() {
                     top: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relative,
-                    verticalPosition: BoxPositionType.relative,
-                    child: Container(key: Key('constrainedChild'), color: Colors.deepOrange),
+                    horizontalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relativeViewport,
+                    child: Container(
+                      key: Key('constrainedChild'),
+                      color: Colors.deepOrange,
+                    ),
                   ),
                 ],
               ),
@@ -384,7 +435,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final childSize = tester.getSize(find.byKey(Key('constrainedChild')));
-      final childPosition = tester.getTopLeft(find.byKey(Key('constrainedChild')));
+      final childPosition = tester.getTopLeft(
+        find.byKey(Key('constrainedChild')),
+      );
 
       // Size should match the specified fixed dimensions
       expect(childSize.width, equals(100.0));

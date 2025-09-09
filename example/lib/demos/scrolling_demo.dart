@@ -81,8 +81,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(160),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.relative,
-            verticalPosition: BoxPositionType.relative,
+            horizontalPosition: BoxPositionType.relativeViewport,
+            verticalPosition: BoxPositionType.relativeViewport,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.green,
@@ -109,8 +109,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(300),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.relativeViewport,
-            verticalPosition: BoxPositionType.relativeViewport,
+            horizontalPosition: BoxPositionType.relativeContent,
+            verticalPosition: BoxPositionType.relativeContent,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.indigo,
@@ -137,8 +137,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(440),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.sticky,
-            verticalPosition: BoxPositionType.sticky,
+            horizontalPosition: BoxPositionType.stickyViewport,
+            verticalPosition: BoxPositionType.stickyViewport,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.purple,
@@ -165,8 +165,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(580),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStart,
-            verticalPosition: BoxPositionType.stickyStart,
+            horizontalPosition: BoxPositionType.stickyStartViewport,
+            verticalPosition: BoxPositionType.stickyStartViewport,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.orange,
@@ -193,8 +193,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(720),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStart,
-            verticalPosition: BoxPositionType.stickyEnd,
+            horizontalPosition: BoxPositionType.stickyStartViewport,
+            verticalPosition: BoxPositionType.stickyEndViewport,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.teal,
@@ -221,8 +221,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(860),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyViewport,
-            verticalPosition: BoxPositionType.stickyViewport,
+            horizontalPosition: BoxPositionType.stickyContent,
+            verticalPosition: BoxPositionType.stickyContent,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.cyan,
@@ -249,8 +249,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(1000),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStartViewport,
-            verticalPosition: BoxPositionType.stickyStartViewport,
+            horizontalPosition: BoxPositionType.stickyStartContent,
+            verticalPosition: BoxPositionType.stickyStartContent,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.amber,
@@ -277,8 +277,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(1140),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyEndViewport,
-            verticalPosition: BoxPositionType.stickyEndViewport,
+            horizontalPosition: BoxPositionType.stickyEndContent,
+            verticalPosition: BoxPositionType.stickyEndContent,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.brown,

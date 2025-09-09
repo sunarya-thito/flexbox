@@ -5,7 +5,9 @@ import 'package:flexiblebox/flexiblebox.dart';
 void main() {
   group('Intrinsic Sizing Tests', () {
     group('FlexBox Intrinsic Computation', () {
-      testWidgets('FlexBox computeMinIntrinsicWidth works correctly', (WidgetTester tester) async {
+      testWidgets('FlexBox computeMinIntrinsicWidth works correctly', (
+        WidgetTester tester,
+      ) async {
         // Create a FlexBox that we can test intrinsic computation on
         await tester.pumpWidget(
           MaterialApp(
@@ -32,14 +34,12 @@ void main() {
                       ),
                     ],
                   );
-                  
+
                   // Test the FlexBox widget in an IntrinsicWidth to trigger intrinsic computation
                   return IntrinsicWidth(
                     child: Column(
                       key: Key('intrinsicColumn'),
-                      children: [
-                        flexBox,
-                      ],
+                      children: [flexBox],
                     ),
                   );
                 },
@@ -49,17 +49,22 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('intrinsicColumn')), findsOneWidget);
-        
+
         // The intrinsic width should be determined by the FlexBox computation
         // (actual behavior may differ from our initial expectation)
         final columnSize = tester.getSize(find.byKey(Key('intrinsicColumn')));
         expect(columnSize.width, greaterThan(0.0));
-        expect(columnSize.width, lessThanOrEqualTo(200.0)); // Should not exceed the widest child
+        expect(
+          columnSize.width,
+          lessThanOrEqualTo(200.0),
+        ); // Should not exceed the widest child
       });
 
-      testWidgets('FlexBox computeMinIntrinsicHeight works correctly', (WidgetTester tester) async {
+      testWidgets('FlexBox computeMinIntrinsicHeight works correctly', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -85,15 +90,10 @@ void main() {
                       ),
                     ],
                   );
-                  
+
                   // Test the FlexBox widget in an IntrinsicHeight to trigger intrinsic computation
                   return IntrinsicHeight(
-                    child: Row(
-                      key: Key('intrinsicRow'),
-                      children: [
-                        flexBox,
-                      ],
-                    ),
+                    child: Row(key: Key('intrinsicRow'), children: [flexBox]),
                   );
                 },
               ),
@@ -102,15 +102,17 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('intrinsicRow')), findsOneWidget);
-        
+
         // The intrinsic height should be determined by the tallest child (150)
         final rowSize = tester.getSize(find.byKey(Key('intrinsicRow')));
         expect(rowSize.height, equals(150.0));
       });
 
-      testWidgets('FlexBox with intrinsic children computes correctly', (WidgetTester tester) async {
+      testWidgets('FlexBox with intrinsic children computes correctly', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -129,7 +131,10 @@ void main() {
                         FlexBoxChild(
                           width: BoxSize.intrinsic(),
                           height: BoxSize.fixed(40),
-                          child: Text('This is a much longer text content', style: TextStyle(fontSize: 16)),
+                          child: Text(
+                            'This is a much longer text content',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                       ],
                     ),
@@ -141,15 +146,22 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('intrinsicContainer')), findsOneWidget);
-        
+
         // The container should size appropriately for the intrinsic content
-        final containerSize = tester.getSize(find.byKey(Key('intrinsicContainer')));
-        expect(containerSize.width, greaterThan(50.0)); // Should accommodate content
+        final containerSize = tester.getSize(
+          find.byKey(Key('intrinsicContainer')),
+        );
+        expect(
+          containerSize.width,
+          greaterThan(50.0),
+        ); // Should accommodate content
       });
 
-      testWidgets('FlexBox with mixed intrinsic and fixed sizing', (WidgetTester tester) async {
+      testWidgets('FlexBox with mixed intrinsic and fixed sizing', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -168,7 +180,10 @@ void main() {
                         FlexBoxChild(
                           width: BoxSize.intrinsic(),
                           height: BoxSize.fixed(40),
-                          child: Text('Medium length text here', style: TextStyle(fontSize: 16)),
+                          child: Text(
+                            'Medium length text here',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                         FlexBoxChild(
                           width: BoxSize.fixed(180),
@@ -185,18 +200,28 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('mixedIntrinsicContainer')), findsOneWidget);
-        
+
         // The container should size appropriately for the content
-        final containerSize = tester.getSize(find.byKey(Key('mixedIntrinsicContainer')));
-        expect(containerSize.width, greaterThan(100.0)); // Should accommodate content
-        expect(containerSize.width, greaterThanOrEqualTo(180.0)); // Should accommodate the widest child (text is ~373.75)
+        final containerSize = tester.getSize(
+          find.byKey(Key('mixedIntrinsicContainer')),
+        );
+        expect(
+          containerSize.width,
+          greaterThan(100.0),
+        ); // Should accommodate content
+        expect(
+          containerSize.width,
+          greaterThanOrEqualTo(180.0),
+        ); // Should accommodate the widest child (text is ~373.75)
       });
     });
 
     group('FlexBoxChild Intrinsic Handling', () {
-      testWidgets('Intrinsic width adapts to content', (WidgetTester tester) async {
+      testWidgets('Intrinsic width adapts to content', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -232,16 +257,21 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final shortSize = tester.getSize(find.byKey(Key('shortText')));
         final longSize = tester.getSize(find.byKey(Key('longText')));
 
         expect(shortSize.width, greaterThan(0));
         expect(longSize.width, greaterThan(shortSize.width));
-        expect(longSize.width, greaterThan(200)); // Should be significantly wider
+        expect(
+          longSize.width,
+          greaterThan(200),
+        ); // Should be significantly wider
       });
 
-      testWidgets('Intrinsic height adapts to content', (WidgetTester tester) async {
+      testWidgets('Intrinsic height adapts to content', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -277,7 +307,7 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final singleLineSize = tester.getSize(find.byKey(Key('singleLine')));
         final multiLineSize = tester.getSize(find.byKey(Key('multiLine')));
 
@@ -285,7 +315,9 @@ void main() {
         expect(multiLineSize.height, greaterThan(singleLineSize.height));
       });
 
-      testWidgets('Intrinsic sizing with min/max constraints', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing with min/max constraints', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -321,7 +353,7 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final smallSize = tester.getSize(find.byKey(Key('constrainedSmall')));
         final largeSize = tester.getSize(find.byKey(Key('constrainedLarge')));
 
@@ -338,7 +370,9 @@ void main() {
         expect(largeSize.height, lessThanOrEqualTo(80.0));
       });
 
-      testWidgets('Intrinsic sizing with different child widgets', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing with different child widgets', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -351,11 +385,7 @@ void main() {
                     FlexBoxChild(
                       width: BoxSize.intrinsic(),
                       height: BoxSize.intrinsic(),
-                      child: Icon(
-                        Icons.star,
-                        key: Key('iconChild'),
-                        size: 48,
-                      ),
+                      child: Icon(Icons.star, key: Key('iconChild'), size: 48),
                     ),
                     FlexBoxChild(
                       width: BoxSize.intrinsic(),
@@ -384,25 +414,39 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final iconSize = tester.getSize(find.byKey(Key('iconChild')));
         final buttonSize = tester.getSize(find.byKey(Key('buttonChild')));
         final containerSize = tester.getSize(find.byKey(Key('containerChild')));
 
         // Each should size to its intrinsic dimensions
-        expect(iconSize.width, closeTo(48.0, 5.0)); // Icon size with some tolerance
+        expect(
+          iconSize.width,
+          closeTo(48.0, 5.0),
+        ); // Icon size with some tolerance
         expect(iconSize.height, closeTo(48.0, 5.0));
-        
-        expect(buttonSize.width, greaterThan(50)); // Button should be wide enough for text
-        expect(buttonSize.height, greaterThan(30)); // Button should have reasonable height
-        
-        expect(containerSize.width, equals(80.0)); // Container with fixed internal size
+
+        expect(
+          buttonSize.width,
+          greaterThan(50),
+        ); // Button should be wide enough for text
+        expect(
+          buttonSize.height,
+          greaterThan(30),
+        ); // Button should have reasonable height
+
+        expect(
+          containerSize.width,
+          equals(80.0),
+        ); // Container with fixed internal size
         expect(containerSize.height, equals(60.0));
       });
     });
 
     group('Complex Intrinsic Scenarios', () {
-      testWidgets('Nested FlexBox with intrinsic sizing', (WidgetTester tester) async {
+      testWidgets('Nested FlexBox with intrinsic sizing', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -422,12 +466,18 @@ void main() {
                               FlexBoxChild(
                                 width: BoxSize.intrinsic(),
                                 height: BoxSize.fixed(30),
-                                child: Text('Left', style: TextStyle(fontSize: 16)),
+                                child: Text(
+                                  'Left',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
                               FlexBoxChild(
                                 width: BoxSize.intrinsic(),
                                 height: BoxSize.fixed(30),
-                                child: Text('Right side with more text', style: TextStyle(fontSize: 16)),
+                                child: Text(
+                                  'Right side with more text',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
                             ],
                           ),
@@ -442,14 +492,19 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('outerContainer')), findsOneWidget);
-        
+
         final containerSize = tester.getSize(find.byKey(Key('outerContainer')));
-        expect(containerSize.width, greaterThan(50)); // Should accommodate nested content
+        expect(
+          containerSize.width,
+          greaterThan(50),
+        ); // Should accommodate nested content
       });
 
-      testWidgets('Intrinsic sizing with flex children', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing with flex children', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -493,21 +548,25 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final fixedSize = tester.getSize(find.byKey(Key('fixedContent')));
         final flexSize = tester.getSize(find.byKey(Key('flexContent')));
-        final moreFixedSize = tester.getSize(find.byKey(Key('moreFixedContent')));
+        final moreFixedSize = tester.getSize(
+          find.byKey(Key('moreFixedContent')),
+        );
 
         // Intrinsic children should size to content
         expect(fixedSize.width, greaterThan(0));
         expect(moreFixedSize.width, greaterThan(0));
-        
+
         // Flex child should take remaining space
         final expectedFlexWidth = 400 - fixedSize.width - moreFixedSize.width;
         expect(flexSize.width, closeTo(expectedFlexWidth, 1.0));
       });
 
-      testWidgets('Intrinsic sizing in scrollable context', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing in scrollable context', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -547,14 +606,19 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('scrollableRow')), findsOneWidget);
-        
+
         final rowSize = tester.getSize(find.byKey(Key('scrollableRow')));
-        expect(rowSize.height, greaterThan(50)); // Should accommodate multi-line content
+        expect(
+          rowSize.height,
+          greaterThan(50),
+        ); // Should accommodate multi-line content
       });
 
-      testWidgets('Intrinsic sizing performance with many children', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing performance with many children', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -564,8 +628,9 @@ void main() {
                   children: [
                     FlexBox(
                       direction: Axis.vertical,
-                      children: List.generate(20, (index) => 
-                        FlexBoxChild(
+                      children: List.generate(
+                        20,
+                        (index) => FlexBoxChild(
                           width: BoxSize.intrinsic(),
                           height: BoxSize.fixed(30),
                           child: Text(
@@ -583,18 +648,25 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         expect(find.byKey(Key('performanceContainer')), findsOneWidget);
-        
+
         // Should handle many intrinsic children without issues
-        final containerSize = tester.getSize(find.byKey(Key('performanceContainer')));
+        final containerSize = tester.getSize(
+          find.byKey(Key('performanceContainer')),
+        );
         expect(containerSize.width, greaterThan(100));
-        expect(containerSize.height, equals(20 * 30.0)); // 20 items * 30px height each
+        expect(
+          containerSize.height,
+          equals(20 * 30.0),
+        ); // 20 items * 30px height each
       });
     });
 
     group('Edge Cases', () {
-      testWidgets('Intrinsic sizing with zero-sized content', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing with zero-sized content', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -622,13 +694,15 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final childSize = tester.getSize(find.byKey(Key('zeroSizedIntrinsic')));
         expect(childSize.width, equals(0.0));
         expect(childSize.height, equals(0.0));
       });
 
-      testWidgets('Intrinsic sizing with empty text', (WidgetTester tester) async {
+      testWidgets('Intrinsic sizing with empty text', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -655,7 +729,7 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        
+
         final textSize = tester.getSize(find.byKey(Key('emptyText')));
         // Empty text should still have some height (font height) but minimal width
         expect(textSize.height, greaterThan(0));

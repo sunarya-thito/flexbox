@@ -20,7 +20,8 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
   double cachedCrossSize = 0;
   double unconstrainedFlex = 0;
   double mainFlex = 0; // Store the actual flex value from FlexSize
-  bool isConstrainedByMinMax = false; // Track if this child is constrained by min/max
+  bool isConstrainedByMinMax =
+      false; // Track if this child is constrained by min/max
 
   int? zOrder;
 
@@ -443,31 +444,36 @@ class RenderFlexBox extends RenderBox
 
     double remainingSpace = max(availableSpace, 0); // Use 0 if negative
     double remainingFlex = totalFlex;
-    
+
     // Iterative algorithm to handle constraints and redistribution
     bool hasChanges = true;
     int maxIterations = 10; // Prevent infinite loops
     int iteration = 0;
-    
+
     while (hasChanges && iteration < maxIterations) {
       hasChanges = false;
       iteration++;
-      
+
       // Pass 1: Check for newly constrained children and update remaining values
       RenderBox? child = relativeFirstChild;
       while (child != null) {
         var layoutData = child.parentData as FlexBoxParentData;
         if (!layoutData.isAbsolute) {
           var mainSizeConstraint = layoutData.getSize(direction);
-          if (mainSizeConstraint is FlexSize && !layoutData.isConstrainedByMinMax) {
-            double proposedSize = remainingFlex > 0 
+          if (mainSizeConstraint is FlexSize &&
+              !layoutData.isConstrainedByMinMax) {
+            double proposedSize = remainingFlex > 0
                 ? (layoutData.mainFlex / remainingFlex) * max(remainingSpace, 0)
                 : 0.0;
-                
+
             final minMain = mainSizeConstraint.min ?? 0.0;
             final maxMain = mainSizeConstraint.max ?? double.infinity;
-            double constrainedSize = _clampIgnoreSign(proposedSize, minMain, maxMain);
-            
+            double constrainedSize = _clampIgnoreSign(
+              proposedSize,
+              minMain,
+              maxMain,
+            );
+
             // Check if this child became constrained
             if (constrainedSize != proposedSize) {
               layoutData.isConstrainedByMinMax = true;
@@ -481,7 +487,7 @@ class RenderFlexBox extends RenderBox
         child = relativeNextSibling(child);
       }
     }
-    
+
     // Pass 2: Distribute remaining space among unconstrained children
     if (remainingFlex > 0) {
       RenderBox? child = relativeFirstChild;
@@ -489,8 +495,10 @@ class RenderFlexBox extends RenderBox
         var layoutData = child.parentData as FlexBoxParentData;
         if (!layoutData.isAbsolute) {
           var mainSizeConstraint = layoutData.getSize(direction);
-          if (mainSizeConstraint is FlexSize && !layoutData.isConstrainedByMinMax) {
-            double finalSize = (layoutData.mainFlex / remainingFlex) * max(remainingSpace, 0);
+          if (mainSizeConstraint is FlexSize &&
+              !layoutData.isConstrainedByMinMax) {
+            double finalSize =
+                (layoutData.mainFlex / remainingFlex) * max(remainingSpace, 0);
             layoutData.cachedMainSize = finalSize;
           }
         }
@@ -506,8 +514,8 @@ class RenderFlexBox extends RenderBox
     _firstSortedChild = null;
     _lastSortedChild = null;
 
-    // Calculate viewport size early for relativeViewport positioning
-    final viewportSize = constraints.biggest;
+    // Calculate viewport size early for positioning calculations
+    final visibleViewportSize = constraints.biggest;
 
     if (kDebugMode) {
       RenderBox? firstChild = relativeFirstChild;
@@ -517,7 +525,7 @@ class RenderFlexBox extends RenderBox
         firstChild = relativeNextSibling(firstChild);
       }
     }
-    
+
     // Reset constraint flags for fresh layout
     RenderBox? resetChild = relativeFirstChild;
     while (resetChild != null) {
@@ -525,7 +533,7 @@ class RenderFlexBox extends RenderBox
       layoutData.isConstrainedByMinMax = false;
       resetChild = relativeNextSibling(resetChild);
     }
-    
+
     var shouldSortChildren = false;
     var hasCrossFlex = false;
     var child = relativeFirstChild;
@@ -535,13 +543,13 @@ class RenderFlexBox extends RenderBox
     var totalAffectedChildren = 0;
     var usedMainSize = 0.0;
     var biggestFlex = 0.0;
-    var totalSize = direction == Axis.horizontal
+    var availableMainSize = direction == Axis.horizontal
         ? constraints.maxWidth
         : constraints.maxHeight;
-    var crossSize = direction == Axis.horizontal
+    var availableCrossSize = direction == Axis.horizontal
         ? constraints.maxHeight
         : constraints.maxWidth;
-    var maxViewportCrossSize = crossSize;
+    var maxContentCrossSize = availableCrossSize;
 
     // First pass:
     // In this pass, we count all flexible children (i.e. how many are there and the total flex value).
@@ -566,9 +574,9 @@ class RenderFlexBox extends RenderBox
         if (mainSizeConstraint is FixedSize) {
           mainChildSize = mainSizeConstraint.size;
         } else if (mainSizeConstraint is IntrinsicSize) {
-          mainChildSize = _computeMaxIntrinsicMain(child, crossSize);
+          mainChildSize = _computeMaxIntrinsicMain(child, availableCrossSize);
         } else if (mainSizeConstraint is RelativeSize) {
-          mainChildSize = mainSizeConstraint.relative * totalSize;
+          mainChildSize = mainSizeConstraint.relative * availableMainSize;
         } else if (mainSizeConstraint is FlexSize) {
           totalFlex += mainSizeConstraint.flex;
           biggestFlex = max(biggestFlex, mainSizeConstraint.flex);
@@ -587,7 +595,7 @@ class RenderFlexBox extends RenderBox
             'Invalid main size constraint: $mainSizeConstraint',
           );
         }
-        
+
         // Clamp main size to respect min/max constraints (except for RatioSize which is handled later)
         if (mainSizeConstraint is! RatioSize) {
           var mainMin = _getMinMain(layoutData);
@@ -599,13 +607,13 @@ class RenderFlexBox extends RenderBox
         double crossChildSize;
         if (crossSizeConstraint is FixedSize) {
           crossChildSize = crossSizeConstraint.size;
-          maxViewportCrossSize = max(maxViewportCrossSize, crossChildSize);
+          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
         } else if (crossSizeConstraint is IntrinsicSize) {
-          crossChildSize = _computeMaxIntrinsicCross(child, totalSize);
-          maxViewportCrossSize = max(maxViewportCrossSize, crossChildSize);
+          crossChildSize = _computeMaxIntrinsicCross(child, availableMainSize);
+          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
         } else if (crossSizeConstraint is RelativeSize) {
-          crossChildSize = crossSizeConstraint.relative * crossSize;
-          maxViewportCrossSize = max(maxViewportCrossSize, crossChildSize);
+          crossChildSize = crossSizeConstraint.relative * availableCrossSize;
+          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
         } else if (crossSizeConstraint is FlexSize) {
           hasCrossFlex = true;
           maxCrossFlex = max(maxCrossFlex, crossSizeConstraint.flex);
@@ -662,10 +670,14 @@ class RenderFlexBox extends RenderBox
           double intrinsicMainSize = direction == Axis.horizontal
               ? child.computeMaxIntrinsicWidth(double.infinity)
               : child.computeMaxIntrinsicHeight(double.infinity);
-          
+
           final minMain = mainSizeConstraint.min ?? 0.0;
           final maxMain = mainSizeConstraint.max ?? double.infinity;
-          intrinsicMainSize = _clampIgnoreSign(intrinsicMainSize, minMain, maxMain);
+          intrinsicMainSize = _clampIgnoreSign(
+            intrinsicMainSize,
+            minMain,
+            maxMain,
+          );
           layoutData.cachedMainSize = intrinsicMainSize;
           usedMainSize += intrinsicMainSize;
 
@@ -684,9 +696,9 @@ class RenderFlexBox extends RenderBox
                 ? child.computeMaxIntrinsicHeight(double.infinity)
                 : child.computeMaxIntrinsicWidth(double.infinity);
           } else if (crossSizeConstraint is RelativeSize) {
-            crossChildSize = crossSizeConstraint.relative * maxViewportCrossSize;
+            crossChildSize = crossSizeConstraint.relative * maxContentCrossSize;
           } else if (crossSizeConstraint is FlexSize) {
-            crossChildSize = maxViewportCrossSize;
+            crossChildSize = maxContentCrossSize;
           } else if (crossSizeConstraint is RatioSize) {
             crossChildSize = intrinsicMainSize * crossSizeConstraint.ratio;
           } else {
@@ -698,8 +710,8 @@ class RenderFlexBox extends RenderBox
           var crossMax = _getMaxCross(layoutData);
           crossChildSize = _clampIgnoreSign(crossChildSize, crossMin, crossMax);
           layoutData.cachedCrossSize = crossChildSize;
-          maxViewportCrossSize = max(maxViewportCrossSize, crossChildSize);
-          
+          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
+
           var childSize = _createSize(
             layoutData.cachedMainSize,
             crossChildSize,
@@ -738,7 +750,7 @@ class RenderFlexBox extends RenderBox
           var mainSizeConstraint = layoutData.getSize(direction);
           if (crossSizeConstraint is FlexSize) {
             var flex = crossSizeConstraint.flex;
-            var crossChildSize = (flex / maxCrossFlex) * maxViewportCrossSize;
+            var crossChildSize = (flex / maxCrossFlex) * maxContentCrossSize;
             var minCross = _getMinCross(layoutData);
             var maxCross = _getMaxCross(layoutData);
             crossChildSize = _clampIgnoreSign(
@@ -757,7 +769,7 @@ class RenderFlexBox extends RenderBox
               _layoutChild(child, childSize);
             }
           } else if (crossSizeConstraint is UnconstrainedSize) {
-            var crossChildSize = maxViewportCrossSize;
+            var crossChildSize = maxContentCrossSize;
             var mainChildSize = layoutData.cachedMainSize;
             var minCross = _getMinCross(layoutData);
             var maxCross = _getMaxCross(layoutData);
@@ -793,7 +805,7 @@ class RenderFlexBox extends RenderBox
     }
 
     var totalUsedMainSize = totalFixedSize + totalGap + usedMainSize;
-    var remainingSpace = totalSize - totalUsedMainSize;
+    var remainingSpace = availableMainSize - totalUsedMainSize;
 
     // Perform proper flex distribution with constraint handling and redistribution
     _performFlexDistribution(remainingSpace, totalFlex);
@@ -812,14 +824,17 @@ class RenderFlexBox extends RenderBox
           if (crossChildConstraint is FixedSize) {
             crossChildSize = crossChildConstraint.size;
           } else if (crossChildConstraint is IntrinsicSize) {
-            crossChildSize = _computeMaxIntrinsicCross(child, totalSize);
+            crossChildSize = _computeMaxIntrinsicCross(
+              child,
+              availableMainSize,
+            );
           } else if (crossChildConstraint is UnconstrainedSize) {
-            crossChildSize = maxViewportCrossSize;
+            crossChildSize = maxContentCrossSize;
           } else if (crossChildConstraint is FlexSize) {
-            crossChildSize = crossChildConstraint.flex * maxViewportCrossSize;
+            crossChildSize = crossChildConstraint.flex * maxContentCrossSize;
           } else if (crossChildConstraint is RelativeSize) {
             crossChildSize =
-                crossChildConstraint.relative * maxViewportCrossSize;
+                crossChildConstraint.relative * maxContentCrossSize;
           } else if (crossChildConstraint is RatioSize) {
             assert(
               mainSizeConstraint is! RatioSize,
@@ -864,7 +879,7 @@ class RenderFlexBox extends RenderBox
     }
 
     if (autoGap) {
-      double remainingSpace = totalSize - usedMainSize;
+      double remainingSpace = availableMainSize - usedMainSize;
       if (remainingSpace > 0) {
         gap = remainingSpace / (totalAffectedChildren - 1);
         usedMainSize += gap * (totalAffectedChildren - 1);
@@ -873,11 +888,17 @@ class RenderFlexBox extends RenderBox
       }
     }
 
-    // Content size
-    final usedSize = _createSize(usedMainSize, usedCrossSize);
+    // Content size - total area of all content
+    final totalContentSize = _createSize(usedMainSize, usedCrossSize);
 
-    double crossMaxSize = max(_getCross(usedSize), _getCross(viewportSize));
-    double mainMaxSize = max(_getMain(usedSize), _getMain(viewportSize));
+    double crossMaxSize = max(
+      _getCross(totalContentSize),
+      _getCross(visibleViewportSize),
+    );
+    double mainMaxSize = max(
+      _getMain(totalContentSize),
+      _getMain(visibleViewportSize),
+    );
 
     double mainOffset = _alignValue(
       alignment: _mainAlignment,
@@ -891,11 +912,15 @@ class RenderFlexBox extends RenderBox
     Offset viewportOffset = Offset(horizontalPixels, verticalPixels);
 
     Offset relativeViewportOffset = Offset(
-      reverseOffsetX && usedSize.width > viewportSize.width
-          ? usedSize.width - viewportSize.width - horizontalPixels
+      reverseOffsetX && totalContentSize.width > visibleViewportSize.width
+          ? totalContentSize.width -
+                visibleViewportSize.width -
+                horizontalPixels
           : horizontalPixels,
-      reverseOffsetY && usedSize.height > viewportSize.height
-          ? usedSize.height - viewportSize.height - verticalPixels
+      reverseOffsetY && totalContentSize.height > visibleViewportSize.height
+          ? totalContentSize.height -
+                visibleViewportSize.height -
+                verticalPixels
           : verticalPixels,
     );
 
@@ -920,17 +945,17 @@ class RenderFlexBox extends RenderBox
 
         if (reverseOffsetX) {
           switch (horizontalType) {
-            case BoxPositionType.stickyStart:
-              horizontalType = BoxPositionType.stickyEnd;
-              break;
-            case BoxPositionType.stickyEnd:
-              horizontalType = BoxPositionType.stickyStart;
-              break;
             case BoxPositionType.stickyStartViewport:
               horizontalType = BoxPositionType.stickyEndViewport;
               break;
             case BoxPositionType.stickyEndViewport:
               horizontalType = BoxPositionType.stickyStartViewport;
+              break;
+            case BoxPositionType.stickyStartContent:
+              horizontalType = BoxPositionType.stickyEndContent;
+              break;
+            case BoxPositionType.stickyEndContent:
+              horizontalType = BoxPositionType.stickyStartContent;
               break;
             default:
               break;
@@ -938,17 +963,17 @@ class RenderFlexBox extends RenderBox
         }
         if (reverseOffsetY) {
           switch (verticalType) {
-            case BoxPositionType.stickyStart:
-              verticalType = BoxPositionType.stickyEnd;
-              break;
-            case BoxPositionType.stickyEnd:
-              verticalType = BoxPositionType.stickyStart;
-              break;
             case BoxPositionType.stickyStartViewport:
               verticalType = BoxPositionType.stickyEndViewport;
               break;
             case BoxPositionType.stickyEndViewport:
               verticalType = BoxPositionType.stickyStartViewport;
+              break;
+            case BoxPositionType.stickyStartContent:
+              verticalType = BoxPositionType.stickyEndContent;
+              break;
+            case BoxPositionType.stickyEndContent:
+              verticalType = BoxPositionType.stickyStartContent;
               break;
             default:
               break;
@@ -959,43 +984,12 @@ class RenderFlexBox extends RenderBox
         var vertical = layoutData.offset.dy;
         if (horizontalType == BoxPositionType.fixed) {
           horizontal += viewportOffset.dx;
-        } else if (horizontalType == BoxPositionType.sticky) {
-          if (layoutData.right != null) {
-            // right excess first
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          }
-        } else if (horizontalType == BoxPositionType.stickyStart) {
-          double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-          horizontal += leftExcess;
-        } else if (horizontalType == BoxPositionType.stickyEnd) {
-          double rightExcess = max(
-            0,
-            -((relativeViewportOffset.dx + constraints.maxWidth) -
-                (horizontal + child.size.width)),
-          );
-          horizontal -= rightExcess;
         } else if (horizontalType == BoxPositionType.stickyViewport) {
           if (layoutData.right != null) {
             // right excess first
             double rightExcess = max(
               0,
-              -((relativeViewportOffset.dx + usedSize.width) -
+              -((relativeViewportOffset.dx + constraints.maxWidth) -
                   (horizontal + child.size.width)),
             );
             horizontal -= rightExcess;
@@ -1006,7 +1000,7 @@ class RenderFlexBox extends RenderBox
             horizontal += leftExcess;
             double rightExcess = max(
               0,
-              -((relativeViewportOffset.dx + usedSize.width) -
+              -((relativeViewportOffset.dx + constraints.maxWidth) -
                   (horizontal + child.size.width)),
             );
             horizontal -= rightExcess;
@@ -1017,50 +1011,50 @@ class RenderFlexBox extends RenderBox
         } else if (horizontalType == BoxPositionType.stickyEndViewport) {
           double rightExcess = max(
             0,
-            -((relativeViewportOffset.dx + usedSize.width) -
+            -((relativeViewportOffset.dx + constraints.maxWidth) -
+                (horizontal + child.size.width)),
+          );
+          horizontal -= rightExcess;
+        } else if (horizontalType == BoxPositionType.stickyContent) {
+          if (layoutData.right != null) {
+            // right excess first
+            double rightExcess = max(
+              0,
+              -((relativeViewportOffset.dx + totalContentSize.width) -
+                  (horizontal + child.size.width)),
+            );
+            horizontal -= rightExcess;
+            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+            horizontal += leftExcess;
+          } else {
+            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+            horizontal += leftExcess;
+            double rightExcess = max(
+              0,
+              -((relativeViewportOffset.dx + totalContentSize.width) -
+                  (horizontal + child.size.width)),
+            );
+            horizontal -= rightExcess;
+          }
+        } else if (horizontalType == BoxPositionType.stickyStartContent) {
+          double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+          horizontal += leftExcess;
+        } else if (horizontalType == BoxPositionType.stickyEndContent) {
+          double rightExcess = max(
+            0,
+            -((relativeViewportOffset.dx + totalContentSize.width) -
                 (horizontal + child.size.width)),
           );
           horizontal -= rightExcess;
         }
         if (verticalType == BoxPositionType.fixed) {
           vertical += viewportOffset.dy;
-        } else if (verticalType == BoxPositionType.sticky) {
-          if (layoutData.bottom != null) {
-            // bottom excess first
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          }
-        } else if (verticalType == BoxPositionType.stickyStart) {
-          double topExcess = max(0, relativeViewportOffset.dy - vertical);
-          vertical += topExcess;
-        } else if (verticalType == BoxPositionType.stickyEnd) {
-          double bottomExcess = max(
-            0,
-            -((relativeViewportOffset.dy + constraints.maxHeight) -
-                (vertical + child.size.height)),
-          );
-          vertical -= bottomExcess;
         } else if (verticalType == BoxPositionType.stickyViewport) {
           if (layoutData.bottom != null) {
             // bottom excess first
             double bottomExcess = max(
               0,
-              -((relativeViewportOffset.dy + size.height) -
+              -((relativeViewportOffset.dy + constraints.maxHeight) -
                   (vertical + child.size.height)),
             );
             vertical -= bottomExcess;
@@ -1071,7 +1065,7 @@ class RenderFlexBox extends RenderBox
             vertical += topExcess;
             double bottomExcess = max(
               0,
-              -((relativeViewportOffset.dy + size.height) -
+              -((relativeViewportOffset.dy + constraints.maxHeight) -
                   (vertical + child.size.height)),
             );
             vertical -= bottomExcess;
@@ -1080,6 +1074,37 @@ class RenderFlexBox extends RenderBox
           double topExcess = max(0, relativeViewportOffset.dy - vertical);
           vertical += topExcess;
         } else if (verticalType == BoxPositionType.stickyEndViewport) {
+          double bottomExcess = max(
+            0,
+            -((relativeViewportOffset.dy + constraints.maxHeight) -
+                (vertical + child.size.height)),
+          );
+          vertical -= bottomExcess;
+        } else if (verticalType == BoxPositionType.stickyContent) {
+          if (layoutData.bottom != null) {
+            // bottom excess first
+            double bottomExcess = max(
+              0,
+              -((relativeViewportOffset.dy + size.height) -
+                  (vertical + child.size.height)),
+            );
+            vertical -= bottomExcess;
+            double topExcess = max(0, relativeViewportOffset.dy - vertical);
+            vertical += topExcess;
+          } else {
+            double topExcess = max(0, relativeViewportOffset.dy - vertical);
+            vertical += topExcess;
+            double bottomExcess = max(
+              0,
+              -((relativeViewportOffset.dy + size.height) -
+                  (vertical + child.size.height)),
+            );
+            vertical -= bottomExcess;
+          }
+        } else if (verticalType == BoxPositionType.stickyStartContent) {
+          double topExcess = max(0, relativeViewportOffset.dy - vertical);
+          vertical += topExcess;
+        } else if (verticalType == BoxPositionType.stickyEndContent) {
           double bottomExcess = max(
             0,
             -((relativeViewportOffset.dy + size.height) -
@@ -1111,11 +1136,11 @@ class RenderFlexBox extends RenderBox
 
     horizontal.applyContentDimensions(
       0,
-      (usedSize.width - size.width).clamp(0, double.infinity),
+      (totalContentSize.width - size.width).clamp(0, double.infinity),
     );
     vertical.applyContentDimensions(
       0,
-      (usedSize.height - size.height).clamp(0, double.infinity),
+      (totalContentSize.height - size.height).clamp(0, double.infinity),
     );
 
     // Layout absolute children after viewport size is established
@@ -1135,29 +1160,28 @@ class RenderFlexBox extends RenderBox
         var dataHeight = layoutData.height;
 
         // Determine which dimensions to use based on positioning type
-        bool useViewportForHorizontal =
-            layoutData.horizontalPosition == BoxPositionType.relativeViewport ||
-            layoutData.horizontalPosition == BoxPositionType.stickyViewport ||
+        bool useContentForHorizontal =
+            layoutData.horizontalPosition == BoxPositionType.relativeContent ||
+            layoutData.horizontalPosition == BoxPositionType.stickyContent ||
             layoutData.horizontalPosition ==
-                BoxPositionType.stickyStartViewport ||
-            layoutData.horizontalPosition == BoxPositionType.stickyEndViewport;
-        bool useViewportForVertical =
-            layoutData.verticalPosition == BoxPositionType.relativeViewport ||
-            layoutData.verticalPosition == BoxPositionType.stickyViewport ||
-            layoutData.verticalPosition ==
-                BoxPositionType.stickyStartViewport ||
-            layoutData.verticalPosition == BoxPositionType.stickyEndViewport;
+                BoxPositionType.stickyStartContent ||
+            layoutData.horizontalPosition == BoxPositionType.stickyEndContent;
+        bool useContentForVertical =
+            layoutData.verticalPosition == BoxPositionType.relativeContent ||
+            layoutData.verticalPosition == BoxPositionType.stickyContent ||
+            layoutData.verticalPosition == BoxPositionType.stickyStartContent ||
+            layoutData.verticalPosition == BoxPositionType.stickyEndContent;
 
-        // For relativeViewport: use the full scrollable content dimensions
-        // For relative: use the visible widget dimensions
-        double referenceWidth = useViewportForHorizontal
-            ? usedSize
-                  .width // Full scrollable content width (viewport)
-            : size.width; // Visible widget width
-        double referenceHeight = useViewportForVertical
-            ? usedSize
-                  .height // Full scrollable content height (viewport)
-            : size.height; // Visible widget height
+        // For relativeContent: use the full scrollable content dimensions
+        // For relativeViewport: use the visible viewport dimensions
+        double referenceWidth = useContentForHorizontal
+            ? totalContentSize
+                  .width // Full scrollable content width
+            : size.width; // Visible viewport width
+        double referenceHeight = useContentForVertical
+            ? totalContentSize
+                  .height // Full scrollable content height
+            : size.height; // Visible viewport height
 
         if (dataWidth != null) {
           if (dataWidth is FixedSize) {
@@ -1167,19 +1191,8 @@ class RenderFlexBox extends RenderBox
           } else if (dataWidth is IntrinsicSize) {
             width = child.computeMaxIntrinsicWidth(double.infinity);
           } else if (dataWidth is UnconstrainedSize) {
-            // Calculate remaining width after accounting for anchors
-            // For unconstrained size, the available space depends on positioning type
-            double availableWidth = useViewportForHorizontal
-                ? size.width
-                : constraints.maxWidth;
-            double usedWidth = 0.0;
-            if (dataLeft != null) {
-              usedWidth += dataLeft.computePosition(referenceWidth);
-            }
-            if (dataRight != null) {
-              usedWidth += dataRight.computePosition(referenceWidth);
-            }
-            width = max(0.0, availableWidth - usedWidth);
+            // For unconstrained size, use the child's intrinsic width
+            width = child.computeMaxIntrinsicWidth(double.infinity);
           } else if (dataWidth is RatioSize) {
             assert(
               dataHeight is! RatioSize,
@@ -1209,19 +1222,8 @@ class RenderFlexBox extends RenderBox
           } else if (dataHeight is IntrinsicSize) {
             height = child.computeMaxIntrinsicHeight(double.infinity);
           } else if (dataHeight is UnconstrainedSize) {
-            // Calculate remaining height after accounting for anchors
-            // For unconstrained size, the available space depends on positioning type
-            double availableHeight = useViewportForVertical
-                ? size.height
-                : constraints.maxHeight;
-            double usedHeight = 0.0;
-            if (dataTop != null) {
-              usedHeight += dataTop.computePosition(referenceHeight);
-            }
-            if (dataBottom != null) {
-              usedHeight += dataBottom.computePosition(referenceHeight);
-            }
-            height = max(0.0, availableHeight - usedHeight);
+            // For unconstrained size, use the child's intrinsic height
+            height = child.computeMaxIntrinsicHeight(double.infinity);
           } else if (dataHeight is RatioSize) {
             assert(
               dataWidth is! RatioSize,
@@ -1294,17 +1296,17 @@ class RenderFlexBox extends RenderBox
 
         if (reverseOffsetX) {
           switch (horizontalType) {
-            case BoxPositionType.stickyStart:
-              horizontalType = BoxPositionType.stickyEnd;
-              break;
-            case BoxPositionType.stickyEnd:
-              horizontalType = BoxPositionType.stickyStart;
-              break;
             case BoxPositionType.stickyStartViewport:
               horizontalType = BoxPositionType.stickyEndViewport;
               break;
             case BoxPositionType.stickyEndViewport:
               horizontalType = BoxPositionType.stickyStartViewport;
+              break;
+            case BoxPositionType.stickyStartContent:
+              horizontalType = BoxPositionType.stickyEndContent;
+              break;
+            case BoxPositionType.stickyEndContent:
+              horizontalType = BoxPositionType.stickyStartContent;
               break;
             default:
               break;
@@ -1312,17 +1314,17 @@ class RenderFlexBox extends RenderBox
         }
         if (reverseOffsetY) {
           switch (verticalType) {
-            case BoxPositionType.stickyStart:
-              verticalType = BoxPositionType.stickyEnd;
-              break;
-            case BoxPositionType.stickyEnd:
-              verticalType = BoxPositionType.stickyStart;
-              break;
             case BoxPositionType.stickyStartViewport:
               verticalType = BoxPositionType.stickyEndViewport;
               break;
             case BoxPositionType.stickyEndViewport:
               verticalType = BoxPositionType.stickyStartViewport;
+              break;
+            case BoxPositionType.stickyStartContent:
+              verticalType = BoxPositionType.stickyEndContent;
+              break;
+            case BoxPositionType.stickyEndContent:
+              verticalType = BoxPositionType.stickyStartContent;
               break;
             default:
               break;
@@ -1333,43 +1335,12 @@ class RenderFlexBox extends RenderBox
         var vertical = layoutData.offset.dy;
         if (horizontalType == BoxPositionType.fixed) {
           horizontal += viewportOffset.dx;
-        } else if (horizontalType == BoxPositionType.sticky) {
-          if (layoutData.right != null) {
-            // right excess first
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          }
-        } else if (horizontalType == BoxPositionType.stickyStart) {
-          double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-          horizontal += leftExcess;
-        } else if (horizontalType == BoxPositionType.stickyEnd) {
-          double rightExcess = max(
-            0,
-            -((relativeViewportOffset.dx + constraints.maxWidth) -
-                (horizontal + child.size.width)),
-          );
-          horizontal -= rightExcess;
         } else if (horizontalType == BoxPositionType.stickyViewport) {
           if (layoutData.right != null) {
             // right excess first
             double rightExcess = max(
               0,
-              -((relativeViewportOffset.dx + usedSize.width) -
+              -((relativeViewportOffset.dx + constraints.maxWidth) -
                   (horizontal + child.size.width)),
             );
             horizontal -= rightExcess;
@@ -1380,7 +1351,7 @@ class RenderFlexBox extends RenderBox
             horizontal += leftExcess;
             double rightExcess = max(
               0,
-              -((relativeViewportOffset.dx + usedSize.width) -
+              -((relativeViewportOffset.dx + constraints.maxWidth) -
                   (horizontal + child.size.width)),
             );
             horizontal -= rightExcess;
@@ -1391,50 +1362,50 @@ class RenderFlexBox extends RenderBox
         } else if (horizontalType == BoxPositionType.stickyEndViewport) {
           double rightExcess = max(
             0,
-            -((relativeViewportOffset.dx + usedSize.width) -
+            -((relativeViewportOffset.dx + constraints.maxWidth) -
+                (horizontal + child.size.width)),
+          );
+          horizontal -= rightExcess;
+        } else if (horizontalType == BoxPositionType.stickyContent) {
+          if (layoutData.right != null) {
+            // right excess first
+            double rightExcess = max(
+              0,
+              -((relativeViewportOffset.dx + totalContentSize.width) -
+                  (horizontal + child.size.width)),
+            );
+            horizontal -= rightExcess;
+            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+            horizontal += leftExcess;
+          } else {
+            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+            horizontal += leftExcess;
+            double rightExcess = max(
+              0,
+              -((relativeViewportOffset.dx + totalContentSize.width) -
+                  (horizontal + child.size.width)),
+            );
+            horizontal -= rightExcess;
+          }
+        } else if (horizontalType == BoxPositionType.stickyStartContent) {
+          double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
+          horizontal += leftExcess;
+        } else if (horizontalType == BoxPositionType.stickyEndContent) {
+          double rightExcess = max(
+            0,
+            -((relativeViewportOffset.dx + totalContentSize.width) -
                 (horizontal + child.size.width)),
           );
           horizontal -= rightExcess;
         }
         if (verticalType == BoxPositionType.fixed) {
           vertical += viewportOffset.dy;
-        } else if (verticalType == BoxPositionType.sticky) {
-          if (layoutData.bottom != null) {
-            // bottom excess first
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          }
-        } else if (verticalType == BoxPositionType.stickyStart) {
-          double topExcess = max(0, relativeViewportOffset.dy - vertical);
-          vertical += topExcess;
-        } else if (verticalType == BoxPositionType.stickyEnd) {
-          double bottomExcess = max(
-            0,
-            -((relativeViewportOffset.dy + constraints.maxHeight) -
-                (vertical + child.size.height)),
-          );
-          vertical -= bottomExcess;
         } else if (verticalType == BoxPositionType.stickyViewport) {
           if (layoutData.bottom != null) {
             // bottom excess first
             double bottomExcess = max(
               0,
-              -((relativeViewportOffset.dy + size.height) -
+              -((relativeViewportOffset.dy + constraints.maxHeight) -
                   (vertical + child.size.height)),
             );
             vertical -= bottomExcess;
@@ -1445,7 +1416,7 @@ class RenderFlexBox extends RenderBox
             vertical += topExcess;
             double bottomExcess = max(
               0,
-              -((relativeViewportOffset.dy + size.height) -
+              -((relativeViewportOffset.dy + constraints.maxHeight) -
                   (vertical + child.size.height)),
             );
             vertical -= bottomExcess;
@@ -1454,6 +1425,37 @@ class RenderFlexBox extends RenderBox
           double topExcess = max(0, relativeViewportOffset.dy - vertical);
           vertical += topExcess;
         } else if (verticalType == BoxPositionType.stickyEndViewport) {
+          double bottomExcess = max(
+            0,
+            -((relativeViewportOffset.dy + constraints.maxHeight) -
+                (vertical + child.size.height)),
+          );
+          vertical -= bottomExcess;
+        } else if (verticalType == BoxPositionType.stickyContent) {
+          if (layoutData.bottom != null) {
+            // bottom excess first
+            double bottomExcess = max(
+              0,
+              -((relativeViewportOffset.dy + size.height) -
+                  (vertical + child.size.height)),
+            );
+            vertical -= bottomExcess;
+            double topExcess = max(0, relativeViewportOffset.dy - vertical);
+            vertical += topExcess;
+          } else {
+            double topExcess = max(0, relativeViewportOffset.dy - vertical);
+            vertical += topExcess;
+            double bottomExcess = max(
+              0,
+              -((relativeViewportOffset.dy + size.height) -
+                  (vertical + child.size.height)),
+            );
+            vertical -= bottomExcess;
+          }
+        } else if (verticalType == BoxPositionType.stickyStartContent) {
+          double topExcess = max(0, relativeViewportOffset.dy - vertical);
+          vertical += topExcess;
+        } else if (verticalType == BoxPositionType.stickyEndContent) {
           double bottomExcess = max(
             0,
             -((relativeViewportOffset.dy + size.height) -
@@ -1631,7 +1633,6 @@ class RenderFlexBox extends RenderBox
   double _computeIntrinsicSize(
     double size,
     double Function(RenderBox item, double size) computeIntrinsicSize,
-    double Function() computeCrossIntrinsicSize,
   ) {
     var totalSpacing = 0;
     RenderBox? child = firstChild;
@@ -1658,7 +1659,8 @@ class RenderFlexBox extends RenderBox
           // If the cross-axis size is infinite (unconstrained), we can't compute the ratio
           // so we skip ratio children in main-axis intrinsic computation to avoid infinity
           if (size.isInfinite) {
-            childSize = 0.0; // Skip ratio sizing when cross-axis is unconstrained
+            childSize =
+                0.0; // Skip ratio sizing when cross-axis is unconstrained
           } else {
             childSize = mainSizeConstraint.ratio * size;
           }
@@ -1683,7 +1685,6 @@ class RenderFlexBox extends RenderBox
   double _computeCrossIntrinsicSize(
     double size,
     double Function(RenderBox item, double size) computeIntrinsicSize,
-    double Function() computeCrossIntrinsicSize,
   ) {
     var totalSize = 0.0;
     RenderBox? child = firstChild;
@@ -1709,7 +1710,8 @@ class RenderFlexBox extends RenderBox
           // If the main-axis size is infinite (unconstrained), we can't compute the ratio
           // so we skip ratio children in cross-axis intrinsic computation to avoid infinity
           if (size.isInfinite) {
-            childSize = 0.0; // Skip ratio sizing when main-axis is unconstrained
+            childSize =
+                0.0; // Skip ratio sizing when main-axis is unconstrained
           } else {
             childSize = size * crossSizeConstraint.ratio;
           }
@@ -1733,12 +1735,10 @@ class RenderFlexBox extends RenderBox
         ? _computeCrossIntrinsicSize(
             width,
             (item, size) => item.getMaxIntrinsicHeight(size),
-            () => 0.0, // Avoid circular call - use fallback
           )
         : _computeIntrinsicSize(
             width,
             (item, size) => item.getMaxIntrinsicHeight(size),
-            () => 0.0, // Avoid circular call - use fallback
           );
   }
 
@@ -1748,12 +1748,10 @@ class RenderFlexBox extends RenderBox
         ? _computeIntrinsicSize(
             height,
             (item, size) => item.getMaxIntrinsicWidth(size),
-            () => 0.0, // Avoid circular call - use fallback
           )
         : _computeCrossIntrinsicSize(
             height,
             (item, size) => item.getMaxIntrinsicWidth(size),
-            () => 0.0, // Avoid circular call - use fallback
           );
   }
 
@@ -1763,12 +1761,10 @@ class RenderFlexBox extends RenderBox
         ? _computeCrossIntrinsicSize(
             width,
             (item, size) => item.getMinIntrinsicHeight(size),
-            () => 0.0, // Avoid circular call - use fallback
           )
         : _computeIntrinsicSize(
             width,
             (item, size) => item.getMinIntrinsicHeight(size),
-            () => 0.0, // Avoid circular call - use fallback
           );
   }
 
@@ -1778,12 +1774,10 @@ class RenderFlexBox extends RenderBox
         ? _computeIntrinsicSize(
             height,
             (item, size) => item.getMinIntrinsicWidth(size),
-            () => 0.0, // Avoid circular call - use fallback
           )
         : _computeCrossIntrinsicSize(
             height,
             (item, size) => item.getMinIntrinsicWidth(size),
-            () => 0.0, // Avoid circular call - use fallback
           );
   }
 
@@ -1800,11 +1794,6 @@ class RenderFlexBox extends RenderBox
     return 0;
   }
 
-  // In RenderFlexBox class
-
-  // +++ NEW HELPER METHOD +++
-
-  // +++ NEW HELPER METHOD +++
   /// Merges two sorted linked lists. This is a helper for the merge sort.
   RenderBox? _merge(RenderBox? a, RenderBox? b) {
     if (a == null) return b;

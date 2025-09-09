@@ -4,7 +4,9 @@ import 'package:flexiblebox/flexiblebox.dart';
 
 void main() {
   group('Basic Layout Tests', () {
-    testWidgets('FlexBox renders children correctly', (WidgetTester tester) async {
+    testWidgets('FlexBox renders children correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -34,7 +36,9 @@ void main() {
       expect(find.byType(FlexBoxChild), findsNWidgets(2));
     });
 
-    testWidgets('FlexBox horizontal direction layout', (WidgetTester tester) async {
+    testWidgets('FlexBox horizontal direction layout', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -67,7 +71,9 @@ void main() {
       // Note: children might have different Y positions due to cross-axis alignment
     });
 
-    testWidgets('FlexBox vertical direction layout', (WidgetTester tester) async {
+    testWidgets('FlexBox vertical direction layout', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -125,7 +131,9 @@ void main() {
       expect(child.height, equals(100.0));
     });
 
-    testWidgets('Unconstrained sizing uses available space', (WidgetTester tester) async {
+    testWidgets('Unconstrained sizing uses available space', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -138,7 +146,10 @@ void main() {
                   FlexBoxChild(
                     width: BoxSize.unconstrained(),
                     height: BoxSize.fixed(100),
-                    child: Container(key: Key('unconstrainedChild'), color: Colors.purple),
+                    child: Container(
+                      key: Key('unconstrainedChild'),
+                      color: Colors.purple,
+                    ),
                   ),
                 ],
               ),
@@ -154,7 +165,9 @@ void main() {
       expect(child.height, equals(100.0));
     });
 
-    testWidgets('Flex sizing distributes space proportionally', (WidgetTester tester) async {
+    testWidgets('Flex sizing distributes space proportionally', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -190,7 +203,9 @@ void main() {
       expect(child2.width / child1.width, closeTo(2.0, 0.1));
     });
 
-    testWidgets('Mixed sizing types work together', (WidgetTester tester) async {
+    testWidgets('Mixed sizing types work together', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -234,14 +249,13 @@ void main() {
       expect(flexChild.width, equals(250.0));
     });
 
-    testWidgets('Empty FlexBox renders without error', (WidgetTester tester) async {
+    testWidgets('Empty FlexBox renders without error', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: FlexBox(
-              direction: Axis.vertical,
-              children: [],
-            ),
+            body: FlexBox(direction: Axis.vertical, children: []),
           ),
         ),
       );
@@ -251,7 +265,9 @@ void main() {
       expect(find.byType(FlexBox), findsOneWidget);
     });
 
-    testWidgets('Single child FlexBox works correctly', (WidgetTester tester) async {
+    testWidgets('Single child FlexBox works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -261,7 +277,10 @@ void main() {
                 FlexBoxChild(
                   width: BoxSize.fixed(200),
                   height: BoxSize.fixed(100),
-                  child: Container(key: Key('singleChild'), color: Colors.orange),
+                  child: Container(
+                    key: Key('singleChild'),
+                    color: Colors.orange,
+                  ),
                 ),
               ],
             ),
@@ -276,14 +295,17 @@ void main() {
       expect(child.height, equals(100.0));
     });
 
-    testWidgets('Large number of children renders correctly', (WidgetTester tester) async {
+    testWidgets('Large number of children renders correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: FlexBox(
               direction: Axis.vertical,
-              children: List.generate(10, (index) => 
-                FlexBoxChild(
+              children: List.generate(
+                10,
+                (index) => FlexBoxChild(
                   width: BoxSize.fixed(100),
                   height: BoxSize.fixed(50),
                   child: Container(key: Key('child$index'), color: Colors.blue),
@@ -323,12 +345,18 @@ void main() {
                       FlexBoxChild(
                         width: BoxSize.fixed(100),
                         height: BoxSize.fixed(100),
-                        child: Container(key: Key('nested1'), color: Colors.red),
+                        child: Container(
+                          key: Key('nested1'),
+                          color: Colors.red,
+                        ),
                       ),
                       FlexBoxChild(
                         width: BoxSize.fixed(150),
                         height: BoxSize.fixed(100),
-                        child: Container(key: Key('nested2'), color: Colors.blue),
+                        child: Container(
+                          key: Key('nested2'),
+                          color: Colors.blue,
+                        ),
                       ),
                     ],
                   ),

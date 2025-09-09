@@ -28,6 +28,7 @@ abstract class BaseDemoPage extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               width: double.infinity,
