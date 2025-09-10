@@ -55,6 +55,8 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.fixed,
             verticalPosition: BoxPositionType.fixed,
+            horizontalScrollAffected: false,
+            verticalScrollAffected: false,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.red,
@@ -81,8 +83,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(160),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.relativeViewport,
-            verticalPosition: BoxPositionType.relativeViewport,
+            horizontalPosition: BoxPositionType.fixed,
+            verticalPosition: BoxPositionType.fixed,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.green,
@@ -103,14 +105,14 @@ class ScrollingDemo extends BaseDemoPage {
             ),
           ),
 
-          // Column 3: relativeViewport
+          // Column 3: relative
           FlexBoxChild(
             bottom: BoxPosition.fixed(20),
             left: BoxPosition.fixed(300),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.relativeContent,
-            verticalPosition: BoxPositionType.relativeContent,
+            horizontalPosition: BoxPositionType.fixed,
+            verticalPosition: BoxPositionType.fixed,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.indigo,
@@ -119,7 +121,7 @@ class ScrollingDemo extends BaseDemoPage {
               ),
               child: Center(
                 child: Text(
-                  'relativeViewport',
+                  'relative',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -137,8 +139,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(440),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyViewport,
-            verticalPosition: BoxPositionType.stickyViewport,
+            horizontalPosition: BoxPositionType.sticky,
+            verticalPosition: BoxPositionType.sticky,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.purple,
@@ -165,8 +167,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(580),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStartViewport,
-            verticalPosition: BoxPositionType.stickyStartViewport,
+            horizontalPosition: BoxPositionType.stickyStart,
+            verticalPosition: BoxPositionType.stickyStart,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.orange,
@@ -193,8 +195,8 @@ class ScrollingDemo extends BaseDemoPage {
             left: BoxPosition.fixed(720),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStartViewport,
-            verticalPosition: BoxPositionType.stickyEndViewport,
+            horizontalPosition: BoxPositionType.stickyStart,
+            verticalPosition: BoxPositionType.stickyEnd,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.teal,
@@ -215,14 +217,14 @@ class ScrollingDemo extends BaseDemoPage {
             ),
           ),
 
-          // Column 7: stickyViewport
+          // Column 7: sticky
           FlexBoxChild(
             top: BoxPosition.fixed(800),
             left: BoxPosition.fixed(860),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyContent,
-            verticalPosition: BoxPositionType.stickyContent,
+            horizontalPosition: BoxPositionType.sticky,
+            verticalPosition: BoxPositionType.sticky,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.cyan,
@@ -231,7 +233,7 @@ class ScrollingDemo extends BaseDemoPage {
               ),
               child: Center(
                 child: Text(
-                  'stickyViewport',
+                  'sticky',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -243,14 +245,14 @@ class ScrollingDemo extends BaseDemoPage {
             ),
           ),
 
-          // Column 8: stickyStartViewport
+          // Column 8: stickyStart
           FlexBoxChild(
             top: BoxPosition.fixed(1000),
             left: BoxPosition.fixed(1000),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyStartContent,
-            verticalPosition: BoxPositionType.stickyStartContent,
+            horizontalPosition: BoxPositionType.stickyStart,
+            verticalPosition: BoxPositionType.stickyStart,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.amber,
@@ -259,7 +261,7 @@ class ScrollingDemo extends BaseDemoPage {
               ),
               child: Center(
                 child: Text(
-                  'stickyStartViewport',
+                  'stickyStart',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -271,14 +273,14 @@ class ScrollingDemo extends BaseDemoPage {
             ),
           ),
 
-          // Column 9: stickyEndViewport
+          // Column 9: stickyEnd
           FlexBoxChild(
             bottom: BoxPosition.fixed(600),
             left: BoxPosition.fixed(1140),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
-            horizontalPosition: BoxPositionType.stickyEndContent,
-            verticalPosition: BoxPositionType.stickyEndContent,
+            horizontalPosition: BoxPositionType.stickyEnd,
+            verticalPosition: BoxPositionType.stickyEnd,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.brown,
@@ -287,7 +289,7 @@ class ScrollingDemo extends BaseDemoPage {
               ),
               child: Center(
                 child: Text(
-                  'stickyEndViewport',
+                  'stickyEnd',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,

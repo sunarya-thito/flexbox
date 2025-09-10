@@ -39,7 +39,7 @@ void main() {
                   right: BoxPosition.fixed(0),
                   width: BoxSize.fixed(20),
                   height: BoxSize.fixed(100),
-                  horizontalPosition: BoxPositionType.relativeContent,
+                  horizontalPosition: BoxPositionType.relative,
                   child: Container(
                     key: Key('anchoredRight'),
                     color: Colors.purple,

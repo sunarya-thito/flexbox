@@ -2,6 +2,7 @@ import 'package:flexiblebox/src/foundation.dart';
 import 'package:flexiblebox/src/morph.dart';
 import 'package:flexiblebox/src/rendering.dart';
 import 'package:flexiblebox/src/scrollable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -16,9 +17,9 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
   final AxisDirection horizontalAxisDirection;
   final bool reverse;
   final bool reversePaint;
-  final bool reverseOffsetX;
-  final bool reverseOffsetY;
   final bool clipPaint;
+  final EdgeInsets padding;
+  final TextDirection textDirection;
 
   const FixedFlexBox({
     super.key,
@@ -33,8 +34,8 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     required this.reverse,
     required this.reversePaint,
     required this.clipPaint,
-    required this.reverseOffsetX,
-    required this.reverseOffsetY,
+    required this.padding,
+    required this.textDirection,
   });
 
   @override
@@ -50,45 +51,62 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
       horizontalAxisDirection: horizontalAxisDirection,
       reversePaint: reversePaint,
       clipPaint: clipPaint,
-      reverseOffsetX: reverseOffsetX,
-      reverseOffsetY: reverseOffsetY,
+      padding: padding,
+      textDirection: textDirection,
     );
   }
 
   @override
   void updateRenderObject(BuildContext context, RenderFlexBox renderObject) {
-    bool changed = false;
+    // bool needsRelayout = false;
+    // bool needsReposition = false;
+    FlexBoxLayoutChange layoutChange = FlexBoxLayoutChange.none;
+    FlexBoxPositionChange positionChange = FlexBoxPositionChange.none;
     if (renderObject.direction != direction) {
       renderObject.direction = direction;
-      changed = true;
+
+      // direction change affects layout for non-absolute children,
+      // it does not affect absolute children layout
+      layoutChange |= FlexBoxLayoutChange.nonAbsolute;
+      // but it affects the position of all children
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.spacing != spacing) {
       renderObject.spacing = spacing;
-      changed = true;
+      // spacing change affects layout for non-absolute children,
+      // it does not affect absolute children layout
+      layoutChange |= FlexBoxLayoutChange.nonAbsolute;
+      // but it affects the position of all children
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.alignment != alignment) {
       renderObject.alignment = alignment;
-      changed = true;
+      // alignment change affects layout for non-absolute children,
+      // it does not affect absolute children layout
+      layoutChange |= FlexBoxLayoutChange.nonAbsolute;
+      // but it does NOT affect the position of absolute children
+      positionChange |= FlexBoxPositionChange.nonAbsolute;
     }
     if (renderObject.reverse != reverse) {
       renderObject.reverse = reverse;
-      changed = true;
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.horizontal != horizontal) {
       renderObject.updateHorizontalOffset(horizontal);
-      changed = true;
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.vertical != vertical) {
       renderObject.updateVerticalOffset(vertical);
-      changed = true;
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.verticalAxisDirection != verticalAxisDirection) {
       renderObject.verticalAxisDirection = verticalAxisDirection;
-      changed = true;
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.horizontalAxisDirection != horizontalAxisDirection) {
       renderObject.horizontalAxisDirection = horizontalAxisDirection;
-      changed = true;
+      // needsRelayout = true;
+      positionChange |= FlexBoxPositionChange.both;
     }
     if (renderObject.reversePaint != reversePaint) {
       renderObject.reversePaint = reversePaint;
@@ -96,13 +114,21 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     }
     if (renderObject.clipPaint != clipPaint) {
       renderObject.clipPaint = clipPaint;
-      changed = true;
+      renderObject.markNeedsPaint();
     }
-    if (renderObject.reverseOffsetX != reverseOffsetX) {
-      renderObject.reverseOffsetX = reverseOffsetX;
-      changed = true;
+    if (renderObject.padding != padding) {
+      renderObject.padding = padding;
+      layoutChange |= FlexBoxLayoutChange.both;
+      positionChange |= FlexBoxPositionChange.both;
     }
-    if (changed) {
+    if (renderObject.textDirection != textDirection) {
+      renderObject.textDirection = textDirection;
+      positionChange |= FlexBoxPositionChange.both;
+    }
+    if (positionChange != FlexBoxPositionChange.none ||
+        layoutChange != FlexBoxLayoutChange.none) {
+      renderObject.positionChange |= positionChange;
+      renderObject.layoutChange |= layoutChange;
       renderObject.markNeedsLayout();
     }
   }
@@ -167,31 +193,104 @@ class FlexBox extends StatelessWidget {
       verticalDetails: verticalDetails,
       horizontalDetails: horizontalDetails,
       builder: (context, vertical, horizontal) {
-        return Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: FixedFlexBox(
-            direction: direction,
-            spacing: spacing,
-            alignment: alignment.resolve(textDirection),
-            reverse: reverse,
-            horizontal: horizontal,
-            vertical: vertical,
-            verticalAxisDirection: verticalDetails.direction,
-            horizontalAxisDirection: horizontalDetails.direction,
-            reversePaint: reverse,
-            clipPaint:
-                false, // Do not set to true, might cause issues with morphing
-            reverseOffsetX: textDirection == TextDirection.rtl,
-            reverseOffsetY: reverse && direction == Axis.vertical,
-            children: children,
-          ),
+        return FixedFlexBox(
+          textDirection: textDirection,
+          direction: direction,
+          spacing: spacing,
+          alignment: alignment.resolve(textDirection),
+          reverse: reverse,
+          horizontal: horizontal,
+          vertical: vertical,
+          verticalAxisDirection: verticalDetails.direction,
+          horizontalAxisDirection: horizontalDetails.direction,
+          reversePaint: reverse,
+          clipPaint: clipBehavior != Clip.none,
+          padding: padding?.resolve(textDirection) ?? EdgeInsets.zero,
+          children: children,
         );
       },
     );
   }
+
+  @override
+  List<DiagnosticsNode> debugDescribeChildren() {
+    return children
+        .map((e) => e.toDiagnosticsNode(name: 'child'))
+        .toList(growable: false);
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(EnumProperty<Axis>('direction', direction));
+    properties.add(DoubleProperty('spacing', spacing, defaultValue: 0.0));
+    properties.add(
+      DiagnosticsProperty<AlignmentGeometry>(
+        'alignment',
+        alignment,
+        defaultValue: Alignment.center,
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'reverse',
+        value: reverse,
+        ifTrue: 'children in reverse order',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'reversePaint',
+        value: reversePaint,
+        ifTrue: 'paint children in reverse order',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'scrollHorizontalOverflow',
+        value: scrollHorizontalOverflow,
+        ifFalse: 'no horizontal scrolling when overflow',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'scrollVerticalOverflow',
+        value: scrollVerticalOverflow,
+        ifFalse: 'no vertical scrolling when overflow',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<Clip>(
+        'clipBehavior',
+        clipBehavior,
+        defaultValue: Clip.hardEdge,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<EdgeInsetsGeometry?>(
+        'padding',
+        padding,
+        defaultValue: null,
+      ),
+    );
+    properties.add(IterableProperty<Widget>('children', children));
+  }
 }
 
 class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
+  /// Forces the child to be positioned absolutely even
+  /// if no position is specified (for this, [alignment] can
+  /// be used to position the child within the parent).
+  final bool absolute;
+
+  /// Self alignment of the child within its allocated space.
+  /// If its absolute but anchors are not specified,
+  /// the alignment will be used to position the child
+  /// within the parent. But if anchors are specified,
+  /// the alignment will be used to position the child
+  /// based on the anchor positions. But it will not
+  /// have any effect if start and end anchors are both specified.
+  final AlignmentGeometry? alignment;
   final BoxPosition? top;
   final BoxPosition? bottom;
   final BoxPosition? left;
@@ -201,6 +300,10 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
   final BoxPositionType? horizontalPosition;
   final BoxPositionType? verticalPosition;
   final int? zOrder;
+  final bool horizontalScrollAffected;
+  final bool verticalScrollAffected;
+  final bool horizontalContentRelative;
+  final bool verticalContentRelative;
 
   const FlexBoxChild({
     super.key,
@@ -213,60 +316,250 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
     this.horizontalPosition,
     this.verticalPosition,
     this.zOrder,
+    this.horizontalScrollAffected = true,
+    this.verticalScrollAffected = true,
+    this.horizontalContentRelative = false,
+    this.verticalContentRelative = false,
+    this.absolute = false,
+    this.alignment,
     required super.child,
   });
 
+  bool get isAbsolute {
+    return top != null || bottom != null || left != null || right != null;
+  }
+
   @override
-  void applyParentData(RenderObject renderObject) {
+  void applyParentData(covariant RenderBox renderObject) {
     if (renderObject.parentData is! FlexBoxParentData) {
       throw ArgumentError('RenderObject must be a FlexBox');
     }
     var parentData = renderObject.parentData as FlexBoxParentData;
-    bool needsLayout = false;
+    bool needsResort = false;
+    FlexBoxLayoutChange layoutChange = FlexBoxLayoutChange.none;
+    FlexBoxPositionChange positionChange = FlexBoxPositionChange.none;
+    if (absolute != parentData.absolute) {
+      parentData.absolute = absolute;
+      if (isAbsolute != parentData.isAbsolute) {
+        // the child is switching from absolute to non-absolute or vice versa
+        // therefore we need a full relayout
+        layoutChange |= FlexBoxLayoutChange.both;
+        // any layout change for non-absolute children
+        // affects the position of all children
+        positionChange |= FlexBoxPositionChange.both;
+      }
+    }
     if (parentData.top != top) {
       parentData.top = top;
-      needsLayout = true;
+      if (isAbsolute != parentData.isAbsolute) {
+        // the child is switching from absolute to non-absolute or vice versa
+        // therefore we need a full relayout
+        layoutChange |= FlexBoxLayoutChange.both;
+        // any layout change for non-absolute children
+        // affects the position of all children
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
     }
     if (parentData.bottom != bottom) {
       parentData.bottom = bottom;
-      needsLayout = true;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
     }
     if (parentData.left != left) {
       parentData.left = left;
-      needsLayout = true;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
     }
     if (parentData.right != right) {
       parentData.right = right;
-      needsLayout = true;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
+    }
+    if (parentData.horizontalRelativeToContent != horizontalContentRelative) {
+      parentData.horizontalRelativeToContent = horizontalContentRelative;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        // if it was or is relative
+        if (width != parentData.width &&
+            (width is RelativeSize || parentData.width is RelativeSize)) {
+          // this changes both
+          layoutChange |= FlexBoxLayoutChange.both;
+          positionChange |= FlexBoxPositionChange.both;
+        }
+        // else, it has no effect on non-absolute children
+      }
+    }
+    if (parentData.verticalRelativeToContent != verticalContentRelative) {
+      parentData.verticalRelativeToContent = verticalContentRelative;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        if (height != parentData.height &&
+            (height is RelativeSize || parentData.height is RelativeSize)) {
+          layoutChange |= FlexBoxLayoutChange.both;
+          positionChange |= FlexBoxPositionChange.both;
+        }
+      }
     }
     if (parentData.width != width) {
       parentData.width = width;
-      needsLayout = true;
+      if (isAbsolute) {
+        // any width change on absolute children
+        // will not affect the layout of non-absolute children
+        layoutChange |= FlexBoxLayoutChange.absolute;
+      } else {
+        // any size change on non-absolute children
+        // will affect the layout of other non-absolute children
+        // therefore we need a full relayout
+        layoutChange |= FlexBoxLayoutChange.both;
+        // and also requires repositioning of both children
+        positionChange |= FlexBoxPositionChange.both;
+      }
     }
     if (parentData.height != height) {
       parentData.height = height;
-      needsLayout = true;
+      if (isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.absolute;
+      } else {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      }
     }
     if (parentData.horizontalPosition != horizontalPosition) {
       parentData.horizontalPosition = horizontalPosition;
-      needsLayout = true;
+      // positioining type only affects its own position
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
     }
     if (parentData.verticalPosition != verticalPosition) {
       parentData.verticalPosition = verticalPosition;
-      needsLayout = true;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (alignment != parentData.alignment) {
+      parentData.alignment = alignment;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
     }
     if (parentData.zOrder != zOrder) {
       parentData.zOrder = zOrder;
-      needsLayout = true;
+      needsResort = true;
     }
-    if (needsLayout) {
-      final parent = renderObject.parent as RenderFlexBox;
+    if (parentData.horizontalScrollAffected != horizontalScrollAffected) {
+      parentData.horizontalScrollAffected = horizontalScrollAffected;
+      // only affects its own position
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (parentData.verticalScrollAffected != verticalScrollAffected) {
+      parentData.verticalScrollAffected = verticalScrollAffected;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+
+    final parent = renderObject.parent as RenderFlexBox;
+    if (needsResort) {
+      parent.needsResort = true;
+      parent.markNeedsPaint();
+    }
+    if (positionChange != FlexBoxPositionChange.none ||
+        layoutChange != FlexBoxLayoutChange.none) {
+      parent.positionChange |= positionChange;
+      parent.layoutChange |= layoutChange;
       parent.markNeedsLayout();
     }
   }
 
   @override
   Type get debugTypicalAncestorWidgetClass => FlexBox;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<BoxPosition>('top', top, ifNull: ''));
+    properties.add(
+      DiagnosticsProperty<BoxPosition>('bottom', bottom, ifNull: ''),
+    );
+    properties.add(DiagnosticsProperty<BoxPosition>('left', left, ifNull: ''));
+    properties.add(
+      DiagnosticsProperty<BoxPosition>('right', right, ifNull: ''),
+    );
+    properties.add(DiagnosticsProperty<BoxSize>('width', width, ifNull: ''));
+    properties.add(DiagnosticsProperty<BoxSize>('height', height, ifNull: ''));
+    properties.add(
+      DiagnosticsProperty<BoxPositionType>(
+        'horizontalPosition',
+        horizontalPosition,
+        ifNull: '',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxPositionType>(
+        'verticalPosition',
+        verticalPosition,
+        ifNull: '',
+      ),
+    );
+    properties.add(IntProperty('zOrder', zOrder, ifNull: ''));
+    properties.add(
+      FlagProperty(
+        'horizontalScrollAffected',
+        value: horizontalScrollAffected,
+        ifFalse: 'not affected by horizontal scroll',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'verticalScrollAffected',
+        value: verticalScrollAffected,
+        ifFalse: 'not affected by vertical scroll',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'horizontalContentRelative',
+        value: horizontalContentRelative,
+        ifFalse: 'not relative to content',
+      ),
+    );
+    properties.add(
+      FlagProperty(
+        'verticalContentRelative',
+        value: verticalContentRelative,
+        ifFalse: 'not relative to content',
+      ),
+    );
+  }
 }
 
 class Morphed extends SingleChildRenderObjectWidget {

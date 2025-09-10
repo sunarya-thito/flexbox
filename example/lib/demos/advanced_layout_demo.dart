@@ -484,8 +484,8 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(60),
                     zOrder: 2,
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.red[400],
@@ -509,8 +509,8 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(60),
                     zOrder: 1,
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.green[400],
@@ -534,8 +534,8 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(60),
                     zOrder: 3,
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.purple[400],

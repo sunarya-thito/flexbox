@@ -28,8 +28,8 @@ void main() {
                       left: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyViewport,
-                      verticalPosition: BoxPositionType.stickyViewport,
+                      horizontalPosition: BoxPositionType.sticky,
+                      verticalPosition: BoxPositionType.sticky,
                       child: Container(
                         key: Key('stickyChild'),
                         color: Colors.orange,
@@ -84,8 +84,8 @@ void main() {
                       left: BoxPosition.fixed(50),
                       width: BoxSize.fixed(120),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyStartViewport,
-                      verticalPosition: BoxPositionType.stickyStartViewport,
+                      horizontalPosition: BoxPositionType.stickyStart,
+                      verticalPosition: BoxPositionType.stickyStart,
                       child: Container(
                         key: Key('stickyStartChild'),
                         color: Colors.green,
@@ -139,8 +139,8 @@ void main() {
                       right: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyEndViewport,
-                      verticalPosition: BoxPositionType.stickyEndViewport,
+                      horizontalPosition: BoxPositionType.stickyEnd,
+                      verticalPosition: BoxPositionType.stickyEnd,
                       child: Container(
                         key: Key('stickyEndChild'),
                         color: Colors.purple,
@@ -170,7 +170,7 @@ void main() {
       expect(child.dx, equals(270.0));
     });
 
-    testWidgets('StickyViewport positioning anchors to viewport', (
+    testWidgets('sticky positioning anchors to viewport', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -194,10 +194,10 @@ void main() {
                       left: BoxPosition.fixed(60),
                       width: BoxSize.fixed(120),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyContent,
-                      verticalPosition: BoxPositionType.stickyContent,
+                      horizontalPosition: BoxPositionType.sticky,
+                      verticalPosition: BoxPositionType.sticky,
                       child: Container(
-                        key: Key('stickyViewportChild'),
+                        key: Key('stickyChild'),
                         color: Colors.amber,
                       ),
                     ),
@@ -217,15 +217,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byKey(Key('stickyViewportChild')), findsOneWidget);
+      expect(find.byKey(Key('stickyChild')), findsOneWidget);
 
-      // StickyViewport should position relative to viewport, not FlexBox content
-      final child = tester.getTopLeft(find.byKey(Key('stickyViewportChild')));
+      // sticky should position relative to viewport, not FlexBox content
+      final child = tester.getTopLeft(find.byKey(Key('stickyChild')));
       expect(child.dx, equals(60.0));
       expect(child.dy, equals(40.0));
     });
 
-    testWidgets('StickyStartViewport positioning works correctly', (
+    testWidgets('stickyStart positioning works correctly', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -249,10 +249,10 @@ void main() {
                       left: BoxPosition.fixed(20),
                       width: BoxSize.fixed(140),
                       height: BoxSize.fixed(70),
-                      horizontalPosition: BoxPositionType.stickyStartContent,
-                      verticalPosition: BoxPositionType.stickyStartContent,
+                      horizontalPosition: BoxPositionType.stickyStart,
+                      verticalPosition: BoxPositionType.stickyStart,
                       child: Container(
-                        key: Key('stickyStartViewportChild'),
+                        key: Key('stickyStartChild'),
                         color: Colors.lime,
                       ),
                     ),
@@ -272,17 +272,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byKey(Key('stickyStartViewportChild')), findsOneWidget);
+      expect(find.byKey(Key('stickyStartChild')), findsOneWidget);
 
       // Should stick to viewport start, not FlexBox start
-      final child = tester.getTopLeft(
-        find.byKey(Key('stickyStartViewportChild')),
-      );
+      final child = tester.getTopLeft(find.byKey(Key('stickyStartChild')));
       expect(child.dx, equals(20.0));
       expect(child.dy, equals(10.0));
     });
 
-    testWidgets('StickyEndViewport positioning works correctly', (
+    testWidgets('stickyEnd positioning works correctly', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -306,10 +304,10 @@ void main() {
                       right: BoxPosition.fixed(40),
                       width: BoxSize.fixed(110),
                       height: BoxSize.fixed(90),
-                      horizontalPosition: BoxPositionType.stickyEndContent,
-                      verticalPosition: BoxPositionType.stickyEndContent,
+                      horizontalPosition: BoxPositionType.stickyEnd,
+                      verticalPosition: BoxPositionType.stickyEnd,
                       child: Container(
-                        key: Key('stickyEndViewportChild'),
+                        key: Key('stickyEndChild'),
                         color: Colors.indigo,
                       ),
                     ),
@@ -329,12 +327,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byKey(Key('stickyEndViewportChild')), findsOneWidget);
+      expect(find.byKey(Key('stickyEndChild')), findsOneWidget);
 
       // Should position relative to viewport end
-      final child = tester.getTopLeft(
-        find.byKey(Key('stickyEndViewportChild')),
-      );
+      final child = tester.getTopLeft(find.byKey(Key('stickyEndChild')));
       // Right positioning relative to viewport: containerWidth - childWidth - rightOffset
       expect(child.dx, equals(400 - 110 - 40)); // 250
     });
@@ -363,8 +359,8 @@ void main() {
                       left: BoxPosition.fixed(20),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyViewport,
-                      verticalPosition: BoxPositionType.stickyViewport,
+                      horizontalPosition: BoxPositionType.sticky,
+                      verticalPosition: BoxPositionType.sticky,
                       child: Container(key: Key('sticky1'), color: Colors.red),
                     ),
                     FlexBoxChild(
@@ -372,8 +368,8 @@ void main() {
                       left: BoxPosition.fixed(120),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyContent,
-                      verticalPosition: BoxPositionType.stickyContent,
+                      horizontalPosition: BoxPositionType.sticky,
+                      verticalPosition: BoxPositionType.sticky,
                       child: Container(key: Key('sticky2'), color: Colors.blue),
                     ),
                     FlexBoxChild(
@@ -381,8 +377,8 @@ void main() {
                       right: BoxPosition.fixed(20),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.stickyEndContent,
-                      verticalPosition: BoxPositionType.stickyEndContent,
+                      horizontalPosition: BoxPositionType.stickyEnd,
+                      verticalPosition: BoxPositionType.stickyEnd,
                       child: Container(
                         key: Key('sticky3'),
                         color: Colors.green,
@@ -442,8 +438,8 @@ void main() {
                       left: BoxPosition.fixed(50),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.stickyViewport,
-                      verticalPosition: BoxPositionType.stickyViewport,
+                      horizontalPosition: BoxPositionType.sticky,
+                      verticalPosition: BoxPositionType.sticky,
                       child: Container(
                         key: Key('scrollStickyChild'),
                         color: Colors.deepPurple,
@@ -514,8 +510,8 @@ void main() {
                         left: BoxPosition.fixed(150),
                         width: BoxSize.fixed(120),
                         height: BoxSize.fixed(80),
-                        horizontalPosition: BoxPositionType.stickyViewport,
-                        verticalPosition: BoxPositionType.stickyContent,
+                        horizontalPosition: BoxPositionType.sticky,
+                        verticalPosition: BoxPositionType.sticky,
                         child: Container(
                           key: Key('mixedStickyChild'),
                           color: Colors.deepOrange,

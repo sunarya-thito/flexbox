@@ -1,3 +1,5 @@
+import 'package:flutter/rendering.dart';
+
 enum FlexBoxWrap {
   /// If the children overflow to the end of the main axis,
   /// they will wrap to the next line. The cross axis will
@@ -69,11 +71,6 @@ abstract class BoxSize {
       RatioSize;
   const factory BoxSize.relative(double relative, {double? min, double? max}) =
       RelativeSize;
-  const factory BoxSize.relativeContent(
-    double relative, {
-    double? min,
-    double? max,
-  }) = RelativeContentSize;
   const factory BoxSize.flex(double flex, {double? min, double? max}) =
       FlexSize;
 
@@ -217,31 +214,6 @@ class RelativeSize extends BoxSize {
   }
 }
 
-class RelativeContentSize extends BoxSize {
-  final double relative;
-
-  const RelativeContentSize(this.relative, {super.min, super.max});
-
-  @override
-  String toString() {
-    return 'RelativeContentSize(relative: $relative, min: $min, max: $max)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is RelativeContentSize &&
-        other.relative == relative &&
-        other.min == min &&
-        other.max == max;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(runtimeType, relative, min, max);
-  }
-}
-
 class FlexSize extends BoxSize {
   final double flex;
 
@@ -279,10 +251,77 @@ class FlexSize extends BoxSize {
   }
 }
 
+abstract class BoxAlignmentGeometry {
+  final double alignment;
+
+  const BoxAlignmentGeometry({this.alignment = 0.0});
+
+  BoxAlignment resolve(TextDirection? textDirection);
+
+  double alongWithSize(double size) {
+    return (alignment + 1) / 2 * size;
+  }
+
+  @override
+  String toString() {
+    return 'BoxAlignment(alignment: $alignment)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other.runtimeType == runtimeType &&
+        (other as BoxAlignmentGeometry).alignment == alignment;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, alignment);
+  }
+}
+
+class BoxAlignment extends BoxAlignmentGeometry {
+  static const start = BoxAlignment(alignment: -1.0);
+  static const center = BoxAlignment(alignment: 0.0);
+  static const end = BoxAlignment(alignment: 1.0);
+  const BoxAlignment({super.alignment});
+
+  @override
+  BoxAlignment resolve(TextDirection? textDirection) {
+    return this;
+  }
+
+  @override
+  String toString() {
+    return 'BoxAlignment(alignment: $alignment)';
+  }
+}
+
+class BoxAlignmentDirectional extends BoxAlignmentGeometry {
+  static const start = BoxAlignmentDirectional(alignment: -1.0);
+  static const center = BoxAlignmentDirectional(alignment: 0.0);
+  static const end = BoxAlignmentDirectional(alignment: 1.0);
+  const BoxAlignmentDirectional({super.alignment});
+
+  @override
+  BoxAlignment resolve(TextDirection? textDirection) {
+    if (textDirection == TextDirection.rtl) {
+      return BoxAlignment(alignment: -alignment);
+    }
+    return BoxAlignment(alignment: alignment);
+  }
+
+  @override
+  String toString() {
+    return 'BoxAlignmentDirectional(alignment: $alignment)';
+  }
+}
+
 abstract class BoxPosition {
   const BoxPosition();
   const factory BoxPosition.fixed(double value) = FixedPosition;
   const factory BoxPosition.relative(double relative) = RelativePosition;
+
   double computePosition(double parentSize);
 
   @override
@@ -357,35 +396,47 @@ class RelativePosition extends BoxPosition {
 }
 
 enum BoxPositionType {
-  /// Fixed position, not affected by scrolling
+  /// Fixed position
   fixed,
 
-  /// Relative position, affected by scrolling
-  relativeViewport,
+  /// Sticky position keeps the child within the viewport bounds
+  /// It prioritizes to stay at upper bound if the viewport bounds
+  /// is too small to fit the child, but if the direction is reversed,
+  /// it will prioritize to stay at lower bound.
+  sticky,
 
-  /// Relative position anchored to the viewport instead of the flexbox,
-  /// affected by scrolling but positions are calculated relative to viewport size
-  relativeContent,
+  /// Sticky position, but it will only stick to the upper bound of the viewport bounds
+  stickyStart,
 
-  /// Sticky position, affected by scrolling until it goes out of bounds.
-  /// It will constrain the position to the viewport bounds.
-  stickyViewport,
+  /// Sticky position, but it will only stick to the lower bound of the viewport bounds
+  stickyEnd,
 
-  /// Sticky position, but it will stick to the start (of the main axis) of the parent
-  stickyStartViewport,
+  // /// Relative position, affected by scrolling
+  // relative,
 
-  /// Sticky position, but it will stick to the end (of the main axis) of the parent
-  stickyEndViewport,
+  // /// Relative position anchored to the viewport instead of the flexbox,
+  // /// affected by scrolling but positions are calculated relative to viewport size
+  // relative,
 
-  /// Sticky position anchored to content, affected by scrolling until it goes out of bounds.
-  /// It will constrain the position to the content bounds. Uses content dimensions as reference.
-  stickyContent,
+  // /// Sticky position, affected by scrolling until it goes out of bounds.
+  // /// It will constrain the position to the viewport bounds.
+  // sticky,
 
-  /// Sticky position anchored to content, but it will stick to the start of the content.
-  /// Uses content dimensions as reference.
-  stickyStartContent,
+  // /// Sticky position, but it will stick to the start (of the main axis) of the parent
+  // stickyStart,
 
-  /// Sticky position anchored to content, but it will stick to the end of the content.
-  /// Uses content dimensions as reference.
-  stickyEndContent,
+  // /// Sticky position, but it will stick to the end (of the main axis) of the parent
+  // stickyEnd,
+
+  // /// Sticky position anchored to content, affected by scrolling until it goes out of bounds.
+  // /// It will constrain the position to the content bounds. Uses content dimensions as reference.
+  // sticky,
+
+  // /// Sticky position anchored to content, but it will stick to the start of the content.
+  // /// Uses content dimensions as reference.
+  // stickyStart,
+
+  // /// Sticky position anchored to content, but it will stick to the end of the content.
+  // /// Uses content dimensions as reference.
+  // stickyEnd,
 }

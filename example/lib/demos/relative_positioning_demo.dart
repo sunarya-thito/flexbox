@@ -7,7 +7,7 @@ class RelativePositioningDemo extends BaseDemoPage {
     : super(
         title: 'Relative Positioning',
         description:
-            'BoxPosition.relative() positioning method for percentage-based positioning',
+            'BoxPosition.fixed() positioning method for percentage-based positioning',
         color: Colors.indigo,
       );
 
@@ -53,12 +53,12 @@ class RelativePositioningDemo extends BaseDemoPage {
 
                   // Relative positioned at 25% from left
                   FlexBoxChild(
-                    left: BoxPosition.relative(0.25), // 25% from left
-                    top: BoxPosition.relative(0.2), // 20% from top
+                    left: BoxPosition.fixed(0.25), // 25% from left
+                    top: BoxPosition.fixed(0.2), // 20% from top
                     width: BoxSize.fixed(60),
                     height: BoxSize.fixed(40),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.red[400],
@@ -83,12 +83,12 @@ class RelativePositioningDemo extends BaseDemoPage {
 
                   // Relative positioned at 70% from left
                   FlexBoxChild(
-                    left: BoxPosition.relative(0.7), // 70% from left
-                    bottom: BoxPosition.relative(0.15), // 15% from bottom
+                    left: BoxPosition.fixed(0.7), // 70% from left
+                    bottom: BoxPosition.fixed(0.15), // 15% from bottom
                     width: BoxSize.fixed(60),
                     height: BoxSize.fixed(40),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.green[400],
@@ -113,12 +113,12 @@ class RelativePositioningDemo extends BaseDemoPage {
 
                   // Center positioned
                   FlexBoxChild(
-                    left: BoxPosition.relative(0.5), // 50% from left
-                    top: BoxPosition.relative(0.5), // 50% from top
+                    left: BoxPosition.fixed(0.5), // 50% from left
+                    top: BoxPosition.fixed(0.5), // 50% from top
                     width: BoxSize.fixed(50),
                     height: BoxSize.fixed(30),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.purple[400],
@@ -184,8 +184,8 @@ class RelativePositioningDemo extends BaseDemoPage {
                     top: BoxPosition.fixed(20),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(30),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.red[500],
@@ -206,12 +206,12 @@ class RelativePositioningDemo extends BaseDemoPage {
 
                   // Relative position at 60% width
                   FlexBoxChild(
-                    left: BoxPosition.relative(0.6),
+                    left: BoxPosition.fixed(0.6),
                     top: BoxPosition.fixed(60),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(30),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.blue[500],
@@ -255,7 +255,7 @@ class RelativePositioningDemo extends BaseDemoPage {
                   '• BoxPosition.fixed(value) - Absolute position in pixels',
                 ),
                 Text(
-                  '• BoxPosition.relative(0.0-1.0) - Percentage of container size',
+                  '• BoxPosition.fixed(0.0-1.0) - Percentage of container size',
                 ),
               ],
             ),

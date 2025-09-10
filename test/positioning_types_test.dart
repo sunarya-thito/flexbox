@@ -21,8 +21,8 @@ void main() {
                     left: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('relativeChild'),
                       color: Colors.green,
@@ -85,7 +85,7 @@ void main() {
       expect(child.dy, equals(20.0));
     });
 
-    testWidgets('RelativeViewport positioning works correctly', (
+    testWidgets('relative positioning works correctly', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -109,8 +109,8 @@ void main() {
                       left: BoxPosition.fixed(30),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('viewportChild'),
                         color: Colors.purple,
@@ -127,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('viewportChild')), findsOneWidget);
-      // RelativeViewport positioning should anchor to viewport, not content
+      // relative positioning should anchor to viewport, not content
     });
 
     testWidgets('Multiple positioning types can coexist', (
@@ -147,8 +147,8 @@ void main() {
                     left: BoxPosition.fixed(10),
                     width: BoxSize.fixed(80),
                     height: BoxSize.fixed(60),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(key: Key('relative'), color: Colors.red),
                   ),
                   FlexBoxChild(
@@ -165,8 +165,8 @@ void main() {
                     left: BoxPosition.fixed(30),
                     width: BoxSize.fixed(80),
                     height: BoxSize.fixed(60),
-                    horizontalPosition: BoxPositionType.relativeContent,
-                    verticalPosition: BoxPositionType.relativeContent,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(key: Key('viewport'), color: Colors.green),
                   ),
                 ],
@@ -199,7 +199,7 @@ void main() {
                     left: BoxPosition.fixed(50),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('leftChild'),
                       color: Colors.orange,
@@ -209,7 +209,7 @@ void main() {
                     right: BoxPosition.fixed(50),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('rightChild'),
                       color: Colors.cyan,
@@ -248,14 +248,14 @@ void main() {
                     top: BoxPosition.fixed(40),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(key: Key('topChild'), color: Colors.lime),
                   ),
                   FlexBoxChild(
                     bottom: BoxPosition.fixed(40),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('bottomChild'),
                       color: Colors.pink,
@@ -299,8 +299,8 @@ void main() {
                     ), // Approximate center - half height percentage
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('centeredChild'),
                       color: Colors.teal,
@@ -339,8 +339,8 @@ void main() {
                     top: BoxPosition.relative(0.5), // 50% of height
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('percentChild'),
                       color: Colors.indigo,
@@ -378,7 +378,7 @@ void main() {
                     top: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
                     verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       key: Key('mixedChild'),
@@ -418,8 +418,8 @@ void main() {
                     top: BoxPosition.fixed(30),
                     width: BoxSize.fixed(100),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('constrainedChild'),
                       color: Colors.deepOrange,
@@ -448,7 +448,7 @@ void main() {
   });
 
   group('Absolute Positioning with Unconstrained Sizing', () {
-    testWidgets('Unconstrained with relativeViewport anchored positioning', (
+    testWidgets('Unconstrained with relative anchored positioning', (
       WidgetTester tester,
     ) async {
       // SPECIFICATION TEST: This documents the DESIRED behavior
@@ -468,8 +468,8 @@ void main() {
                     width: BoxSize.fixed(150),
                     height:
                         BoxSize.unconstrained(), // Should fill remaining space
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('unconstrainedViewportChild'),
                       color: Colors.blue,
@@ -497,13 +497,13 @@ void main() {
       expect(childPosition.dy, equals(20.0)); // Top position should be 20
     });
 
-    testWidgets('Unconstrained with relativeContent anchored positioning', (
+    testWidgets('Unconstrained with relative anchored positioning', (
       WidgetTester tester,
     ) async {
       // SPECIFICATION TEST: This documents the DESIRED behavior
       // Test: FlexBox 100px height, but content 300px height (scrollable)
       // Child anchored top=20, height=unconstrained
-      // Expected: height = 280px (300 - 20) when using relativeContent
+      // Expected: height = 280px (300 - 20) when using relative
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -527,8 +527,8 @@ void main() {
                     width: BoxSize.fixed(150),
                     height:
                         BoxSize.unconstrained(), // Should fill remaining content space
-                    horizontalPosition: BoxPositionType.relativeContent,
-                    verticalPosition: BoxPositionType.relativeContent,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('unconstrainedContentChild'),
                       color: Colors.red,
@@ -556,7 +556,7 @@ void main() {
       expect(childPosition.dy, equals(20.0)); // Top position should be 20
     });
 
-    testWidgets('Unconstrained with bottom anchor relativeViewport', (
+    testWidgets('Unconstrained with bottom anchor relative', (
       WidgetTester tester,
     ) async {
       // SPECIFICATION TEST: This documents the DESIRED behavior
@@ -575,8 +575,8 @@ void main() {
                     bottom: BoxPosition.fixed(30), // Anchored 30px from bottom
                     width: BoxSize.fixed(150),
                     height: BoxSize.unconstrained(),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('unconstrainedBottomChild'),
                       color: Colors.green,
@@ -624,8 +624,8 @@ void main() {
                     right: BoxPosition.fixed(30),
                     width: BoxSize.unconstrained(),
                     height: BoxSize.fixed(80),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.relative,
+                    verticalPosition: BoxPositionType.relative,
                     child: Container(
                       key: Key('unconstrainedWidthChild'),
                       color: Colors.purple,

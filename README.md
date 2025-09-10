@@ -263,7 +263,7 @@ Controls how positioned children respond to scrolling.
 | ------------------ | ----------------------------------------------------------------------------------------- |
 | `fixed`            | Not affected by scrolling                                                                 |
 | `relative`         | Scrolls with content                                                                      |
-| `relativeViewport` | Scrolls with content, but positions are anchored to viewport size instead of flexbox size |
+| `relative` | Scrolls with content, but positions are anchored to viewport size instead of flexbox size |
 | `sticky`           | Scrolls until viewport edge, then clamps                                                  |
 | `stickyStart`      | Sticks to start edge of parent's main axis                                                |
 | `stickyEnd`        | Sticks to end edge of parent's main axis                                                  |

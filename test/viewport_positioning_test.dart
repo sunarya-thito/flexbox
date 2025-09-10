@@ -4,7 +4,7 @@ import 'package:flexiblebox/flexiblebox.dart';
 
 void main() {
   group('Viewport Positioning Tests', () {
-    testWidgets('RelativeViewport positioning anchors to viewport', (
+    testWidgets('relative positioning anchors to viewport', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -28,8 +28,8 @@ void main() {
                       left: BoxPosition.fixed(80),
                       width: BoxSize.fixed(120),
                       height: BoxSize.fixed(90),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('viewportChild'),
                         color: Colors.blue,
@@ -54,12 +54,12 @@ void main() {
       expect(find.byKey(Key('viewportChild')), findsOneWidget);
 
       final child = tester.getTopLeft(find.byKey(Key('viewportChild')));
-      // RelativeViewport should position relative to viewport, not FlexBox content
+      // relative should position relative to viewport, not FlexBox content
       expect(child.dx, equals(80.0));
       expect(child.dy, equals(50.0));
     });
 
-    testWidgets('RelativeViewport with percentage positioning', (
+    testWidgets('relative with percentage positioning', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -90,8 +90,8 @@ void main() {
                         ), // 50% of viewport height
                         width: BoxSize.fixed(100),
                         height: BoxSize.fixed(80),
-                        horizontalPosition: BoxPositionType.relativeContent,
-                        verticalPosition: BoxPositionType.relativeContent,
+                        horizontalPosition: BoxPositionType.relative,
+                        verticalPosition: BoxPositionType.relative,
                         child: Container(
                           key: Key('percentViewportChild'),
                           color: Colors.purple,
@@ -117,14 +117,14 @@ void main() {
       expect(find.byKey(Key('percentViewportChild')), findsOneWidget);
 
       final child = tester.getTopLeft(find.byKey(Key('percentViewportChild')));
-      // Position should be relative to full content dimensions for relativeViewport positioning
+      // Position should be relative to full content dimensions for relative positioning
       // Content height = 200 (first child) + 700 (third child) = 900
       // Content width = 600 (from SizedBox)
       expect(child.dx, equals(600 * 0.25)); // 150 (25% of content width)
       expect(child.dy, equals(900 * 0.5)); // 450 (50% of content height)
     });
 
-    testWidgets('RelativeViewport vs Relative positioning comparison', (
+    testWidgets('relative vs Relative positioning comparison', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -149,21 +149,21 @@ void main() {
                       left: BoxPosition.fixed(100),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.relativeViewport,
-                      verticalPosition: BoxPositionType.relativeViewport,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('relativeChild'),
                         color: Colors.orange,
                       ),
                     ),
-                    // RelativeViewport positioning - relative to viewport
+                    // relative positioning - relative to viewport
                     FlexBoxChild(
                       top: BoxPosition.fixed(60),
                       left: BoxPosition.fixed(100),
                       width: BoxSize.fixed(80),
                       height: BoxSize.fixed(60),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('viewportRelativeChild'),
                         color: Colors.cyan,
@@ -224,8 +224,8 @@ void main() {
                       left: BoxPosition.fixed(150),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('scrollViewportChild'),
                         color: Colors.indigo,
@@ -314,21 +314,21 @@ void main() {
                       left: BoxPosition.fixed(160),
                       width: BoxSize.fixed(90),
                       height: BoxSize.fixed(70),
-                      horizontalPosition: BoxPositionType.relativeViewport,
-                      verticalPosition: BoxPositionType.relativeViewport,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('relativeChild'),
                         color: Colors.blue,
                       ),
                     ),
-                    // RelativeViewport positioning
+                    // relative positioning
                     FlexBoxChild(
                       top: BoxPosition.fixed(50),
                       left: BoxPosition.fixed(270),
                       width: BoxSize.fixed(90),
                       height: BoxSize.fixed(70),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('viewportChild'),
                         color: Colors.green,
@@ -366,7 +366,7 @@ void main() {
       expect(relativeChild.dx, equals(160.0));
       expect(relativeChild.dy, equals(40.0));
 
-      // RelativeViewport should be relative to viewport
+      // relative should be relative to viewport
       expect(viewportChild.dx, equals(270.0));
       expect(viewportChild.dy, equals(50.0));
     });
@@ -403,8 +403,8 @@ void main() {
                         ), // 20% of viewport width
                         width: BoxSize.flex(1.0),
                         height: BoxSize.fixed(120),
-                        horizontalPosition: BoxPositionType.relativeContent,
-                        verticalPosition: BoxPositionType.relativeContent,
+                        horizontalPosition: BoxPositionType.relative,
+                        verticalPosition: BoxPositionType.relative,
                         child: Container(
                           key: Key('flexViewportChild'),
                           color: Colors.deepPurple,
@@ -416,8 +416,8 @@ void main() {
                         right: BoxPosition.fixed(40),
                         width: BoxSize.unconstrained(),
                         height: BoxSize.unconstrained(),
-                        horizontalPosition: BoxPositionType.relativeContent,
-                        verticalPosition: BoxPositionType.relativeContent,
+                        horizontalPosition: BoxPositionType.relative,
+                        verticalPosition: BoxPositionType.relative,
                         child: Container(
                           key: Key('unconstrainedViewportChild'),
                           width: 150,
@@ -450,7 +450,7 @@ void main() {
         find.byKey(Key('unconstrainedViewportChild')),
       );
 
-      // FlexViewport child positioned relative to content dimensions for relativeViewport
+      // FlexViewport child positioned relative to content dimensions for relative
       // Content height = 300 (first child) + 600 (third child) = 900
       // Content width = 800 (from SizedBox)
       expect(flexChild.dx, equals(800 * 0.2)); // 160 (20% of content width)
@@ -487,8 +487,8 @@ void main() {
                       left: BoxPosition.fixed(100),
                       width: BoxSize.fixed(0),
                       height: BoxSize.fixed(80),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('zeroWidthChild'),
                         color: Colors.orange,
@@ -500,8 +500,8 @@ void main() {
                       left: BoxPosition.fixed(200),
                       width: BoxSize.fixed(100),
                       height: BoxSize.fixed(0),
-                      horizontalPosition: BoxPositionType.relativeContent,
-                      verticalPosition: BoxPositionType.relativeContent,
+                      horizontalPosition: BoxPositionType.relative,
+                      verticalPosition: BoxPositionType.relative,
                       child: Container(
                         key: Key('zeroHeightChild'),
                         color: Colors.cyan,
@@ -565,8 +565,8 @@ void main() {
                             left: BoxPosition.fixed(120),
                             width: BoxSize.fixed(160),
                             height: BoxSize.fixed(100),
-                            horizontalPosition: BoxPositionType.relativeContent,
-                            verticalPosition: BoxPositionType.relativeContent,
+                            horizontalPosition: BoxPositionType.relative,
+                            verticalPosition: BoxPositionType.relative,
                             child: GestureDetector(
                               onTap: () => setState(
                                 () => showExtraContent = !showExtraContent,

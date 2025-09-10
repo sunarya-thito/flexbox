@@ -318,7 +318,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
           SizedBox(height: 24),
 
           _buildExample(
-            'Unconstrained Absolute Positioning - RelativeViewport',
+            'Unconstrained Absolute Positioning - relative',
             'Absolutely positioned elements with unconstrained sizing relative to viewport',
             Container(
               height: 200,
@@ -354,8 +354,8 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                     top: BoxPosition.fixed(20),
                     width: BoxSize.unconstrained(),
                     height: BoxSize.unconstrained(),
-                    horizontalPosition: BoxPositionType.relativeViewport,
-                    verticalPosition: BoxPositionType.relativeViewport,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.red[400]!.withOpacity(0.8),
@@ -364,7 +364,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                       ),
                       child: Center(
                         child: Text(
-                          'Unconstrained\nAbsolute\n(RelativeViewport)\nFills remaining\nviewport space',
+                          'Unconstrained\nAbsolute\n(relative)\nFills remaining\nviewport space',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
@@ -383,7 +383,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
           SizedBox(height: 24),
 
           _buildExample(
-            'Unconstrained Absolute Positioning - RelativeContent',
+            'Unconstrained Absolute Positioning - relative',
             'Absolutely positioned elements with unconstrained sizing relative to scrollable content',
             Container(
               height: 250,
@@ -424,14 +424,14 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                       ),
                     ),
 
-                  // Absolutely positioned unconstrained element - RelativeContent
+                  // Absolutely positioned unconstrained element - relative
                   FlexBoxChild(
                     right: BoxPosition.fixed(20),
                     top: BoxPosition.fixed(30),
                     width: BoxSize.unconstrained(),
                     height: BoxSize.unconstrained(),
-                    horizontalPosition: BoxPositionType.relativeContent,
-                    verticalPosition: BoxPositionType.relativeContent,
+                    horizontalPosition: BoxPositionType.fixed,
+                    verticalPosition: BoxPositionType.fixed,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.green[400]!.withOpacity(0.8),
@@ -440,7 +440,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                       ),
                       child: Center(
                         child: Text(
-                          'Unconstrained Absolute\n(RelativeContent)\n\nFills remaining space\nof ENTIRE scrollable\ncontent area\n\nScrolls with content',
+                          'Unconstrained Absolute\n(relative)\n\nFills remaining space\nof ENTIRE scrollable\ncontent area\n\nScrolls with content',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
@@ -502,17 +502,17 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  '• RelativeViewport: Fills remaining space within the visible viewport',
+                  '• relative: Fills remaining space within the visible viewport',
                 ),
                 Text(
-                  '• RelativeContent: Fills remaining space within the entire scrollable content area',
+                  '• relative: Fills remaining space within the entire scrollable content area',
                 ),
                 Text(
                   '• Fixed: Stays in fixed position, unaffected by scrolling',
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'The key difference: RelativeContent sizing extends to the full content size, while RelativeViewport only considers the visible area.',
+                  'The key difference: relative sizing extends to the full content size, while relative only considers the visible area.',
                   style: TextStyle(fontStyle: FontStyle.italic),
                 ),
               ],
