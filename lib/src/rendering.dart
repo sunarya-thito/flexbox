@@ -513,6 +513,7 @@ class RenderFlexBox extends RenderBox
     double? maxCrossFlex = 0.0;
 
     double spaceRemaining = maxViewportMainSize;
+    double spacing = this.spacing;
 
     // a little bit of note: if one of the axis size is 0,
     // you might think we should not resolve the other axis or just set it to 0,
@@ -539,6 +540,9 @@ class RenderFlexBox extends RenderBox
     int unresolvedFlexCount = 0;
     int unresolvedUnconstrainedCount = 0;
     int crossDependedCount = 0;
+
+    bool hasFlexIntrinsicFallback = false;
+    bool hasRelativeIntrinsicFallback = false;
 
     // First pass
     RenderBox? child = relativeFirstChild;
@@ -819,7 +823,18 @@ class RenderFlexBox extends RenderBox
             // impossible to handle: UnconstrainedSize (need max content cross size),
             //   RelativeContentSize (need max content cross size),
             //   FlexSize (need max content cross size)
-            data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            // data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            if (mainSize.intrinsicFallback) {
+              // data.resolvedMainSize = _clamp(
+              //   _computeMaxIntrinsicMain(child, double.infinity),
+              //   mainSize.min,
+              //   mainSize.max,
+              // );
+              hasFlexIntrinsicFallback = true;
+              continue;
+            } else {
+              data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            }
             mainContentSize += data.resolvedMainSize!;
             // resolvedMainAxisCount++;
             switch (crossSize) {
@@ -901,12 +916,23 @@ class RenderFlexBox extends RenderBox
           if (spaceRemaining.isInfinite) {
             // flex requires space to resolve, but since spaceRemaining is infinite,
             // we cannot resolve flex. Flex always requires space to resolve.
-            // A safe fallback is done by treating flex as zero.
+            // A safe fallback is done by treating flex as zero or intrinsic depending on the option
             // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
             // impossible to handle: UnconstrainedSize (need max content cross size),
             //   RelativeContentSize (need max content cross size),
             //   FlexSize (need max content cross size)
-            data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            // data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            if (mainSize.intrinsicFallback) {
+              // data.resolvedMainSize = _clamp(
+              //   _computeMaxIntrinsicMain(child, double.infinity),
+              //   mainSize.min,
+              //   mainSize.max,
+              // );
+              hasFlexIntrinsicFallback = true;
+              continue;
+            } else {
+              data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
+            }
             mainContentSize += data.resolvedMainSize!;
             // resolvedMainAxisCount++;
             switch (crossSize) {
@@ -1062,7 +1088,7 @@ class RenderFlexBox extends RenderBox
                 crossSize.max,
               );
               data.resolvedMainSize = _clamp(
-                data.resolvedCrossSize! / mainSize.ratio,
+                data.resolvedCrossSize! * mainSize.ratio,
                 mainSize.min,
                 mainSize.max,
               );
@@ -1083,7 +1109,7 @@ class RenderFlexBox extends RenderBox
                   crossSize.max,
                 );
                 data.resolvedMainSize = _clamp(
-                  data.resolvedCrossSize! / mainSize.ratio,
+                  data.resolvedCrossSize! * mainSize.ratio,
                   mainSize.min,
                   mainSize.max,
                 );
@@ -1096,13 +1122,25 @@ class RenderFlexBox extends RenderBox
               } else {
                 // infinite max cross size, cannot resolve
                 // so, as a safe fallback, we resolve both
-                // as 0
-                data.resolvedCrossSize = _clamp(
-                  0.0,
-                  crossSize.min,
-                  crossSize.max,
+                // as 0/intrinsic
+                if (crossSize.intrinsicFallback) {
+                  data.resolvedCrossSize = _clamp(
+                    _computeMaxIntrinsicCross(child, double.infinity),
+                    crossSize.min,
+                    crossSize.max,
+                  );
+                } else {
+                  data.resolvedCrossSize = _clamp(
+                    0.0,
+                    crossSize.min,
+                    crossSize.max,
+                  );
+                }
+                data.resolvedMainSize = _clamp(
+                  data.resolvedCrossSize! * mainSize.ratio,
+                  mainSize.min,
+                  mainSize.max,
                 );
-                data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
                 mainContentSize += data.resolvedMainSize!;
                 // resolvedMainAxisCount++;
                 crossContentSize = max(
@@ -1133,6 +1171,17 @@ class RenderFlexBox extends RenderBox
       child = relativeNextSibling(child);
     }
 
+    int gapCount = childCount - absoluteCount - 1;
+    if (gapCount > 0) {
+      if (spacing.isFinite) {
+        mainContentSize += gapCount * spacing;
+        spaceRemaining -= gapCount * spacing;
+      } else {
+        spaceRemaining = 0.0; // it eats the whole thing
+        // flex will also fallback to intrinsic/0
+      }
+    }
+
     // At this point, these children have been laid out:
     // - Size(Fixed, Fixed)
     // - Size(Fixed, Intrinsic)
@@ -1147,7 +1196,7 @@ class RenderFlexBox extends RenderBox
     // - Size(Relative, Ratio) * CARE FOR INFINITE MAIN SIZE
     // - Size(Relative, Relative) * CARE FOR INFINITE SIZES
     // - Size(RelativeContent, *) * NOT ALLOWED
-    // - Size(Flex (infinite), Fixed)
+    // - Size(Flex (infinite, treat as 0 Fixed), Fixed)
     // - Size(Flex (infinite), Intrinsic)
     // - Size(Flex (infinite), Relative) * CARE FOR INFINITE CROSS SIZE
     // - Size(Flex (infinite), Ratio)
@@ -1589,7 +1638,7 @@ class RenderFlexBox extends RenderBox
                     crossSize.max,
                   );
                   data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! / mainSize.ratio,
+                    data.resolvedCrossSize! * mainSize.ratio,
                     mainSize.min,
                     mainSize.max,
                   );
@@ -1606,7 +1655,7 @@ class RenderFlexBox extends RenderBox
                     crossSize.max,
                   );
                   data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! / mainSize.ratio,
+                    data.resolvedCrossSize! * mainSize.ratio,
                     mainSize.min,
                     mainSize.max,
                   );
@@ -1618,7 +1667,7 @@ class RenderFlexBox extends RenderBox
                     crossSize.max,
                   );
                   data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! / mainSize.ratio,
+                    data.resolvedCrossSize! * mainSize.ratio,
                     mainSize.min,
                     mainSize.max,
                   );
@@ -1630,7 +1679,7 @@ class RenderFlexBox extends RenderBox
                     crossSize.max,
                   );
                   data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! / mainSize.ratio,
+                    data.resolvedCrossSize! * mainSize.ratio,
                     mainSize.min,
                     mainSize.max,
                   );
@@ -1648,7 +1697,7 @@ class RenderFlexBox extends RenderBox
                     crossSize.max,
                   );
                   data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! / mainSize.ratio,
+                    data.resolvedCrossSize! * mainSize.ratio,
                     mainSize.min,
                     mainSize.max,
                   );
@@ -1729,33 +1778,31 @@ class RenderFlexBox extends RenderBox
                 );
             }
           }
-          child = relativeNextSibling(child);
-          continue;
-        }
-
-        final crossSize = data.getSize(crossDirection);
-        switch (crossSize) {
-          case UnconstrainedSize():
-            data.resolvedCrossSize = _clamp(
-              crossContentSize,
-              crossSize.min,
-              crossSize.max,
-            );
-            break;
-          case FlexSize():
-            data.resolvedCrossSize = _clamp(
-              crossSpacePerFlex * crossSize.flex,
-              crossSize.min,
-              crossSize.max,
-            );
-            break;
-          case RelativeContentSize():
-            data.resolvedCrossSize = _clamp(
-              crossContentSize * crossSize.relative,
-              crossSize.min,
-              crossSize.max,
-            );
-            break;
+        } else {
+          final crossSize = data.getSize(crossDirection);
+          switch (crossSize) {
+            case UnconstrainedSize():
+              data.resolvedCrossSize = _clamp(
+                crossContentSize,
+                crossSize.min,
+                crossSize.max,
+              );
+              break;
+            case FlexSize():
+              data.resolvedCrossSize = _clamp(
+                crossSpacePerFlex * crossSize.flex,
+                crossSize.min,
+                crossSize.max,
+              );
+              break;
+            case RelativeContentSize():
+              data.resolvedCrossSize = _clamp(
+                crossContentSize * crossSize.relative,
+                crossSize.min,
+                crossSize.max,
+              );
+              break;
+          }
         }
 
         // finally layout the children
@@ -1763,7 +1810,7 @@ class RenderFlexBox extends RenderBox
         double? resolvedCross = data.resolvedCrossSize;
         assert(
           resolvedMain != null && resolvedCross != null,
-          'Resolved sizes should not be null at this point for size (${data.getSize(direction)}, $crossSize)',
+          'Resolved sizes should not be null at this point for size (${data.getSize(direction)}, ${data.getSize(crossDirection)})',
         );
         child.layout(
           BoxConstraints.tightFor(
@@ -1775,6 +1822,26 @@ class RenderFlexBox extends RenderBox
         child = relativeNextSibling(child);
       }
     }
+
+    // make sure all children has been laid out
+    assert(() {
+      RenderBox? child = relativeFirstChild;
+      while (child != null) {
+        final data = child.parentData as FlexBoxParentData;
+        if (!child.hasSize) {
+          throw FlutterError(
+            'Child has not been laid out. This is likely a bug. Please report it to the package maintainer. Child: $child, isAbsolute: ${data.isAbsolute}, mainSize: ${data.getSize(direction)}, crossSize: ${data.getSize(crossDirection)}',
+          );
+        }
+        child = relativeNextSibling(child);
+      }
+      return true;
+    }(), 'Conditions does not meet expectations');
+
+    return (
+      mainContentSize: mainContentSize,
+      crossContentSize: crossContentSize,
+    );
   }
 
   double _clamp(double value, double? lower, double? upper) {
@@ -1783,7 +1850,12 @@ class RenderFlexBox extends RenderBox
     return _clampIgnoreSign(value, lower, upper);
   }
 
-  void _positionsChildren() {
+  void _positionsChildren({
+    required double mainContentSize,
+    required double crossContentSize,
+    required double mainViewportSize,
+    required double crossViewportSize,
+  }) {
     if (childCount == 0) {
       return;
     }

@@ -184,7 +184,18 @@ class RatioSize extends BoxSize {
 class RelativeSize extends BoxSize {
   final double relative;
 
-  const RelativeSize(this.relative, {super.min, super.max});
+  /// If true, when the flex box is in an unconstrained environment,
+  /// it will fallback to using the intrinsic size of the child.
+  /// If false, it will use zero size in unconstrained environments.
+  /// Defaults to true.
+  final bool intrinsicFallback;
+
+  const RelativeSize(
+    this.relative, {
+    super.min,
+    super.max,
+    this.intrinsicFallback = true,
+  });
 
   @override
   String toString() {
@@ -234,11 +245,22 @@ class RelativeContentSize extends BoxSize {
 class FlexSize extends BoxSize {
   final double flex;
 
-  const FlexSize(this.flex, {super.min, super.max});
+  /// If true, when the flex box is in an unconstrained environment,
+  /// it will fallback to using the intrinsic size of the child.
+  /// If false, it will use zero size in unconstrained environments.
+  /// Defaults to true.
+  final bool intrinsicFallback;
+
+  const FlexSize(
+    this.flex, {
+    super.min,
+    super.max,
+    this.intrinsicFallback = true,
+  });
 
   @override
   String toString() {
-    return 'FlexSize(flex: $flex, min: $min, max: $max)';
+    return 'FlexSize(flex: $flex, min: $min, max: $max, intrinsicFallback: $intrinsicFallback)';
   }
 
   @override
@@ -247,12 +269,13 @@ class FlexSize extends BoxSize {
     return other is FlexSize &&
         other.flex == flex &&
         other.min == min &&
-        other.max == max;
+        other.max == max &&
+        other.intrinsicFallback == intrinsicFallback;
   }
 
   @override
   int get hashCode {
-    return Object.hash(runtimeType, flex, min, max);
+    return Object.hash(runtimeType, flex, min, max, intrinsicFallback);
   }
 }
 
