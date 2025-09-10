@@ -69,6 +69,11 @@ abstract class BoxSize {
       RatioSize;
   const factory BoxSize.relative(double relative, {double? min, double? max}) =
       RelativeSize;
+  const factory BoxSize.relativeContent(
+    double relative, {
+    double? min,
+    double? max,
+  }) = RelativeContentSize;
   const factory BoxSize.flex(double flex, {double? min, double? max}) =
       FlexSize;
 
@@ -190,6 +195,31 @@ class RelativeSize extends BoxSize {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is RelativeSize &&
+        other.relative == relative &&
+        other.min == min &&
+        other.max == max;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, relative, min, max);
+  }
+}
+
+class RelativeContentSize extends BoxSize {
+  final double relative;
+
+  const RelativeContentSize(this.relative, {super.min, super.max});
+
+  @override
+  String toString() {
+    return 'RelativeContentSize(relative: $relative, min: $min, max: $max)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is RelativeContentSize &&
         other.relative == relative &&
         other.min == min &&
         other.max == max;

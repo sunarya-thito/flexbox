@@ -436,1318 +436,6 @@ class RenderFlexBox extends RenderBox
     child.layout(BoxConstraints.tight(size), parentUsesSize: true);
   }
 
-  /// Performs proper flex distribution with constraint handling and redistribution.
-  /// This algorithm ensures that when flex children are constrained by min/max,
-  /// the remaining space is properly redistributed among other flex children.
-  void _performFlexDistribution(double availableSpace, double totalFlex) {
-    if (totalFlex <= 0) {
-      // No flex children, nothing to distribute
-      return;
-    }
-
-    double remainingSpace = max(availableSpace, 0); // Use 0 if negative
-    double remainingFlex = totalFlex;
-
-    // Iterative algorithm to handle constraints and redistribution
-    bool hasChanges = true;
-    int maxIterations = 10; // Prevent infinite loops
-    int iteration = 0;
-
-    while (hasChanges && iteration < maxIterations) {
-      hasChanges = false;
-      iteration++;
-
-      // Pass 1: Check for newly constrained children and update remaining values
-      RenderBox? child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          var mainSizeConstraint = layoutData.getSize(direction);
-          if ((mainSizeConstraint is FlexSize ||
-                  (mainSizeConstraint is UnconstrainedSize &&
-                      layoutData.mainFlex > 0)) &&
-              !layoutData.isConstrainedByMinMax) {
-            double proposedSize = remainingFlex > 0
-                ? (layoutData.mainFlex / remainingFlex) * max(remainingSpace, 0)
-                : 0.0;
-
-            final minMain = mainSizeConstraint is FlexSize
-                ? mainSizeConstraint.min ?? 0.0
-                : (mainSizeConstraint as UnconstrainedSize).min ?? 0.0;
-            final maxMain = mainSizeConstraint is FlexSize
-                ? mainSizeConstraint.max ?? double.infinity
-                : (mainSizeConstraint as UnconstrainedSize).max ??
-                      double.infinity;
-            double constrainedSize = _clampIgnoreSign(
-              proposedSize,
-              minMain,
-              maxMain,
-            );
-
-            // Check if this child became constrained
-            if (constrainedSize != proposedSize) {
-              layoutData.isConstrainedByMinMax = true;
-              layoutData.cachedMainSize = constrainedSize;
-              remainingSpace -= constrainedSize;
-              remainingFlex -= layoutData.mainFlex;
-              hasChanges = true;
-            }
-          }
-        }
-        child = relativeNextSibling(child);
-      }
-    }
-
-    // Pass 2: Distribute remaining space among unconstrained children
-    if (remainingFlex > 0) {
-      RenderBox? child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          var mainSizeConstraint = layoutData.getSize(direction);
-          if ((mainSizeConstraint is FlexSize ||
-                  (mainSizeConstraint is UnconstrainedSize &&
-                      layoutData.mainFlex > 0)) &&
-              !layoutData.isConstrainedByMinMax) {
-            double finalSize =
-                (layoutData.mainFlex / remainingFlex) * max(remainingSpace, 0);
-            layoutData.cachedMainSize = finalSize;
-          }
-        }
-        child = relativeNextSibling(child);
-      }
-    }
-  }
-
-  // @override
-  void _performLayout() {
-    BoxConstraints constraints = this.constraints;
-    // If there are no children, set size and return early
-    if (firstChild == null) {
-      size = constraints.constrain(Size.zero);
-      return;
-    }
-    // Count unconstrained children first (needed before constraint override)
-    int unconstrainedCount = 0;
-    RenderBox? unconstrainedChild = relativeFirstChild;
-    int totalAffectedChildren = 0;
-    while (unconstrainedChild != null) {
-      var layoutData = unconstrainedChild.parentData as FlexBoxParentData;
-      if (!layoutData.isAbsolute) {
-        totalAffectedChildren++;
-        var mainSizeConstraint = layoutData.getSize(direction);
-        if (mainSizeConstraint is UnconstrainedSize) {
-          unconstrainedCount++;
-        }
-      }
-      unconstrainedChild = relativeNextSibling(unconstrainedChild);
-    }
-    bool onlyUnconstrained =
-        (totalAffectedChildren == unconstrainedCount) && unconstrainedCount > 0;
-    if (!onlyUnconstrained) {
-      constraints = BoxConstraints.tight(constraints.smallest);
-    }
-    _firstSortedChild = null;
-    _lastSortedChild = null;
-
-    // Calculate viewport size early for positioning calculations
-    final visibleViewportSize = constraints.biggest;
-
-    if (kDebugMode) {
-      RenderBox? firstChild = relativeFirstChild;
-      while (firstChild != null) {
-        var layoutData = firstChild.parentData as FlexBoxParentData;
-        layoutData.debugLayout = false;
-        firstChild = relativeNextSibling(firstChild);
-      }
-    }
-
-    // Reset constraint flags for fresh layout
-    RenderBox? resetChild = relativeFirstChild;
-    while (resetChild != null) {
-      var layoutData = resetChild.parentData as FlexBoxParentData;
-      layoutData.isConstrainedByMinMax = false;
-      resetChild = relativeNextSibling(resetChild);
-    }
-
-    var shouldSortChildren = false;
-    var hasCrossFlex = false;
-    var child = relativeFirstChild;
-    var totalFlex = 0.0;
-    var maxCrossFlex = 0.0;
-    var totalFixedSize = 0.0;
-    // Use totalAffectedChildren from pre-pass above
-    var usedMainSize = 0.0;
-    var biggestFlex = 0.0;
-    var availableMainSize = direction == Axis.horizontal
-        ? constraints.maxWidth
-        : constraints.maxHeight;
-    var availableCrossSize = direction == Axis.horizontal
-        ? constraints.maxHeight
-        : constraints.maxWidth;
-    var maxContentCrossSize = availableCrossSize;
-
-    // First pass:
-    // In this pass, we count all flexible children (i.e. how many are there and the total flex value).
-    // If its an intrinsic size, we compute the maximum intrinsic size.
-    // If its a fixed size, we add it to the total fixed size, and we lay it out immediately.
-    // Unless its cross size is unconstrained or flexible, we skip it.
-
-    child = relativeFirstChild;
-    while (child != null) {
-      var layoutData = child.parentData as FlexBoxParentData;
-      layoutData.cachedMainSize = 0;
-      layoutData.cachedCrossSize = 0;
-      layoutData.unconstrainedFlex = 0;
-      layoutData.mainFlex = 0;
-      shouldSortChildren = shouldSortChildren || layoutData.zOrder != null;
-      layoutData._nextSortedSibling = null;
-      layoutData._previousSortedSibling = null;
-      if (!layoutData.isAbsolute) {
-        var mainSizeConstraint = layoutData.getSize(direction);
-        var crossSizeConstraint = layoutData.getSize(crossDirection);
-        double mainChildSize;
-        if (mainSizeConstraint is FixedSize) {
-          mainChildSize = mainSizeConstraint.size;
-        } else if (mainSizeConstraint is IntrinsicSize) {
-          mainChildSize = _computeMaxIntrinsicMain(child, availableCrossSize);
-        } else if (mainSizeConstraint is RelativeSize) {
-          mainChildSize = mainSizeConstraint.relative * availableMainSize;
-        } else if (mainSizeConstraint is FlexSize) {
-          totalFlex += mainSizeConstraint.flex;
-          biggestFlex = max(biggestFlex, mainSizeConstraint.flex);
-          layoutData.mainFlex = mainSizeConstraint.flex; // Store the flex value
-          child = relativeNextSibling(child);
-          continue;
-        } else if (mainSizeConstraint is RatioSize) {
-          mainChildSize = 0;
-          // skip this for now
-        } else if (mainSizeConstraint is UnconstrainedSize) {
-          child = relativeNextSibling(child);
-          continue;
-        } else {
-          throw ArgumentError(
-            'Invalid main size constraint: $mainSizeConstraint',
-          );
-        }
-
-        // Clamp main size to respect min/max constraints (except for RatioSize which is handled later)
-        if (mainSizeConstraint is! RatioSize) {
-          var mainMin = _getMinMain(layoutData);
-          var mainMax = _getMaxMain(layoutData);
-          mainChildSize = _clampIgnoreSign(mainChildSize, mainMin, mainMax);
-        }
-        layoutData.cachedMainSize = mainChildSize;
-
-        double crossChildSize;
-        if (crossSizeConstraint is FixedSize) {
-          crossChildSize = crossSizeConstraint.size;
-          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-        } else if (crossSizeConstraint is IntrinsicSize) {
-          crossChildSize = _computeMaxIntrinsicCross(child, availableMainSize);
-          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-        } else if (crossSizeConstraint is RelativeSize) {
-          crossChildSize = crossSizeConstraint.relative * availableCrossSize;
-          maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-        } else if (crossSizeConstraint is FlexSize) {
-          hasCrossFlex = true;
-          maxCrossFlex = max(maxCrossFlex, crossSizeConstraint.flex);
-          child = relativeNextSibling(child);
-          continue;
-        } else if (crossSizeConstraint is UnconstrainedSize) {
-          hasCrossFlex = true;
-          maxCrossFlex = max(maxCrossFlex, 1.0);
-          child = relativeNextSibling(child);
-          continue;
-        } else if (crossSizeConstraint is RatioSize) {
-          assert(
-            mainChildSize is! RatioSize,
-            'RatioSize cannot be used with RatioSize for main size',
-          );
-          crossChildSize = mainChildSize * crossSizeConstraint.ratio;
-          // skip this for now
-        } else {
-          throw ArgumentError(
-            'Invalid cross size constraint: $crossSizeConstraint',
-          );
-        }
-        if (mainSizeConstraint is RatioSize) {
-          var aspectRatio = mainSizeConstraint.ratio;
-          mainChildSize = crossChildSize * aspectRatio;
-          // Clamp the main size to respect min/max constraints
-          var mainMin = _getMinMain(layoutData);
-          var mainMax = _getMaxMain(layoutData);
-          mainChildSize = _clampIgnoreSign(mainChildSize, mainMin, mainMax);
-          layoutData.cachedMainSize = mainChildSize;
-        }
-        var crossMin = _getMinCross(layoutData);
-        var crossMax = _getMaxCross(layoutData);
-        crossChildSize = _clampIgnoreSign(crossChildSize, crossMin, crossMax);
-        layoutData.cachedCrossSize = crossChildSize;
-        var childSize = _createSize(mainChildSize, crossChildSize);
-        _layoutChild(child, childSize);
-        totalFixedSize += mainChildSize;
-      }
-      // Skip absolute children in first pass - they will be laid out later
-      child = relativeNextSibling(child);
-    }
-
-    // Second pass:
-    // Handle UnconstrainedSize children - they need special logic
-    // If there are flex children, unconstrained acts as biggest flex
-    // If no flex children, unconstrained fills remaining space
-
-    // (Already counted unconstrainedCount and onlyUnconstrained above for constraint logic)
-
-    // Handle unconstrained children: act as flex if flex children exist, fill remaining space if not, use intrinsic if only unconstrained
-    // (Already determined onlyUnconstrained above; parentTightAndFinite logic not needed)
-    child = relativeFirstChild;
-    while (child != null) {
-      var layoutData = child.parentData as FlexBoxParentData;
-      // --- NEW LOGIC: Precompute unconstrained sizes in mixed scenarios and subtract from available space for flex ---
-      double totalUnconstrainedMainSize = 0.0;
-      child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          var mainSizeConstraint = layoutData.getSize(direction);
-          if (mainSizeConstraint is UnconstrainedSize) {
-            if (onlyUnconstrained) {
-              // Only unconstrained children: always use intrinsic size
-              double unconstrainedMainSize = direction == Axis.horizontal
-                  ? child.computeMaxIntrinsicWidth(double.infinity)
-                  : child.computeMaxIntrinsicHeight(double.infinity);
-              final minMain = mainSizeConstraint.min ?? 0.0;
-              final maxMain = mainSizeConstraint.max ?? double.infinity;
-              unconstrainedMainSize = _clampIgnoreSign(
-                unconstrainedMainSize,
-                minMain,
-                maxMain,
-              );
-              layoutData.cachedMainSize = unconstrainedMainSize;
-              usedMainSize += unconstrainedMainSize;
-
-              // Handle cross size for UnconstrainedSize children
-              var crossSizeConstraint = layoutData.getSize(crossDirection);
-              double crossChildSize;
-              if (crossSizeConstraint is FixedSize) {
-                crossChildSize = crossSizeConstraint.size;
-              } else if (crossSizeConstraint is IntrinsicSize) {
-                crossChildSize = direction == Axis.horizontal
-                    ? child.computeMaxIntrinsicHeight(double.infinity)
-                    : child.computeMaxIntrinsicWidth(double.infinity);
-              } else if (crossSizeConstraint is UnconstrainedSize) {
-                // For cross-axis unconstrained, use intrinsic size
-                crossChildSize = direction == Axis.horizontal
-                    ? child.computeMaxIntrinsicHeight(double.infinity)
-                    : child.computeMaxIntrinsicWidth(double.infinity);
-              } else if (crossSizeConstraint is RelativeSize) {
-                crossChildSize =
-                    crossSizeConstraint.relative * maxContentCrossSize;
-              } else if (crossSizeConstraint is FlexSize) {
-                crossChildSize = maxContentCrossSize;
-              } else if (crossSizeConstraint is RatioSize) {
-                crossChildSize =
-                    unconstrainedMainSize * crossSizeConstraint.ratio;
-              } else {
-                throw ArgumentError(
-                  'Invalid cross size constraint: $crossSizeConstraint',
-                );
-              }
-              var crossMin = _getMinCross(layoutData);
-              var crossMax = _getMaxCross(layoutData);
-              crossChildSize = _clampIgnoreSign(
-                crossChildSize,
-                crossMin,
-                crossMax,
-              );
-              layoutData.cachedCrossSize = crossChildSize;
-              maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-
-              var childSize = _createSize(
-                layoutData.cachedMainSize,
-                crossChildSize,
-              );
-              _layoutChild(child, childSize);
-            } else if (totalFlex > 0) {
-              // If all non-absolute children are flex or unconstrained, unconstrained acts as flex
-              int flexOrUnconstrainedCount = 0;
-              RenderBox? checkChild = relativeFirstChild;
-              while (checkChild != null) {
-                var checkData = checkChild.parentData as FlexBoxParentData;
-                if (!checkData.isAbsolute) {
-                  var c = checkData.getSize(direction);
-                  if (c is FlexSize || c is UnconstrainedSize) {
-                    flexOrUnconstrainedCount++;
-                  }
-                }
-                checkChild = relativeNextSibling(checkChild);
-              }
-              if (flexOrUnconstrainedCount == totalAffectedChildren) {
-                // Only flex and unconstrained: unconstrained acts as flex
-                layoutData.mainFlex = biggestFlex;
-                totalFlex += biggestFlex;
-                // Do not assign cachedMainSize here; let flex distribution handle it
-              } else {
-                // Mixed: unconstrained uses explicit/intrinsic size
-                double unconstrainedMainSize = direction == Axis.horizontal
-                    ? child.computeMaxIntrinsicWidth(double.infinity)
-                    : child.computeMaxIntrinsicHeight(double.infinity);
-                final minMain = mainSizeConstraint.min ?? 0.0;
-                final maxMain = mainSizeConstraint.max ?? double.infinity;
-                unconstrainedMainSize = _clampIgnoreSign(
-                  unconstrainedMainSize,
-                  minMain,
-                  maxMain,
-                );
-                layoutData.cachedMainSize = unconstrainedMainSize;
-                totalUnconstrainedMainSize += unconstrainedMainSize;
-
-                // Cross size
-                var crossSizeConstraint = layoutData.getSize(crossDirection);
-                double crossChildSize;
-                if (crossSizeConstraint is FixedSize) {
-                  crossChildSize = crossSizeConstraint.size;
-                } else if (crossSizeConstraint is IntrinsicSize) {
-                  crossChildSize = direction == Axis.horizontal
-                      ? child.computeMaxIntrinsicHeight(double.infinity)
-                      : child.computeMaxIntrinsicWidth(double.infinity);
-                } else if (crossSizeConstraint is UnconstrainedSize) {
-                  crossChildSize = direction == Axis.horizontal
-                      ? child.computeMaxIntrinsicHeight(double.infinity)
-                      : child.computeMaxIntrinsicWidth(double.infinity);
-                } else if (crossSizeConstraint is RelativeSize) {
-                  crossChildSize =
-                      crossSizeConstraint.relative * maxContentCrossSize;
-                } else if (crossSizeConstraint is FlexSize) {
-                  crossChildSize = maxContentCrossSize;
-                } else if (crossSizeConstraint is RatioSize) {
-                  crossChildSize =
-                      unconstrainedMainSize * crossSizeConstraint.ratio;
-                } else {
-                  throw ArgumentError(
-                    'Invalid cross size constraint: $crossSizeConstraint',
-                  );
-                }
-                var crossMin = _getMinCross(layoutData);
-                var crossMax = _getMaxCross(layoutData);
-                crossChildSize = _clampIgnoreSign(
-                  crossChildSize,
-                  crossMin,
-                  crossMax,
-                );
-                layoutData.cachedCrossSize = crossChildSize;
-                maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-
-                var childSize = _createSize(
-                  layoutData.cachedMainSize,
-                  crossChildSize,
-                );
-                _layoutChild(child, childSize);
-              }
-            } else if ((totalAffectedChildren - unconstrainedCount) > 0) {
-              // There are other non-flex children (fixed, relative, intrinsic) and no flex children
-              // Unconstrained fills remaining space
-              var totalUsedMainSize =
-                  totalFixedSize +
-                  (totalAffectedChildren - unconstrainedCount) * spacing;
-              var remainingSpace = availableMainSize - totalUsedMainSize;
-              double unconstrainedMainSize = max(
-                0.0,
-                remainingSpace / unconstrainedCount,
-              );
-              final minMain = mainSizeConstraint.min ?? 0.0;
-              final maxMain = mainSizeConstraint.max ?? double.infinity;
-              unconstrainedMainSize = _clampIgnoreSign(
-                unconstrainedMainSize,
-                minMain,
-                maxMain,
-              );
-              layoutData.cachedMainSize = unconstrainedMainSize;
-              usedMainSize += unconstrainedMainSize;
-
-              // Cross size for UnconstrainedSize children
-              var crossSizeConstraint = layoutData.getSize(crossDirection);
-              double crossChildSize;
-              if (crossSizeConstraint is FixedSize) {
-                crossChildSize = crossSizeConstraint.size;
-              } else if (crossSizeConstraint is IntrinsicSize) {
-                crossChildSize = direction == Axis.horizontal
-                    ? child.computeMaxIntrinsicHeight(double.infinity)
-                    : child.computeMaxIntrinsicWidth(double.infinity);
-              } else if (crossSizeConstraint is UnconstrainedSize) {
-                crossChildSize = direction == Axis.horizontal
-                    ? child.computeMaxIntrinsicHeight(double.infinity)
-                    : child.computeMaxIntrinsicWidth(double.infinity);
-              } else if (crossSizeConstraint is RelativeSize) {
-                crossChildSize =
-                    crossSizeConstraint.relative * maxContentCrossSize;
-              } else if (crossSizeConstraint is FlexSize) {
-                crossChildSize = maxContentCrossSize;
-              } else if (crossSizeConstraint is RatioSize) {
-                crossChildSize =
-                    unconstrainedMainSize * crossSizeConstraint.ratio;
-              } else {
-                throw ArgumentError(
-                  'Invalid cross size constraint: $crossSizeConstraint',
-                );
-              }
-              var crossMin = _getMinCross(layoutData);
-              var crossMax = _getMaxCross(layoutData);
-              crossChildSize = _clampIgnoreSign(
-                crossChildSize,
-                crossMin,
-                crossMax,
-              );
-              layoutData.cachedCrossSize = crossChildSize;
-              maxContentCrossSize = max(maxContentCrossSize, crossChildSize);
-
-              var childSize = _createSize(
-                layoutData.cachedMainSize,
-                crossChildSize,
-              );
-              _layoutChild(child, childSize);
-            }
-          }
-        }
-        child = relativeNextSibling(child);
-      }
-
-      // If there are flex children, subtract totalUnconstrainedMainSize from availableMainSize before flex distribution
-      double adjustedAvailableMainSize = availableMainSize;
-      if (totalFlex > 0 && totalUnconstrainedMainSize > 0) {
-        adjustedAvailableMainSize -= totalUnconstrainedMainSize;
-      }
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          var mainSizeConstraint = layoutData.getSize(direction);
-          if (mainSizeConstraint is FlexSize) {
-            layoutData.mainFlex = mainSizeConstraint.flex;
-            biggestFlex = max(biggestFlex, mainSizeConstraint.flex);
-          }
-        }
-        child = relativeNextSibling(child);
-      }
-
-      // Fourth pass:
-      // If there are any children with cross flex, we need to layout them.
-      if (hasCrossFlex) {
-        child = relativeFirstChild;
-        while (child != null) {
-          var layoutData = child.parentData as FlexBoxParentData;
-          if (!layoutData.isAbsolute) {
-            var crossSizeConstraint = layoutData.getSize(crossDirection);
-            var mainSizeConstraint = layoutData.getSize(direction);
-            if (crossSizeConstraint is FlexSize) {
-              var flex = crossSizeConstraint.flex;
-              var crossChildSize = (flex / maxCrossFlex) * maxContentCrossSize;
-              var minCross = _getMinCross(layoutData);
-              var maxCross = _getMaxCross(layoutData);
-              crossChildSize = _clampIgnoreSign(
-                crossChildSize,
-                minCross,
-                maxCross,
-              );
-              var mainChildSize = layoutData.cachedMainSize;
-              totalFixedSize += mainChildSize;
-              if (mainSizeConstraint is FlexSize ||
-                  mainSizeConstraint is UnconstrainedSize) {
-                // Lay out later
-                layoutData.cachedCrossSize = crossChildSize;
-              } else {
-                var childSize = _createSize(mainChildSize, crossChildSize);
-                _layoutChild(child, childSize);
-              }
-            } else if (crossSizeConstraint is UnconstrainedSize) {
-              var crossChildSize = maxContentCrossSize;
-              var mainChildSize = layoutData.cachedMainSize;
-              var minCross = _getMinCross(layoutData);
-              var maxCross = _getMaxCross(layoutData);
-              crossChildSize = _clampIgnoreSign(
-                crossChildSize,
-                minCross,
-                maxCross,
-              );
-              totalFixedSize += mainChildSize;
-              if (mainSizeConstraint is FlexSize ||
-                  mainSizeConstraint is UnconstrainedSize) {
-                // Lay out later
-                layoutData.cachedCrossSize = crossChildSize;
-              } else {
-                var childSize = _createSize(mainChildSize, crossChildSize);
-                _layoutChild(child, childSize);
-              }
-            }
-          }
-          child = relativeNextSibling(child);
-        }
-      }
-
-      var totalGap = totalAffectedChildren > 1
-          ? spacing * (totalAffectedChildren - 1)
-          : 0.0;
-      var autoGap = false;
-      var gap = spacing;
-      if (totalGap.isInfinite) {
-        gap = 0.0;
-        totalGap = 0.0;
-        autoGap = true;
-      }
-
-      // Perform proper flex distribution with constraint handling and redistribution
-      // Use adjustedAvailableMainSize if flex children and unconstrained children coexist
-      double flexRemainingSpace =
-          adjustedAvailableMainSize -
-          totalFixedSize -
-          (totalAffectedChildren - unconstrainedCount) * spacing;
-      _performFlexDistribution(flexRemainingSpace, totalFlex);
-
-      child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          var mainSizeConstraint = layoutData.getSize(direction);
-          if (mainSizeConstraint is FlexSize ||
-              (mainSizeConstraint is UnconstrainedSize &&
-                  layoutData.mainFlex > 0)) {
-            // Size is already computed by _performFlexDistribution and stored in cachedMainSize
-
-            // Cross
-            var crossChildConstraint = layoutData.getSize(crossDirection);
-            double crossChildSize;
-            if (crossChildConstraint is FixedSize) {
-              crossChildSize = crossChildConstraint.size;
-            } else if (crossChildConstraint is IntrinsicSize) {
-              crossChildSize = _computeMaxIntrinsicCross(
-                child,
-                availableMainSize,
-              );
-            } else if (crossChildConstraint is UnconstrainedSize) {
-              crossChildSize = maxContentCrossSize;
-            } else if (crossChildConstraint is FlexSize) {
-              crossChildSize = crossChildConstraint.flex * maxContentCrossSize;
-            } else if (crossChildConstraint is RelativeSize) {
-              crossChildSize =
-                  crossChildConstraint.relative * maxContentCrossSize;
-            } else if (crossChildConstraint is RatioSize) {
-              assert(
-                mainSizeConstraint is! RatioSize,
-                'RatioSize cannot be used with RatioSize for main size',
-              );
-              crossChildSize =
-                  layoutData.cachedMainSize * crossChildConstraint.ratio;
-            } else {
-              throw ArgumentError(
-                'Invalid cross size constraint: $crossChildConstraint',
-              );
-            }
-            var crossMin = _getMinCross(layoutData);
-            var crossMax = _getMaxCross(layoutData);
-            crossChildSize = _clampIgnoreSign(
-              crossChildSize,
-              crossMin,
-              crossMax,
-            );
-            layoutData.cachedCrossSize = crossChildSize;
-            var childSize = _createSize(
-              layoutData.cachedMainSize,
-              crossChildSize,
-            );
-            _layoutChild(child, childSize);
-          }
-        }
-        child = relativeNextSibling(child);
-      }
-
-      var usedCrossSize = 0.0;
-      child = relativeFirstChild;
-      bool first = true;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          if (first) {
-            usedMainSize += _getMain(child.size);
-            first = false;
-          } else {
-            usedMainSize += _getMain(child.size) + gap;
-          }
-          usedCrossSize = max(usedCrossSize, _getCross(child.size));
-        }
-        child = relativeNextSibling(child);
-      }
-
-      if (autoGap) {
-        double remainingSpace = availableMainSize - usedMainSize;
-        if (remainingSpace > 0) {
-          gap = remainingSpace / (totalAffectedChildren - 1);
-          usedMainSize += gap * (totalAffectedChildren - 1);
-        } else {
-          gap = 0.0;
-        }
-      }
-
-      // Content size - total area of all content
-      final totalContentSize = _createSize(usedMainSize, usedCrossSize);
-
-      double crossMaxSize = max(
-        _getCross(totalContentSize),
-        _getCross(visibleViewportSize),
-      );
-      double mainMaxSize = max(
-        _getMain(totalContentSize),
-        _getMain(visibleViewportSize),
-      );
-
-      double mainOffset = _alignValue(
-        alignment: _mainAlignment,
-        min: 0.0,
-        max: mainMaxSize - usedMainSize,
-      );
-
-      double horizontalPixels = horizontal.pixels;
-      double verticalPixels = vertical.pixels;
-
-      Offset viewportOffset = Offset(horizontalPixels, verticalPixels);
-
-      Offset relativeViewportOffset = Offset(
-        reverseOffsetX && totalContentSize.width > visibleViewportSize.width
-            ? totalContentSize.width -
-                  visibleViewportSize.width -
-                  horizontalPixels
-            : horizontalPixels,
-        reverseOffsetY && totalContentSize.height > visibleViewportSize.height
-            ? totalContentSize.height -
-                  visibleViewportSize.height -
-                  verticalPixels
-            : verticalPixels,
-      );
-
-      viewportOffset = relativeViewportOffset;
-
-      child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (!layoutData.isAbsolute) {
-          double childCrossOffset = _alignValue(
-            min: 0.0,
-            max: crossMaxSize - _getCross(child.size),
-            alignment: _crossAlignment,
-          );
-          layoutData.offset = _createOffset(mainOffset, childCrossOffset);
-          mainOffset += _getMain(child.size) + gap;
-
-          // Only handle positioning for non-absolute children here
-          // Absolute children positioning will be handled after they are laid out
-          var horizontalType = layoutData.horizontalPosition;
-          var verticalType = layoutData.verticalPosition;
-
-          if (reverseOffsetX) {
-            switch (horizontalType) {
-              case BoxPositionType.stickyStartViewport:
-                horizontalType = BoxPositionType.stickyEndViewport;
-                break;
-              case BoxPositionType.stickyEndViewport:
-                horizontalType = BoxPositionType.stickyStartViewport;
-                break;
-              case BoxPositionType.stickyStartContent:
-                horizontalType = BoxPositionType.stickyEndContent;
-                break;
-              case BoxPositionType.stickyEndContent:
-                horizontalType = BoxPositionType.stickyStartContent;
-                break;
-              default:
-                break;
-            }
-          }
-          if (reverseOffsetY) {
-            switch (verticalType) {
-              case BoxPositionType.stickyStartViewport:
-                verticalType = BoxPositionType.stickyEndViewport;
-                break;
-              case BoxPositionType.stickyEndViewport:
-                verticalType = BoxPositionType.stickyStartViewport;
-                break;
-              case BoxPositionType.stickyStartContent:
-                verticalType = BoxPositionType.stickyEndContent;
-                break;
-              case BoxPositionType.stickyEndContent:
-                verticalType = BoxPositionType.stickyStartContent;
-                break;
-              default:
-                break;
-            }
-          }
-
-          var horizontal = layoutData.offset.dx;
-          var vertical = layoutData.offset.dy;
-          if (horizontalType == BoxPositionType.fixed) {
-            horizontal += viewportOffset.dx;
-          } else if (horizontalType == BoxPositionType.stickyViewport) {
-            if (layoutData.right != null) {
-              // right excess first
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + constraints.maxWidth) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-            } else {
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + constraints.maxWidth) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-            }
-          } else if (horizontalType == BoxPositionType.stickyStartViewport) {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else if (horizontalType == BoxPositionType.stickyEndViewport) {
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          } else if (horizontalType == BoxPositionType.stickyContent) {
-            if (layoutData.right != null) {
-              // right excess first
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + totalContentSize.width) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-            } else {
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + totalContentSize.width) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-            }
-          } else if (horizontalType == BoxPositionType.stickyStartContent) {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else if (horizontalType == BoxPositionType.stickyEndContent) {
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + totalContentSize.width) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          }
-          if (verticalType == BoxPositionType.fixed) {
-            vertical += viewportOffset.dy;
-          } else if (verticalType == BoxPositionType.stickyViewport) {
-            if (layoutData.bottom != null) {
-              // bottom excess first
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + constraints.maxHeight) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-            } else {
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + constraints.maxHeight) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-            }
-          } else if (verticalType == BoxPositionType.stickyStartViewport) {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else if (verticalType == BoxPositionType.stickyEndViewport) {
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          } else if (verticalType == BoxPositionType.stickyContent) {
-            if (layoutData.bottom != null) {
-              // bottom excess first
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + size.height) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-            } else {
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + size.height) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-            }
-          } else if (verticalType == BoxPositionType.stickyStartContent) {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else if (verticalType == BoxPositionType.stickyEndContent) {
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + size.height) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          }
-
-          layoutData.offset = Offset(
-            horizontal - relativeViewportOffset.dx,
-            vertical - relativeViewportOffset.dy,
-          );
-        } // End of non-absolute children processing
-
-        child = relativeNextSibling(child);
-      }
-      double viewportMinWidth = _getMain(constraints.smallest);
-      double viewportMinHeight = _getCross(constraints.smallest);
-      if (usedMainSize < viewportMinWidth) {
-        usedMainSize = viewportMinWidth;
-      }
-      if (usedCrossSize < viewportMinHeight) {
-        usedCrossSize = viewportMinHeight;
-      }
-      size = this.constraints.constrain(
-        _createSize(usedMainSize, usedCrossSize),
-      );
-
-      horizontal.applyViewportDimension(size.width);
-      vertical.applyViewportDimension(size.height);
-
-      horizontal.applyContentDimensions(
-        0,
-        (totalContentSize.width - size.width).clamp(0, double.infinity),
-      );
-      vertical.applyContentDimensions(
-        0,
-        (totalContentSize.height - size.height).clamp(0, double.infinity),
-      );
-
-      // Layout absolute children after viewport size is established
-      child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (layoutData.isAbsolute) {
-          double top;
-          double left;
-          double width;
-          double height;
-          var dataLeft = layoutData.left;
-          var dataRight = layoutData.right;
-          var dataTop = layoutData.top;
-          var dataBottom = layoutData.bottom;
-          var dataWidth = layoutData.width;
-          var dataHeight = layoutData.height;
-
-          // Determine which dimensions to use based on positioning type
-          bool useContentForHorizontal =
-              layoutData.horizontalPosition ==
-                  BoxPositionType.relativeContent ||
-              layoutData.horizontalPosition == BoxPositionType.stickyContent ||
-              layoutData.horizontalPosition ==
-                  BoxPositionType.stickyStartContent ||
-              layoutData.horizontalPosition == BoxPositionType.stickyEndContent;
-          bool useContentForVertical =
-              layoutData.verticalPosition == BoxPositionType.relativeContent ||
-              layoutData.verticalPosition == BoxPositionType.stickyContent ||
-              layoutData.verticalPosition ==
-                  BoxPositionType.stickyStartContent ||
-              layoutData.verticalPosition == BoxPositionType.stickyEndContent;
-
-          // For relativeContent: use the full scrollable content dimensions
-          // For relativeViewport: use the visible viewport dimensions
-          double referenceWidth = useContentForHorizontal
-              ? totalContentSize
-                    .width // Full scrollable content width
-              : size.width; // Visible viewport width
-          double referenceHeight = useContentForVertical
-              ? totalContentSize
-                    .height // Full scrollable content height
-              : size.height; // Visible viewport height
-
-          if (dataWidth != null) {
-            if (dataWidth is FixedSize) {
-              width = dataWidth.size;
-            } else if (dataWidth is RelativeSize) {
-              width = dataWidth.relative * referenceWidth;
-            } else if (dataWidth is IntrinsicSize) {
-              width = child.computeMaxIntrinsicWidth(double.infinity);
-            } else if (dataWidth is UnconstrainedSize) {
-              // For unconstrained size in absolute positioning, calculate remaining space
-              if (dataLeft != null && dataRight != null) {
-                // Both anchors specified - fill space between them
-                width =
-                    referenceWidth -
-                    dataLeft.computePosition(referenceWidth) -
-                    dataRight.computePosition(referenceWidth);
-              } else if (dataLeft != null) {
-                // Only left anchor - fill remaining space to right
-                width =
-                    referenceWidth - dataLeft.computePosition(referenceWidth);
-              } else if (dataRight != null) {
-                // Only right anchor - fill remaining space to left
-                width =
-                    referenceWidth - dataRight.computePosition(referenceWidth);
-              } else {
-                // No anchors - fill entire width
-                width = referenceWidth;
-              }
-              // Apply min/max constraints
-              final minWidth = dataWidth.min ?? 0.0;
-              final maxWidth = dataWidth.max ?? double.infinity;
-              width = _clampIgnoreSign(width, minWidth, maxWidth);
-            } else if (dataWidth is RatioSize) {
-              assert(
-                dataHeight is! RatioSize,
-                'RatioSize cannot be used with RatioSize for height',
-              );
-              width = 0; // skip this for now
-            } else if (dataWidth is FlexSize) {
-              // FlexSize constraints are handled in the flex distribution phase
-              // Skip them here and they will be processed later
-              width = 0; // Will be set during flex distribution
-            } else {
-              throw ArgumentError('Invalid width constraint: $dataWidth');
-            }
-          } else if (dataLeft != null && dataRight != null) {
-            width =
-                referenceWidth -
-                dataLeft.computePosition(referenceWidth) -
-                dataRight.computePosition(referenceWidth);
-          } else {
-            width = child.computeMaxIntrinsicWidth(constraints.maxHeight);
-          }
-          if (dataHeight != null) {
-            if (dataHeight is FixedSize) {
-              height = dataHeight.size;
-            } else if (dataHeight is RelativeSize) {
-              height = dataHeight.relative * referenceHeight;
-            } else if (dataHeight is IntrinsicSize) {
-              height = child.computeMaxIntrinsicHeight(double.infinity);
-            } else if (dataHeight is UnconstrainedSize) {
-              // For unconstrained size in absolute positioning, calculate remaining space
-              if (dataTop != null && dataBottom != null) {
-                // Both anchors specified - fill space between them
-                height =
-                    referenceHeight -
-                    dataTop.computePosition(referenceHeight) -
-                    dataBottom.computePosition(referenceHeight);
-              } else if (dataTop != null) {
-                // Only top anchor - fill remaining space to bottom
-                height =
-                    referenceHeight - dataTop.computePosition(referenceHeight);
-              } else if (dataBottom != null) {
-                // Only bottom anchor - fill remaining space to top
-                height =
-                    referenceHeight -
-                    dataBottom.computePosition(referenceHeight);
-              } else {
-                // No anchors - fill entire height
-                height = referenceHeight;
-              }
-              // Apply min/max constraints
-              final minHeight = dataHeight.min ?? 0.0;
-              final maxHeight = dataHeight.max ?? double.infinity;
-              height = _clampIgnoreSign(height, minHeight, maxHeight);
-            } else if (dataHeight is RatioSize) {
-              assert(
-                dataWidth is! RatioSize,
-                'RatioSize cannot be used with RatioSize for width',
-              );
-              height = 0; // skip this for now
-            } else if (dataHeight is FlexSize) {
-              // FlexSize constraints are handled in the flex distribution phase
-              // Skip them here and they will be processed later
-              height = 0; // Will be set during flex distribution
-            } else {
-              throw ArgumentError('Invalid height constraint: $dataHeight');
-            }
-          } else if (dataTop != null && dataBottom != null) {
-            height =
-                referenceHeight -
-                dataTop.computePosition(referenceHeight) -
-                dataBottom.computePosition(referenceHeight);
-          } else {
-            height = child.computeMaxIntrinsicHeight(constraints.maxWidth);
-          }
-          if (dataWidth is RatioSize) {
-            width = height * dataWidth.ratio;
-          } else if (dataHeight is RatioSize) {
-            height = width / dataHeight.ratio;
-          }
-          if (dataTop != null) {
-            top = dataTop.computePosition(referenceHeight);
-          } else if (dataBottom != null) {
-            top =
-                referenceHeight -
-                height -
-                dataBottom.computePosition(referenceHeight);
-          } else {
-            top = 0.0;
-          }
-          if (dataLeft != null) {
-            left = dataLeft.computePosition(referenceWidth);
-          } else if (dataRight != null) {
-            left =
-                referenceWidth -
-                width -
-                dataRight.computePosition(referenceWidth);
-          } else {
-            left = 0.0;
-          }
-
-          if (width.isNegative) {
-            left -= width;
-          }
-          if (height.isNegative) {
-            top -= height;
-          }
-          _layoutChild(
-            child,
-            _constrainIgnoreSign(Size(width, height), layoutData.constraints),
-          );
-          layoutData.offset = Offset(left, top);
-        }
-        child = relativeNextSibling(child);
-      }
-
-      // Apply positioning for absolute children now that they are laid out
-      child = relativeFirstChild;
-      while (child != null) {
-        var layoutData = child.parentData as FlexBoxParentData;
-        if (layoutData.isAbsolute) {
-          var horizontalType = layoutData.horizontalPosition;
-          var verticalType = layoutData.verticalPosition;
-
-          if (reverseOffsetX) {
-            switch (horizontalType) {
-              case BoxPositionType.stickyStartViewport:
-                horizontalType = BoxPositionType.stickyEndViewport;
-                break;
-              case BoxPositionType.stickyEndViewport:
-                horizontalType = BoxPositionType.stickyStartViewport;
-                break;
-              case BoxPositionType.stickyStartContent:
-                horizontalType = BoxPositionType.stickyEndContent;
-                break;
-              case BoxPositionType.stickyEndContent:
-                horizontalType = BoxPositionType.stickyStartContent;
-                break;
-              default:
-                break;
-            }
-          }
-          if (reverseOffsetY) {
-            switch (verticalType) {
-              case BoxPositionType.stickyStartViewport:
-                verticalType = BoxPositionType.stickyEndViewport;
-                break;
-              case BoxPositionType.stickyEndViewport:
-                verticalType = BoxPositionType.stickyStartViewport;
-                break;
-              case BoxPositionType.stickyStartContent:
-                verticalType = BoxPositionType.stickyEndContent;
-                break;
-              case BoxPositionType.stickyEndContent:
-                verticalType = BoxPositionType.stickyStartContent;
-                break;
-              default:
-                break;
-            }
-          }
-
-          var horizontal = layoutData.offset.dx;
-          var vertical = layoutData.offset.dy;
-          if (horizontalType == BoxPositionType.fixed) {
-            horizontal += viewportOffset.dx;
-          } else if (horizontalType == BoxPositionType.stickyViewport) {
-            if (layoutData.right != null) {
-              // right excess first
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + constraints.maxWidth) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-            } else {
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + constraints.maxWidth) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-            }
-          } else if (horizontalType == BoxPositionType.stickyStartViewport) {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else if (horizontalType == BoxPositionType.stickyEndViewport) {
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + constraints.maxWidth) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          } else if (horizontalType == BoxPositionType.stickyContent) {
-            if (layoutData.right != null) {
-              // right excess first
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + totalContentSize.width) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-            } else {
-              double leftExcess = max(
-                0,
-                relativeViewportOffset.dx - horizontal,
-              );
-              horizontal += leftExcess;
-              double rightExcess = max(
-                0,
-                -((relativeViewportOffset.dx + totalContentSize.width) -
-                    (horizontal + child.size.width)),
-              );
-              horizontal -= rightExcess;
-            }
-          } else if (horizontalType == BoxPositionType.stickyStartContent) {
-            double leftExcess = max(0, relativeViewportOffset.dx - horizontal);
-            horizontal += leftExcess;
-          } else if (horizontalType == BoxPositionType.stickyEndContent) {
-            double rightExcess = max(
-              0,
-              -((relativeViewportOffset.dx + totalContentSize.width) -
-                  (horizontal + child.size.width)),
-            );
-            horizontal -= rightExcess;
-          }
-          if (verticalType == BoxPositionType.fixed) {
-            vertical += viewportOffset.dy;
-          } else if (verticalType == BoxPositionType.stickyViewport) {
-            if (layoutData.bottom != null) {
-              // bottom excess first
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + constraints.maxHeight) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-            } else {
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + constraints.maxHeight) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-            }
-          } else if (verticalType == BoxPositionType.stickyStartViewport) {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else if (verticalType == BoxPositionType.stickyEndViewport) {
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + constraints.maxHeight) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          } else if (verticalType == BoxPositionType.stickyContent) {
-            if (layoutData.bottom != null) {
-              // bottom excess first
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + size.height) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-            } else {
-              double topExcess = max(0, relativeViewportOffset.dy - vertical);
-              vertical += topExcess;
-              double bottomExcess = max(
-                0,
-                -((relativeViewportOffset.dy + size.height) -
-                    (vertical + child.size.height)),
-              );
-              vertical -= bottomExcess;
-            }
-          } else if (verticalType == BoxPositionType.stickyStartContent) {
-            double topExcess = max(0, relativeViewportOffset.dy - vertical);
-            vertical += topExcess;
-          } else if (verticalType == BoxPositionType.stickyEndContent) {
-            double bottomExcess = max(
-              0,
-              -((relativeViewportOffset.dy + size.height) -
-                  (vertical + child.size.height)),
-            );
-            vertical -= bottomExcess;
-          }
-
-          layoutData.offset = Offset(
-            horizontal - relativeViewportOffset.dx,
-            vertical - relativeViewportOffset.dy,
-          );
-        }
-        child = relativeNextSibling(child);
-      }
-
-      if (shouldSortChildren) {
-        _sortChildren();
-      }
-    }
-  }
-
   @override
   void performLayout() {
     _layoutChildren();
@@ -1758,13 +446,38 @@ class RenderFlexBox extends RenderBox
     /*
     Note:
     - Absolute children does not affect size
-    - BoxSizes are:
+    - BoxSizes are (7):
       - IntrinsicSize
+        Intrinsic depends on cross axis size, so if cross axis size
+        is not resolved, resolve it in the next pass until cross
+        axis size is resolved.
       - FixedSize (does not have min/max)
+        Fixed size can be resolved immediately
       - UnconstrainedSize
+        Unconstrained size acts as the biggest flex, if there are flex
+        children (flex: 1, and flex: 2), then the unconstrained size
+        has flex: 2, but if there are no flex children, then unconstrained
+        size has flex: 1. But if constrained is on the cross axis, then
+        the unconstrained size resolves to the max cross size, which means
+        UnconstrainedSize can be resolved immediately if the max cross size
+        is done resolved.
       - RatioSize
+        Ratio depends on cross axis size
       - RelativeSize
+        Relative can be resolved immediately if the parent size is known
       - FlexSize
+        Flex size depends on available space after fixed and unconstrained
+        sizes are resolved, and also depends on min/max constraints. If flex
+        is on the cross size, it acts like RelativeContentSize, which depends
+        on the max cross size. BUT if the spaceRemaining is infinite,
+        we resolve flex
+      - RelativeContentSize
+        Similar to RelativeSize, but depends on the content size instead of
+        the viewport size. WARNING: This only applies to cross axis, not main axis.
+        Applying this to main axis would create a circular dependency.
+        This also means that RelativeContentSize depends on the max cross size.
+        Different from RelativeSize, which depends on the viewport size.
+        This cannot be resolved until the max cross size is resolved.
     */
 
     BoxConstraints constraints = this.constraints;
@@ -1772,8 +485,36 @@ class RenderFlexBox extends RenderBox
       return;
     }
 
+    double maxViewportMainSize = _getMain(constraints.biggest);
+    double maxViewportCrossSize = _getCross(constraints.biggest);
+
     double mainContentSize = 0.0;
     double crossContentSize = 0.0;
+
+    double? biggestMainFlex;
+    double totalMainFlex = 0.0;
+
+    double spaceRemaining = maxViewportMainSize;
+
+    // a little bit of note: if one of the axis size is 0,
+    // you might think we should not resolve the other axis or just set it to 0,
+    // but its wrong. You need to resolve the other axis because
+    // the children might need it. For example,
+    // FlexBox(
+    //   FlexBoxChild(
+    //     size: 0,
+    //     child: Stack(
+    //       children: [
+    //         Positioned(
+    //           left: 0, bottom: 0, width: 100, height: 100,
+    //           child: Container(color: Colors.red),
+    //         ),
+    //       ],
+    //     )
+    //   )
+    // )
+    // without the other axis, the positioned child inside the stack
+    // would have trouble positioning it to the bottom.
 
     // First pass
     RenderBox? child = relativeFirstChild;
@@ -1789,7 +530,11 @@ class RenderFlexBox extends RenderBox
       final crossSize = data.getSize(crossDirection);
       switch (mainSize) {
         case FixedSize():
-          data.resolvedMainSize = _clamp(mainSize.size, mainSize.min, mainSize.max);
+          data.resolvedMainSize = _clamp(
+            mainSize.size,
+            mainSize.min,
+            mainSize.max,
+          );
           mainContentSize += data.resolvedMainSize!;
           switch (crossSize) {
             case FixedSize():
@@ -1816,6 +561,126 @@ class RenderFlexBox extends RenderBox
               );
               crossContentSize = max(crossContentSize, data.resolvedCrossSize!);
               break;
+            case RelativeSize():
+              if (maxViewportCrossSize.isFinite) {
+                data.resolvedCrossSize = _clamp(
+                  maxViewportCrossSize * crossSize.relative,
+                  crossSize.min,
+                  crossSize.max,
+                );
+                crossContentSize = max(
+                  crossContentSize,
+                  data.resolvedCrossSize!,
+                );
+              }
+              break;
+          }
+          break;
+        case IntrinsicSize():
+          switch (crossSize) {
+            case FixedSize():
+              data.resolvedCrossSize = _clamp(
+                crossSize.size,
+                crossSize.min,
+                crossSize.max,
+              );
+              data.resolvedMainSize = _clamp(
+                child.computeMaxIntrinsicWidth(data.resolvedCrossSize!),
+                mainSize.min,
+                mainSize.max,
+              );
+              mainContentSize += data.resolvedMainSize!;
+              crossContentSize = max(crossContentSize, data.resolvedCrossSize!);
+              break;
+            case RelativeSize():
+              if (maxViewportCrossSize.isFinite) {
+                data.resolvedCrossSize = _clamp(
+                  maxViewportCrossSize * crossSize.relative,
+                  crossSize.min,
+                  crossSize.max,
+                );
+                data.resolvedMainSize = _clamp(
+                  child.computeMaxIntrinsicWidth(data.resolvedCrossSize!),
+                  mainSize.min,
+                  mainSize.max,
+                );
+                mainContentSize += data.resolvedMainSize!;
+                crossContentSize = max(
+                  crossContentSize,
+                  data.resolvedCrossSize!,
+                );
+              }
+              break;
+          }
+          break;
+        case RelativeSize():
+          if (maxViewportMainSize.isFinite) {
+            data.resolvedMainSize = _clamp(
+              maxViewportMainSize * mainSize.relative,
+              mainSize.min,
+              mainSize.max,
+            );
+            mainContentSize += data.resolvedMainSize!;
+            switch (crossSize) {
+              case FixedSize():
+                data.resolvedCrossSize = _clamp(
+                  crossSize.size,
+                  crossSize.min,
+                  crossSize.max,
+                );
+                crossContentSize = max(
+                  crossContentSize,
+                  data.resolvedCrossSize!,
+                );
+                break;
+              case IntrinsicSize():
+                data.resolvedCrossSize = _clamp(
+                  child.computeMaxIntrinsicHeight(constraints.maxWidth),
+                  crossSize.min,
+                  crossSize.max,
+                );
+                crossContentSize = max(
+                  crossContentSize,
+                  data.resolvedCrossSize!,
+                );
+                break;
+              case RatioSize():
+                data.resolvedCrossSize = _clamp(
+                  data.resolvedMainSize! * crossSize.ratio,
+                  crossSize.min,
+                  crossSize.max,
+                );
+                crossContentSize = max(
+                  crossContentSize,
+                  data.resolvedCrossSize!,
+                );
+                break;
+            }
+          }
+          break;
+        case RelativeContentSize():
+          // throw flutter error
+          throw FlutterError(
+            'RelativeContentSize cannot be used on the main axis. It can only be used on the cross axis.',
+          );
+        case FlexSize():
+          if (spaceRemaining.isInfinite) {
+            // flex requires space to resolve, but since spaceRemaining is infinite,
+            // we cannot resolve flex. Flex always requires space to resolve. 
+            // A safe fallback is done by treating flex as zero.
+            data.resolvedMainSize = _clamp(
+              0.0,
+              mainSize.min,
+              mainSize.max,
+            );
+            mainContentSize += data.resolvedMainSize!;
+            switch 
+          } else {
+            // only record flex values for now
+            if (biggestMainFlex == null || mainSize.flex > biggestMainFlex) {
+              biggestMainFlex = mainSize.flex;
+            }
+            totalMainFlex += mainSize.flex;
           }
           break;
       }
@@ -1825,8 +690,27 @@ class RenderFlexBox extends RenderBox
     // - Size(Fixed, Fixed)
     // - Size(Fixed, Intrinsic)
     // - Size(Fixed, Ratio)
+    // - Size(Intrinsic, Fixed)
+    // - Size(Fixed, Relative) * ONLY WHEN CROSS SIZE IS FINITE
+    // - Size(Intrinsic, Relative) * ONLY WHEN CROSS SIZE IS FINITE
+    // - Size(Relative, Fixed) * ONLY WHEN MAIN SIZE IS FINITE
+    // - Size(Relative, Intrinsic) * ONLY WHEN MAIN SIZE IS FINITE
+    // - Size(Relative, Ratio) * ONLY WHEN MAIN SIZE IS FINITE
+    // - Size(RelativeContent, *) * NOT ALLOWED
     // mainContentSize now the sum size of all fixeds
     // crossContentSize is now the max of fixed, intrinsic, and ratio
+    // which remains:
+    // - Size(Fixed, Unconstrained) * reason: Unconstrained resolves to max cross size, max cross size is not ready yet.
+    // - Size(Fixed, RelativeContent) * reason: RelativeContent depends on max cross size, max cross size is not ready yet.
+    // - Size(Fixed, Flex) * reason: Flex depends on available space after unconstrained is resolved
+    // - Size(Fixed, Relative (with infinite viewport cross)) * reason: Relative depends on viewport cross size, which is infinite
+    // - Size(Intrinsic, Unconstrained) * reason: Unconstrained resolves to max cross size, max cross size is not ready yet.
+    // - Size(Intrinsic, RelativeContent) * reason: RelativeContent depends on max cross size, max cross size is not ready yet.
+    // - Size(Intrinsic, Flex) * reason: Flex on cross depends on the max cross size.
+    // - Size(Intrinsic, Relative (with infinite viewport cross)) * reason: Relative depends on viewport cross size, which is infinite
+    // - Size(Flex, *)
+    // - Size(Unconstrained, *)
+    // - Size(Ratio, *)
 
     // Second Phase
     child = relativeFirstChild;
@@ -1836,7 +720,9 @@ class RenderFlexBox extends RenderBox
         child = relativeNextSibling(child);
         continue;
       }
-      final mainSize = data
+      final mainSize = data.getSize(direction);
+      final crossSize = data.getSize(crossDirection);
+      switch (mainSize) {}
       child = relativeNextSibling(child);
     }
   }
