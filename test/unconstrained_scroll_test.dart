@@ -21,7 +21,7 @@ void main() {
                   child: Container(key: Key('fixed1'), color: Colors.red),
                 ),
                 FlexBoxChild(
-                  width: BoxSize.unconstrained(),
+                  width: BoxSize.expanding(),
                   height: BoxSize.fixed(100),
                   child: Container(
                     key: Key('unconstrained'),

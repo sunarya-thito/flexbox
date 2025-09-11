@@ -20,11 +20,12 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
   final bool clipPaint;
   final EdgeInsets padding;
   final TextDirection textDirection;
+  final FlexSpacing spacingBehavior;
 
   const FixedFlexBox({
     super.key,
     required this.direction,
-    this.spacing = 0.0,
+    required this.spacing,
     required this.alignment,
     required this.horizontal,
     required this.vertical,
@@ -36,6 +37,7 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     required this.clipPaint,
     required this.padding,
     required this.textDirection,
+    required this.spacingBehavior,
   });
 
   @override
@@ -53,6 +55,7 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
       clipPaint: clipPaint,
       padding: padding,
       textDirection: textDirection,
+      spacingBehavior: spacingBehavior,
     );
   }
 
@@ -74,6 +77,14 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     if (renderObject.spacing != spacing) {
       renderObject.spacing = spacing;
       // spacing change affects layout for non-absolute children,
+      // it does not affect absolute children layout
+      layoutChange |= FlexBoxLayoutChange.nonAbsolute;
+      // but it affects the position of all children
+      positionChange |= FlexBoxPositionChange.both;
+    }
+    if (renderObject.spacingBehavior != spacingBehavior) {
+      renderObject.spacingBehavior = spacingBehavior;
+      // spacing behavior change affects layout for non-absolute children,
       // it does not affect absolute children layout
       layoutChange |= FlexBoxLayoutChange.nonAbsolute;
       // but it affects the position of all children
@@ -134,6 +145,24 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
   }
 }
 
+class FlexBoxSpacer extends StatelessWidget {
+  final double? flex;
+  final double? min;
+  final double? max;
+
+  const FlexBoxSpacer({super.key, this.flex, this.min, this.max});
+
+  @override
+  Widget build(BuildContext context) {
+    return DirectionalFlexBoxChild(
+      mainSize: flex == null
+          ? BoxSize.expanding(min: min, max: max)
+          : BoxSize.flex(flex!, min: min, max: max),
+      child: const SizedBox.shrink(),
+    );
+  }
+}
+
 class FlexBox extends StatelessWidget {
   final Axis direction;
   final double spacing;
@@ -147,6 +176,8 @@ class FlexBox extends StatelessWidget {
   final bool reversePaint;
   final ScrollController? horizontalController;
   final ScrollController? verticalController;
+  final TextDirection? textDirection;
+  final FlexSpacing spacingBehavior;
 
   const FlexBox({
     super.key,
@@ -162,11 +193,16 @@ class FlexBox extends StatelessWidget {
     this.reversePaint = false,
     this.horizontalController,
     this.verticalController,
+    this.textDirection,
+    this.spacingBehavior = FlexSpacing.between,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textDirection = Directionality.of(context);
+    final textDirection =
+        this.textDirection ??
+        Directionality.maybeOf(context) ??
+        TextDirection.ltr;
     var reverse = this.reverse;
     var reversePaint = this.reversePaint;
     if (textDirection != TextDirection.ltr && direction == Axis.horizontal) {
@@ -193,20 +229,24 @@ class FlexBox extends StatelessWidget {
       verticalDetails: verticalDetails,
       horizontalDetails: horizontalDetails,
       builder: (context, vertical, horizontal) {
-        return FixedFlexBox(
-          textDirection: textDirection,
-          direction: direction,
-          spacing: spacing,
-          alignment: alignment.resolve(textDirection),
-          reverse: reverse,
-          horizontal: horizontal,
-          vertical: vertical,
-          verticalAxisDirection: verticalDetails.direction,
-          horizontalAxisDirection: horizontalDetails.direction,
-          reversePaint: reverse,
-          clipPaint: clipBehavior != Clip.none,
-          padding: padding?.resolve(textDirection) ?? EdgeInsets.zero,
-          children: children,
+        return Padding(
+          padding: padding ?? EdgeInsets.zero,
+          child: FixedFlexBox(
+            textDirection: textDirection,
+            direction: direction,
+            spacing: spacing,
+            alignment: alignment.resolve(textDirection),
+            reverse: reverse,
+            horizontal: horizontal,
+            vertical: vertical,
+            verticalAxisDirection: verticalDetails.direction,
+            horizontalAxisDirection: horizontalDetails.direction,
+            reversePaint: reverse,
+            clipPaint: clipBehavior != Clip.none,
+            padding: padding?.resolve(textDirection) ?? EdgeInsets.zero,
+            spacingBehavior: spacingBehavior,
+            children: children,
+          ),
         );
       },
     );
@@ -560,6 +600,244 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
       ),
     );
   }
+}
+
+class DirectionalFlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
+  final bool absolute;
+  final AlignmentGeometry? alignment;
+  final BoxPosition? mainStart;
+  final BoxPosition? mainEnd;
+  final BoxPosition? crossStart;
+  final BoxPosition? crossEnd;
+  final BoxSize? mainSize;
+  final BoxSize? crossSize;
+  final BoxPositionType? mainPosition;
+  final BoxPositionType? crossPosition;
+  final int? zOrder;
+  final bool mainScrollAffected;
+  final bool crossScrollAffected;
+  final bool mainContentRelative;
+  final bool crossContentRelative;
+  const DirectionalFlexBoxChild({
+    super.key,
+    this.mainStart,
+    this.mainEnd,
+    this.crossStart,
+    this.crossEnd,
+    this.mainSize,
+    this.crossSize,
+    this.mainPosition,
+    this.crossPosition,
+    this.zOrder,
+    this.mainScrollAffected = true,
+    this.crossScrollAffected = true,
+    this.mainContentRelative = false,
+    this.crossContentRelative = false,
+    this.absolute = false,
+    this.alignment,
+    required super.child,
+  });
+
+  bool get isAbsolute {
+    return mainStart != null ||
+        mainEnd != null ||
+        crossStart != null ||
+        crossEnd != null;
+  }
+
+  @override
+  void applyParentData(covariant RenderBox renderObject) {
+    if (renderObject.parentData is! FlexBoxParentData) {
+      throw ArgumentError('RenderObject must be a FlexBox');
+    }
+    var parentData = renderObject.parentData as FlexBoxParentData;
+    bool needsResort = false;
+    FlexBoxLayoutChange layoutChange = FlexBoxLayoutChange.none;
+    FlexBoxPositionChange positionChange = FlexBoxPositionChange.none;
+    final direction = (renderObject.parent as RenderFlexBox).direction;
+
+    // Map main/cross axis to actual fields
+    BoxPosition? top, bottom, left, right;
+    BoxSize? width, height;
+    BoxPositionType? horizontalPosition, verticalPosition;
+    bool horizontalScrollAffected = true;
+    bool verticalScrollAffected = true;
+    bool horizontalContentRelative = false;
+    bool verticalContentRelative = false;
+
+    if (direction == Axis.horizontal) {
+      left = mainStart;
+      right = mainEnd;
+      width = mainSize;
+      horizontalPosition = mainPosition;
+      horizontalScrollAffected = mainScrollAffected;
+      horizontalContentRelative = mainContentRelative;
+      top = crossStart;
+      bottom = crossEnd;
+      height = crossSize;
+      verticalPosition = crossPosition;
+      verticalScrollAffected = crossScrollAffected;
+      verticalContentRelative = crossContentRelative;
+    } else {
+      top = mainStart;
+      bottom = mainEnd;
+      height = mainSize;
+      verticalPosition = mainPosition;
+      verticalScrollAffected = mainScrollAffected;
+      verticalContentRelative = mainContentRelative;
+      left = crossStart;
+      right = crossEnd;
+      width = crossSize;
+      horizontalPosition = crossPosition;
+      horizontalScrollAffected = crossScrollAffected;
+      horizontalContentRelative = crossContentRelative;
+    }
+
+    if (absolute != parentData.absolute) {
+      parentData.absolute = absolute;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      }
+    }
+    if (parentData.top != top) {
+      parentData.top = top;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
+    }
+    if (parentData.bottom != bottom) {
+      parentData.bottom = bottom;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
+    }
+    if (parentData.left != left) {
+      parentData.left = left;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
+    }
+    if (parentData.right != right) {
+      parentData.right = right;
+      if (isAbsolute != parentData.isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      } else if (isAbsolute && parentData.isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      }
+    }
+    if (parentData.horizontalRelativeToContent != horizontalContentRelative) {
+      parentData.horizontalRelativeToContent = horizontalContentRelative;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        if (width != parentData.width &&
+            (width is RelativeSize || parentData.width is RelativeSize)) {
+          layoutChange |= FlexBoxLayoutChange.both;
+          positionChange |= FlexBoxPositionChange.both;
+        }
+      }
+    }
+    if (parentData.verticalRelativeToContent != verticalContentRelative) {
+      parentData.verticalRelativeToContent = verticalContentRelative;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        if (height != parentData.height &&
+            (height is RelativeSize || parentData.height is RelativeSize)) {
+          layoutChange |= FlexBoxLayoutChange.both;
+          positionChange |= FlexBoxPositionChange.both;
+        }
+      }
+    }
+    if (parentData.width != width) {
+      parentData.width = width;
+      if (isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.absolute;
+      } else {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      }
+    }
+    if (parentData.height != height) {
+      parentData.height = height;
+      if (isAbsolute) {
+        layoutChange |= FlexBoxLayoutChange.absolute;
+      } else {
+        layoutChange |= FlexBoxLayoutChange.both;
+        positionChange |= FlexBoxPositionChange.both;
+      }
+    }
+    if (parentData.horizontalPosition != horizontalPosition) {
+      parentData.horizontalPosition = horizontalPosition;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (parentData.verticalPosition != verticalPosition) {
+      parentData.verticalPosition = verticalPosition;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (alignment != parentData.alignment) {
+      parentData.alignment = alignment;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (parentData.zOrder != zOrder) {
+      parentData.zOrder = zOrder;
+      needsResort = true;
+    }
+    if (parentData.horizontalScrollAffected != horizontalScrollAffected) {
+      parentData.horizontalScrollAffected = horizontalScrollAffected;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+    if (parentData.verticalScrollAffected != verticalScrollAffected) {
+      parentData.verticalScrollAffected = verticalScrollAffected;
+      if (isAbsolute) {
+        positionChange |= FlexBoxPositionChange.absolute;
+      } else {
+        positionChange |= FlexBoxPositionChange.nonAbsolute;
+      }
+    }
+
+    final parent = renderObject.parent as RenderFlexBox;
+    if (needsResort) {
+      parent.needsResort = true;
+      parent.markNeedsPaint();
+    }
+    if (positionChange != FlexBoxPositionChange.none ||
+        layoutChange != FlexBoxLayoutChange.none) {
+      parent.positionChange |= positionChange;
+      parent.layoutChange |= layoutChange;
+      parent.markNeedsLayout();
+    }
+  }
+
+  @override
+  Type get debugTypicalAncestorWidgetClass => FlexBox;
 }
 
 class Morphed extends SingleChildRenderObjectWidget {

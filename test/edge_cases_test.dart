@@ -464,8 +464,8 @@ void main() {
                 direction: Axis.vertical,
                 children: [
                   FlexBoxChild(
-                    width: BoxSize.unconstrained(),
-                    height: BoxSize.unconstrained(),
+                    width: BoxSize.expanding(),
+                    height: BoxSize.expanding(),
                     child: Container(
                       key: Key('unconstrainedChild'),
                       width: 250,

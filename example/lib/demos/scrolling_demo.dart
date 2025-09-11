@@ -13,22 +13,25 @@ class ScrollingDemo extends BaseDemoPage {
   @override
   Widget buildDemo(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(horizontal: 300, vertical: 100),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(8),
       ),
       width: 1300,
       child: FlexBox(
+        padding: EdgeInsets.only(top: 16, left: 24, right: 32, bottom: 48),
         direction: Axis.vertical,
+        clipBehavior: Clip.none,
+        reverse: true,
         children: [
           // Content blocks to create scrollable area
           for (int i = 0; i < 50; i++)
             FlexBoxChild(
-              width: BoxSize.unconstrained(),
+              width: BoxSize.expanding(),
               height: BoxSize.fixed(80),
+              verticalPosition: i == 10 ? BoxPositionType.sticky : null,
               child: Container(
-                margin: EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -49,8 +52,8 @@ class ScrollingDemo extends BaseDemoPage {
 
           // Column 1: fixed
           FlexBoxChild(
-            top: BoxPosition.fixed(20),
-            left: BoxPosition.fixed(20),
+            top: BoxPosition.fixed(0),
+            left: BoxPosition.fixed(0),
             width: BoxSize.fixed(120),
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.fixed,
@@ -76,6 +79,66 @@ class ScrollingDemo extends BaseDemoPage {
               ),
             ),
           ),
+          FlexBoxChild(
+            bottom: BoxPosition.fixed(0),
+            right: BoxPosition.fixed(0),
+            width: BoxSize.fixed(120),
+            height: BoxSize.fixed(50),
+            horizontalPosition: BoxPositionType.fixed,
+            verticalPosition: BoxPositionType.fixed,
+            // horizontalScrollAffected: false,
+            // verticalScrollAffected: false,
+            horizontalContentRelative: true,
+            verticalContentRelative: true,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+              ),
+              child: Center(
+                child: Text(
+                  'fixed 2',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          FlexBoxChild(
+            bottom: BoxPosition.fixed(0),
+            right: BoxPosition.fixed(0),
+            width: BoxSize.fixed(120),
+            height: BoxSize.fixed(50),
+            horizontalPosition: BoxPositionType.fixed,
+            verticalPosition: BoxPositionType.fixed,
+            horizontalScrollAffected: false,
+            verticalScrollAffected: false,
+            // horizontalContentRelative: true,
+            // verticalContentRelative: true,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+              ),
+              child: Center(
+                child: Text(
+                  'fixed 3',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           // Column 2: relative
           FlexBoxChild(
@@ -85,6 +148,7 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.fixed,
             verticalPosition: BoxPositionType.fixed,
+
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.green,
@@ -105,7 +169,7 @@ class ScrollingDemo extends BaseDemoPage {
             ),
           ),
 
-          // Column 3: relative
+          // Column 3: relative content
           FlexBoxChild(
             bottom: BoxPosition.fixed(20),
             left: BoxPosition.fixed(300),
@@ -113,6 +177,8 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.fixed,
             verticalPosition: BoxPositionType.fixed,
+            verticalContentRelative: true,
+            horizontalContentRelative: true,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.indigo,
@@ -225,6 +291,8 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.sticky,
             verticalPosition: BoxPositionType.sticky,
+            verticalContentRelative: true,
+            horizontalContentRelative: true,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.cyan,
@@ -253,6 +321,8 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.stickyStart,
             verticalPosition: BoxPositionType.stickyStart,
+            verticalContentRelative: true,
+            horizontalContentRelative: true,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.amber,
@@ -281,6 +351,8 @@ class ScrollingDemo extends BaseDemoPage {
             height: BoxSize.fixed(50),
             horizontalPosition: BoxPositionType.stickyEnd,
             verticalPosition: BoxPositionType.stickyEnd,
+            verticalContentRelative: true,
+            horizontalContentRelative: true,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.brown,

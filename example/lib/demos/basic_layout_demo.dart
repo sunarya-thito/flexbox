@@ -17,72 +17,72 @@ class BasicLayoutDemo extends BaseDemoPage {
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          if (false)
-            // Horizontal Layout
-            _buildSection('Horizontal Layout', [
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: FlexBox(
-                  direction: Axis.horizontal,
-                  children: [
-                    FlexBoxChild(
-                      width: BoxSize.fixed(80),
-                      height: BoxSize.fixed(80),
-                      child: Container(
-                        color: Colors.red[300],
-                        child: Center(
-                          child: Text(
-                            'Box 1',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                    FlexBoxChild(
-                      width: BoxSize.fixed(100),
-                      height: BoxSize.fixed(60),
-                      child: Container(
-                        color: Colors.green[300],
-                        child: Center(
-                          child: Text(
-                            'Box 2',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                    FlexBoxChild(
-                      width: BoxSize.fixed(90),
-                      height: BoxSize.fixed(70),
-                      child: Container(
-                        color: Colors.blue[300],
-                        child: Center(
-                          child: Text(
-                            'Box 3',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          // Horizontal Layout
+          _buildSection('Horizontal Layout', [
+            Container(
+              height: 120,
+              width: 400,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]),
+              child: FlexBox(
+                direction: Axis.horizontal,
+                children: [
+                  FlexBoxChild(
+                    width: BoxSize.fixed(80),
+                    height: BoxSize.fixed(80),
+                    child: Container(
+                      color: Colors.red[300],
+                      child: Center(
+                        child: Text(
+                          'Box 1',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.fixed(100),
+                    height: BoxSize.fixed(60),
+                    child: Container(
+                      color: Colors.green[300],
+                      child: Center(
+                        child: Text(
+                          'Box 2',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  FlexBoxChild(
+                    width: BoxSize.fixed(90),
+                    height: BoxSize.fixed(70),
+                    child: Container(
+                      color: Colors.blue[300],
+                      child: Center(
+                        child: Text(
+                          'Box 3',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
 
           SizedBox(height: 24),
 
           // Vertical Layout
           _buildSection('Vertical Layout', [
             Container(
-              height: 200,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
               ),
+              padding: EdgeInsets.all(8),
               child: FlexBox(
                 direction: Axis.vertical,
                 children: [

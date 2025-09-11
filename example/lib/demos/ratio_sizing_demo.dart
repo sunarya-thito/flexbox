@@ -295,7 +295,7 @@ class RatioSizingDemo extends BaseDemoPage {
                     children: [
                       FlexBoxChild(
                         width: BoxSize.ratio(1.5), // 3:2 aspect ratio
-                        height: BoxSize.unconstrained(),
+                        height: BoxSize.expanding(),
                         child: Container(
                           color: Colors.deepOrange[400],
                           child: Center(
@@ -325,7 +325,7 @@ class RatioSizingDemo extends BaseDemoPage {
                     children: [
                       FlexBoxChild(
                         width: BoxSize.ratio(1.5), // Same 3:2 aspect ratio
-                        height: BoxSize.unconstrained(),
+                        height: BoxSize.expanding(),
                         child: Container(
                           color: Colors.deepOrange[400],
                           child: Center(

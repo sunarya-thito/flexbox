@@ -88,8 +88,8 @@ void main() {
                   direction: Axis.vertical,
                   children: [
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(),
-                      height: BoxSize.unconstrained(),
+                      width: BoxSize.expanding(),
+                      height: BoxSize.expanding(),
                       child: Container(
                         key: Key('unconstrainedChild'),
                         width: 180,
@@ -124,8 +124,8 @@ void main() {
                   direction: Axis.vertical,
                   children: [
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(min: 100, max: 250),
-                      height: BoxSize.unconstrained(min: 80, max: 200),
+                      width: BoxSize.expanding(min: 100, max: 250),
+                      height: BoxSize.expanding(min: 80, max: 200),
                       child: Container(
                         key: Key('constrainedUnconstrainedChild'),
                         width: 50, // Below min
@@ -183,7 +183,7 @@ void main() {
                       ),
                     ),
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(),
+                      width: BoxSize.expanding(),
                       height: BoxSize.fixed(100),
                       child: Container(
                         key: Key('unconstrainedChild'),
@@ -237,7 +237,7 @@ void main() {
                       ),
                     ),
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(),
+                      width: BoxSize.expanding(),
                       height: BoxSize.fixed(100),
                       child: Container(
                         key: Key('unconstrainedChild'),
@@ -694,7 +694,7 @@ void main() {
                       ),
                     ),
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(),
+                      width: BoxSize.expanding(),
                       height: BoxSize.fixed(100),
                       child: Container(
                         key: Key('unconstrainedChild'),
@@ -760,7 +760,7 @@ void main() {
                     ),
                     FlexBoxChild(
                       width: BoxSize.fixed(300),
-                      height: BoxSize.unconstrained(),
+                      height: BoxSize.expanding(),
                       child: Container(
                         key: Key('unconstrainedHeightChild'),
                         height: 60,

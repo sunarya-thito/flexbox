@@ -34,8 +34,8 @@ class RelativePositioningDemo extends BaseDemoPage {
                 children: [
                   // Background content
                   FlexBoxChild(
-                    width: BoxSize.unconstrained(),
-                    height: BoxSize.unconstrained(),
+                    width: BoxSize.expanding(),
+                    height: BoxSize.expanding(),
                     child: Container(
                       color: Colors.blue[50],
                       child: Center(
@@ -162,8 +162,8 @@ class RelativePositioningDemo extends BaseDemoPage {
                 children: [
                   // Background
                   FlexBoxChild(
-                    width: BoxSize.unconstrained(),
-                    height: BoxSize.unconstrained(),
+                    width: BoxSize.expanding(),
+                    height: BoxSize.expanding(),
                     child: Container(
                       color: Colors.pink[50],
                       child: Center(

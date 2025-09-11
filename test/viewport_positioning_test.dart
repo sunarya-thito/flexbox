@@ -414,8 +414,8 @@ void main() {
                       FlexBoxChild(
                         bottom: BoxPosition.fixed(80),
                         right: BoxPosition.fixed(40),
-                        width: BoxSize.unconstrained(),
-                        height: BoxSize.unconstrained(),
+                        width: BoxSize.expanding(),
+                        height: BoxSize.expanding(),
                         horizontalPosition: BoxPositionType.relative,
                         verticalPosition: BoxPositionType.relative,
                         child: Container(

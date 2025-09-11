@@ -65,6 +65,7 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                 SizedBox(height: 8),
                 Container(
                   height: 80,
+                  width: 300,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),
                     borderRadius: BorderRadius.circular(8),
@@ -461,8 +462,8 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                 children: [
                   // Background element
                   FlexBoxChild(
-                    width: BoxSize.unconstrained(),
-                    height: BoxSize.unconstrained(),
+                    width: BoxSize.fixed(250),
+                    height: BoxSize.expanding(),
                     zOrder: 0,
                     child: Container(
                       color: Colors.blue[100],

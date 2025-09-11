@@ -466,8 +466,7 @@ void main() {
                   FlexBoxChild(
                     top: BoxPosition.fixed(20), // Anchored 20px from top
                     width: BoxSize.fixed(150),
-                    height:
-                        BoxSize.unconstrained(), // Should fill remaining space
+                    height: BoxSize.expanding(), // Should fill remaining space
                     horizontalPosition: BoxPositionType.relative,
                     verticalPosition: BoxPositionType.relative,
                     child: Container(
@@ -526,7 +525,7 @@ void main() {
                     ), // Anchored 20px from content top
                     width: BoxSize.fixed(150),
                     height:
-                        BoxSize.unconstrained(), // Should fill remaining content space
+                        BoxSize.expanding(), // Should fill remaining content space
                     horizontalPosition: BoxPositionType.relative,
                     verticalPosition: BoxPositionType.relative,
                     child: Container(
@@ -574,7 +573,7 @@ void main() {
                   FlexBoxChild(
                     bottom: BoxPosition.fixed(30), // Anchored 30px from bottom
                     width: BoxSize.fixed(150),
-                    height: BoxSize.unconstrained(),
+                    height: BoxSize.expanding(),
                     horizontalPosition: BoxPositionType.relative,
                     verticalPosition: BoxPositionType.relative,
                     child: Container(
@@ -622,7 +621,7 @@ void main() {
                   FlexBoxChild(
                     left: BoxPosition.fixed(20),
                     right: BoxPosition.fixed(30),
-                    width: BoxSize.unconstrained(),
+                    width: BoxSize.expanding(),
                     height: BoxSize.fixed(80),
                     horizontalPosition: BoxPositionType.relative,
                     verticalPosition: BoxPositionType.relative,

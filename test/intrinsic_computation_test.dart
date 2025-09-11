@@ -282,8 +282,8 @@ void main() {
                   direction: Axis.horizontal,
                   children: [
                     FlexBoxChild(
-                      width: BoxSize.unconstrained(),
-                      height: BoxSize.unconstrained(),
+                      width: BoxSize.expanding(),
+                      height: BoxSize.expanding(),
                       child: Container(
                         width: 120,
                         height: 60,
