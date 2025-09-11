@@ -9,7 +9,9 @@ import 'package:flutter/widgets.dart';
 
 class FixedFlexBox extends MultiChildRenderObjectWidget {
   final Axis direction;
-  final double spacing;
+  final BoxSize? spacing;
+  final BoxSize? spacingBefore;
+  final BoxSize? spacingAfter;
   final Alignment alignment;
   final ViewportOffset horizontal;
   final ViewportOffset vertical;
@@ -20,12 +22,13 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
   final bool clipPaint;
   final EdgeInsets padding;
   final TextDirection textDirection;
-  final FlexSpacing spacingBehavior;
 
   const FixedFlexBox({
     super.key,
     required this.direction,
     required this.spacing,
+    required this.spacingBefore,
+    required this.spacingAfter,
     required this.alignment,
     required this.horizontal,
     required this.vertical,
@@ -37,7 +40,6 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     required this.clipPaint,
     required this.padding,
     required this.textDirection,
-    required this.spacingBehavior,
   });
 
   @override
@@ -45,6 +47,8 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
     return RenderFlexBox(
       direction: direction,
       spacing: spacing,
+      spacingBefore: spacingBefore,
+      spacingAfter: spacingAfter,
       alignment: alignment,
       reverse: reverse,
       horizontal: horizontal,
@@ -55,7 +59,6 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
       clipPaint: clipPaint,
       padding: padding,
       textDirection: textDirection,
-      spacingBehavior: spacingBehavior,
     );
   }
 
@@ -82,9 +85,17 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
       // but it affects the position of all children
       positionChange |= FlexBoxPositionChange.both;
     }
-    if (renderObject.spacingBehavior != spacingBehavior) {
-      renderObject.spacingBehavior = spacingBehavior;
-      // spacing behavior change affects layout for non-absolute children,
+    if (renderObject.spacingBefore != spacingBefore) {
+      renderObject.spacingBefore = spacingBefore;
+      // spacing change affects layout for non-absolute children,
+      // it does not affect absolute children layout
+      layoutChange |= FlexBoxLayoutChange.nonAbsolute;
+      // but it affects the position of all children
+      positionChange |= FlexBoxPositionChange.both;
+    }
+    if (renderObject.spacingAfter != spacingAfter) {
+      renderObject.spacingAfter = spacingAfter;
+      // spacing change affects layout for non-absolute children,
       // it does not affect absolute children layout
       layoutChange |= FlexBoxLayoutChange.nonAbsolute;
       // but it affects the position of all children
@@ -147,17 +158,16 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
 
 class FlexBoxSpacer extends StatelessWidget {
   final double? flex;
-  final double? min;
-  final double? max;
+  final BoxSize? min;
+  final BoxSize? max;
 
   const FlexBoxSpacer({super.key, this.flex, this.min, this.max});
 
   @override
   Widget build(BuildContext context) {
     return DirectionalFlexBoxChild(
-      mainSize: flex == null
-          ? BoxSize.expanding(min: min, max: max)
-          : BoxSize.flex(flex!, min: min, max: max),
+      mainSize: (flex == null ? BoxSize.expanding() : BoxSize.flex(flex!))
+          .clamp(min: min, max: max),
       child: const SizedBox.shrink(),
     );
   }
@@ -165,7 +175,9 @@ class FlexBoxSpacer extends StatelessWidget {
 
 class FlexBox extends StatelessWidget {
   final Axis direction;
-  final double spacing;
+  final BoxSize? spacing;
+  final BoxSize? spacingBefore;
+  final BoxSize? spacingAfter;
   final AlignmentGeometry alignment;
   final List<Widget> children;
   final bool scrollHorizontalOverflow;
@@ -177,12 +189,13 @@ class FlexBox extends StatelessWidget {
   final ScrollController? horizontalController;
   final ScrollController? verticalController;
   final TextDirection? textDirection;
-  final FlexSpacing spacingBehavior;
 
   const FlexBox({
     super.key,
     this.direction = Axis.horizontal,
-    this.spacing = 0.0,
+    this.spacing,
+    this.spacingBefore,
+    this.spacingAfter,
     this.alignment = Alignment.center,
     this.reverse = false,
     this.children = const [],
@@ -194,7 +207,6 @@ class FlexBox extends StatelessWidget {
     this.horizontalController,
     this.verticalController,
     this.textDirection,
-    this.spacingBehavior = FlexSpacing.between,
   });
 
   @override
@@ -235,6 +247,8 @@ class FlexBox extends StatelessWidget {
             textDirection: textDirection,
             direction: direction,
             spacing: spacing,
+            spacingBefore: spacingBefore,
+            spacingAfter: spacingAfter,
             alignment: alignment.resolve(textDirection),
             reverse: reverse,
             horizontal: horizontal,
@@ -244,7 +258,6 @@ class FlexBox extends StatelessWidget {
             reversePaint: reverse,
             clipPaint: clipBehavior != Clip.none,
             padding: padding?.resolve(textDirection) ?? EdgeInsets.zero,
-            spacingBehavior: spacingBehavior,
             children: children,
           ),
         );
@@ -263,7 +276,27 @@ class FlexBox extends StatelessWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(EnumProperty<Axis>('direction', direction));
-    properties.add(DoubleProperty('spacing', spacing, defaultValue: 0.0));
+    properties.add(
+      DiagnosticsProperty<BoxSize?>(
+        'spacing',
+        spacing,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxSize?>(
+        'spacingBefore',
+        spacingBefore,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxSize?>(
+        'spacingAfter',
+        spacingAfter,
+        defaultValue: null,
+      ),
+    );
     properties.add(
       DiagnosticsProperty<AlignmentGeometry>(
         'alignment',
@@ -314,6 +347,13 @@ class FlexBox extends StatelessWidget {
       ),
     );
     properties.add(IterableProperty<Widget>('children', children));
+    properties.add(
+      DiagnosticsProperty<TextDirection?>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+      ),
+    );
   }
 }
 
@@ -371,6 +411,11 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
 
   @override
   void applyParentData(covariant RenderBox renderObject) {
+    assert(() {
+      width?.debugIsValid();
+      height?.debugIsValid();
+      return true;
+    }());
     if (renderObject.parentData is! FlexBoxParentData) {
       throw ArgumentError('RenderObject must be a FlexBox');
     }

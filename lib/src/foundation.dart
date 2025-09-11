@@ -1,62 +1,15 @@
 import 'package:flutter/rendering.dart';
 
+// FlexBoxWrap is still WIP and not used yet
+// its so cunty 💅 cant wait to implement this (i can)
 enum FlexBoxWrap {
-  /// If the children overflow to the end of the main axis,
-  /// they will wrap to the next line. The cross axis will
-  /// become scrolled if necessary.
-  wrapMainAxis,
+  none,
 
-  /// If the children overflow to the end of the cross axis,
-  /// they will wrap to the next column. The main axis will
-  /// become scrolled if necessary.
-  wrapCrossAxis,
-
-  /// If the children overflow to the end of the main axis,
-  /// they will wrap to the previous line.
-  /// The cross axis will become scrolled if necessary.
-  wrapMainAxisReverse,
-
-  /// If the children overflow to the end of the cross axis,
-  /// they will wrap to the previous column.
-  /// The main axis will become scrolled if necessary.
-  wrapCrossAxisReverse,
-}
-
-class ChildSizing {
-  final double parentSize;
-  final double crossAxisSize;
-  final double flexFactor;
-  final double remainingSpace;
-  final double Function() computeIntrinsic;
-
-  ChildSizing({
-    required this.parentSize,
-    required this.crossAxisSize,
-    required this.flexFactor,
-    required this.remainingSpace,
-    required this.computeIntrinsic,
-  });
-
-  @override
-  String toString() {
-    return 'ChildSizing(parentSize: $parentSize, crossAxisSize: $crossAxisSize, flexFactor: $flexFactor, remainingSpace: $remainingSpace)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ChildSizing &&
-        other.parentSize == parentSize &&
-        other.crossAxisSize == crossAxisSize &&
-        other.flexFactor == flexFactor &&
-        other.remainingSpace == remainingSpace;
-    // Note: Function comparison is not reliable, so we exclude computeIntrinsic
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(parentSize, crossAxisSize, flexFactor, remainingSpace);
-  }
+  /// If the items overflow the main axis,
+  /// they will be wrapped to the next line
+  /// in the cross axis direction.
+  wrap,
+  wrapReverse,
 }
 
 double _clamp(double value, double? min, double? max) {
@@ -69,30 +22,87 @@ double _clamp(double value, double? min, double? max) {
   return value;
 }
 
+const Iterable<Key> _emptyDependency = Iterable.empty();
+
+const ({
+  bool needsCrossAxisParentSize,
+  bool needsFlexFactor,
+  bool needsMainAxisParentSize,
+})
+_noDependency = (
+  needsCrossAxisParentSize: false,
+  needsMainAxisParentSize: false,
+  needsFlexFactor: false,
+);
+
 abstract class BoxSize {
-  const BoxSize();
-  const factory BoxSize.intrinsic() = IntrinsicSize;
-  const factory BoxSize.fixed(double size) = FixedSize;
-  const factory BoxSize.expanding() = ExpandingSize;
-  const factory BoxSize.ratio(double ratio) = RatioSize;
-  const factory BoxSize.relative(double relative) = RelativeSize;
-  const factory BoxSize.flex(double flex) = FlexSize;
+  final Key? key;
+  const BoxSize({this.key});
+  const factory BoxSize.intrinsic({Key? key}) = IntrinsicSize;
+  const factory BoxSize.fixed(double size, {Key? key}) = FixedSize;
+  const factory BoxSize.expanding({bool intrinsicFallback, Key? key}) =
+      ExpandingSize;
+  const factory BoxSize.ratio(
+    double ratio, {
+    Key? key,
+  }) = RatioSize;
+  const factory BoxSize.relative(
+    double relative, {
+    bool intrinsicFallback,
+    Key? key,
+  }) = RelativeSize;
+  const factory BoxSize.flex(double flex, {bool intrinsicFallback, Key? key}) =
+      FlexSize;
 
-  BoxSize clamp({BoxSize? min, BoxSize? max}) =>
-      ClampedBoxSize(this, min: min, max: max);
+  void debugIsValid() {}
 
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) => false;
-  bool requiresCrossAxisParentSize(bool mainAxis) => false;
-  bool requiresMainAxisParentSize(bool mainAxis) => false;
-  bool requiresFlexFactor(bool mainAxis) => false;
+  BoxSize clamp({BoxSize? min, BoxSize? max}) {
+    if (min == null && max == null) {
+      return this;
+    }
+
+    return ClampedSize(this, min: min, max: max);
+  }
+
+  ({
+    // if true, it means this size needs to know the parent size in the cross axis before it can be computed
+    bool needsCrossAxisParentSize,
+    // if true, it means this size needs to know the parent size in the main axis before it can be computed
+    bool needsMainAxisParentSize,
+    // if true, it means the parent needs to consensus the flex sizes of all children
+    // then compute the flex factor for this child, THEN this size can be computed
+    bool needsFlexFactor,
+    // Iterable<Key> dependencies,
+  })
+  getRequiredInputs({
+    // if true and the direction is horizontal, then this size is for width
+    // if false and the direction is horizontal, then this size is for height
+    // if true and the direction is vertical, then this size is for height
+    // if false and the direction is vertical, then this size is for width
+    required bool mainAxis,
+    // if true, then the cross axis requires this size to be computed first
+    // if false, then the cross axis does not care whether this size is computed first or later
+    // if null, then we don't know whether the cross axis is a very needy boy or not yet
+    bool? crossRequiresSize,
+  }) {
+    return _noDependency;
+  }
+
+  Iterable<Key> get dependencies => _emptyDependency;
+
+  bool get needsCrossAxis => false;
 
   double? computeTotalFlex(double? biggestFlex) => null;
 
-  ({bool recomputeFlex, double result, double flexResult}) computeSize({
+  // if this returns null, it means
+  // there is a dependency that has not been resolved yet
+  ({bool recomputeFlex, double result, double flexResult})? computeSize({
     required RenderBox child,
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -100,22 +110,78 @@ abstract class BoxSize {
     double? crossAxisSize,
   });
 
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  });
+
   operator -() => NegatedBoxSize(this);
-  BoxSize operator +(BoxSize other) => CompoundBoxSize([this, other]);
-  BoxSize operator *(BoxSize other) => CompoundBoxSize([this, other]);
-  BoxSize operator /(BoxSize other) => CompoundBoxSize([this, other]);
-  BoxSize operator %(BoxSize other) => CompoundBoxSize([this, other]);
-  BoxSize operator ~() => NegatedBoxSize(this);
+
+  BoxSize operator +(BoxSize other) =>
+      BoxSizeComputer(this, other, BoxSizeComputer.addition);
   BoxSize operator -(BoxSize other) =>
-      CompoundBoxSize([this, NegatedBoxSize(other)]);
+      BoxSizeComputer(this, other, BoxSizeComputer.subtraction);
+  BoxSize operator *(double other) => PrimitiveSizeComputer(
+    this,
+    other,
+    PrimitiveSizeComputer.multiplication,
+  );
+  BoxSize operator /(double other) =>
+      PrimitiveSizeComputer(this, other, PrimitiveSizeComputer.division);
+  BoxSize operator %(double other) =>
+      PrimitiveSizeComputer(this, other, PrimitiveSizeComputer.modulo);
+  BoxSize operator ~() => NegatedBoxSize(this);
+  BoxSize operator ~/(double other) => PrimitiveSizeComputer(
+    this,
+    other,
+    PrimitiveSizeComputer.floorDivision,
+  );
 }
 
 class IntrinsicSize extends BoxSize {
-  const IntrinsicSize();
+  const IntrinsicSize({super.key});
 
   @override
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) {
-    return !crossRequires;
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return (
+      needsCrossAxisParentSize: !mainAxis,
+      needsMainAxisParentSize: mainAxis,
+      needsFlexFactor: false,
+    );
+  }
+
+  @override
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    if (child == null) {
+      if (key != null) {
+        dependencies[key!] = 0.0;
+      }
+      return 0.0;
+    }
+    double result = switch ((direction, computeMax)) {
+      (Axis.horizontal, true) => child.getMaxIntrinsicWidth(extent),
+      (Axis.horizontal, false) => child.getMinIntrinsicWidth(extent),
+      (Axis.vertical, true) => child.getMaxIntrinsicHeight(extent),
+      (Axis.vertical, false) => child.getMinIntrinsicHeight(extent),
+    };
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
   }
 
   @override
@@ -124,6 +190,8 @@ class IntrinsicSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -133,10 +201,19 @@ class IntrinsicSize extends BoxSize {
     double result;
     switch (direction) {
       case Axis.horizontal:
-        result = child.getMaxIntrinsicWidth(crossAxisSize ?? double.infinity);
+        result = child.getMaxIntrinsicWidth(
+          (mainAxis ? crossAxisParentSize : mainAxisParentSize) ??
+              double.infinity,
+        );
         break;
       case Axis.vertical:
-        result = child.getMaxIntrinsicHeight(crossAxisSize ?? double.infinity);
+        result = child.getMaxIntrinsicHeight(
+          (mainAxis ? crossAxisParentSize : mainAxisParentSize) ??
+              double.infinity,
+        );
+    }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
     }
     return (
       recomputeFlex: false,
@@ -165,7 +242,42 @@ class IntrinsicSize extends BoxSize {
 class FixedSize extends BoxSize {
   final double size;
 
-  const FixedSize(this.size);
+  const FixedSize(this.size, {super.key})
+    : assert(
+        size == size,
+        'FixedSize size must not be NaN',
+      ),
+      assert(
+        size != double.infinity && size != double.negativeInfinity,
+        'FixedSize size must be a finite number, got $size. If you want an infinite size, use ExpandingSize instead.',
+      );
+
+  @override
+  void debugIsValid() {
+    if (size.isNaN) {
+      throw FlutterError('FixedSize size must be a finite number, got $size');
+    }
+    if (size.isInfinite) {
+      throw FlutterError(
+        'FixedSize size must be a finite number, got $size. If you want an infinite size, use ExpandingSize instead.',
+      );
+    }
+  }
+
+  @override
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double result = size;
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
+  }
 
   @override
   String toString() {
@@ -178,12 +290,17 @@ class FixedSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
     double? crossAxisParentSize,
     double? crossAxisSize,
   }) {
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = size;
+    }
     return (recomputeFlex: false, result: size, flexResult: 0.0);
   }
 
@@ -203,21 +320,52 @@ class ExpandingSize extends BoxSize {
   final bool intrinsicFallback;
   const ExpandingSize({
     this.intrinsicFallback = true,
+    super.key,
   });
 
   @override
-  bool requiresFlexFactor(bool mainAxis) {
-    return mainAxis;
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return (
+      needsCrossAxisParentSize: !mainAxis,
+      needsMainAxisParentSize: false,
+      needsFlexFactor: mainAxis,
+    );
   }
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    return !mainAxis;
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    if (intrinsicFallback && child != null) {
+      double result = switch (direction) {
+        Axis.horizontal => child.getMaxIntrinsicWidth(extent),
+        Axis.vertical => child.getMaxIntrinsicHeight(extent),
+      };
+      if (key != null) {
+        dependencies[key!] = result;
+      }
+      return result;
+    }
+    if (key != null) {
+      dependencies[key!] = 0.0;
+    }
+    return 0.0;
   }
 
   @override
   double? computeTotalFlex(double? biggestFlex) {
-    biggestFlex ??= 1;
+    if (biggestFlex == null) {
+      return double.nan;
+    }
     return biggestFlex;
   }
 
@@ -227,6 +375,8 @@ class ExpandingSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -255,6 +405,9 @@ class ExpandingSize extends BoxSize {
     } else {
       result = crossAxisParentSize ?? 0;
     }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
+    }
     return (recomputeFlex: false, flexResult: 0.0, result: result);
   }
 
@@ -278,12 +431,45 @@ class ExpandingSize extends BoxSize {
 class RatioSize extends BoxSize {
   final double ratio;
 
-  const RatioSize(this.ratio);
+  const RatioSize(this.ratio, {super.key});
 
   @override
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) {
-    return !crossRequires;
+  void debugIsValid() {
+    if (ratio.isNaN || ratio.isInfinite) {
+      throw FlutterError('RatioSize ratio must be a finite number, got $ratio');
+    }
   }
+
+  @override
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return (
+      needsCrossAxisParentSize: false,
+      needsMainAxisParentSize: false,
+      needsFlexFactor: false,
+    );
+  }
+
+  @override
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    if (key != null) {
+      dependencies[key!] = 0.0;
+    }
+    return 0.0;
+  }
+
+  @override
+  bool get needsCrossAxis => true;
 
   @override
   ({bool recomputeFlex, double result, double flexResult}) computeSize({
@@ -291,13 +477,29 @@ class RatioSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
     double? crossAxisParentSize,
     double? crossAxisSize,
   }) {
-    double result = crossAxisSize == null ? 0 : crossAxisSize * ratio;
+    if (crossAxisSize == null) {
+      // circular dependency
+      throw FlutterError(
+        'RatioSize requires the cross axis size to be known before it can be computed. '
+        'This usually means that you have a circular dependency in your BoxSize definitions. '
+        'For example, if you have a horizontal FlexBox, and one of its children has a RatioSize for width, '
+        'but the height of that child is also defined in terms of the width (e.g. RatioSize), '
+        'then this will cause a circular dependency. '
+        'To fix this, make sure that the cross axis size can be determined independently of the main axis size.',
+      );
+    }
+    double result = crossAxisSize * ratio;
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
+    }
     return (
       recomputeFlex: false,
       result: result,
@@ -334,16 +536,62 @@ class RelativeSize extends BoxSize {
   const RelativeSize(
     this.relative, {
     this.intrinsicFallback = true,
+    super.key,
   });
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    return mainAxis;
+  void debugIsValid() {
+    if (relative.isNaN || relative.isInfinite) {
+      throw FlutterError(
+        'RelativeSize relative must be a finite number, got $relative',
+      );
+    }
   }
 
   @override
-  bool requiresMainAxisParentSize(bool mainAxis) {
-    return !mainAxis;
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    if (child == null) {
+      if (key != null) {
+        dependencies[key!] = 0.0;
+      }
+      return 0.0;
+    }
+    if (intrinsicFallback) {
+      double result = switch ((direction, computeMax)) {
+        (Axis.horizontal, true) => child.getMaxIntrinsicWidth(extent),
+        (Axis.horizontal, false) => child.getMinIntrinsicWidth(extent),
+        (Axis.vertical, true) => child.getMaxIntrinsicHeight(extent),
+        (Axis.vertical, false) => child.getMinIntrinsicHeight(extent),
+      };
+      if (key != null) {
+        dependencies[key!] = result;
+      }
+      return result;
+    }
+    if (key != null) {
+      dependencies[key!] = 0.0;
+    }
+    return 0.0;
+  }
+
+  @override
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return (
+      needsCrossAxisParentSize: !mainAxis,
+      needsMainAxisParentSize: mainAxis,
+      needsFlexFactor: false,
+    );
   }
 
   @override
@@ -352,6 +600,8 @@ class RelativeSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -394,6 +644,9 @@ class RelativeSize extends BoxSize {
         result = crossAxisParentSize * relative;
       }
     }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
+    }
     return (
       recomputeFlex: false,
       result: result,
@@ -430,16 +683,56 @@ class FlexSize extends BoxSize {
   const FlexSize(
     this.flex, {
     this.intrinsicFallback = true,
+    super.key,
   });
 
   @override
-  bool requiresFlexFactor(bool mainAxis) {
-    return mainAxis;
+  void debugIsValid() {
+    if (flex.isNaN || flex.isInfinite) {
+      throw FlutterError(
+        'FlexSize flex must be a finite number, got $flex',
+      );
+    }
   }
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    return !mainAxis;
+  double computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    if (intrinsicFallback && child != null) {
+      double result = switch ((direction, computeMax)) {
+        (Axis.horizontal, true) => child.getMaxIntrinsicWidth(extent),
+        (Axis.horizontal, false) => child.getMinIntrinsicWidth(extent),
+        (Axis.vertical, true) => child.getMaxIntrinsicHeight(extent),
+        (Axis.vertical, false) => child.getMinIntrinsicHeight(extent),
+      };
+      if (key != null) {
+        dependencies[key!] = result;
+      }
+      return result;
+    }
+    if (key != null) {
+      dependencies[key!] = 0.0;
+    }
+    return 0.0;
+  }
+
+  @override
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return (
+      needsCrossAxisParentSize: !mainAxis,
+      needsMainAxisParentSize: false,
+      needsFlexFactor: mainAxis,
+    );
   }
 
   @override
@@ -453,6 +746,8 @@ class FlexSize extends BoxSize {
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -497,6 +792,9 @@ class FlexSize extends BoxSize {
         result = crossAxisParentSize;
       }
     }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
+    }
     return (recomputeFlex: false, flexResult: result, result: 0.0);
   }
 
@@ -522,34 +820,68 @@ class FlexSize extends BoxSize {
 class NegatedBoxSize extends BoxSize {
   final BoxSize original;
 
-  NegatedBoxSize(this.original);
+  NegatedBoxSize(this.original, {super.key});
 
   @override
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) {
-    return original.requiresCrossAxisSize(mainAxis, crossRequires);
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double? result = original.computeIntrinsicSize(
+      child: child,
+      direction: direction,
+      extent: extent,
+      dependencies: dependencies,
+      computeMax: computeMax,
+    );
+    if (result == null) {
+      return null;
+    }
+    if (key != null) {
+      dependencies[key!] = -result;
+    }
+    return -result;
   }
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    return original.requiresCrossAxisParentSize(mainAxis);
+  void debugIsValid() {
+    original.debugIsValid();
   }
 
   @override
-  bool requiresMainAxisParentSize(bool mainAxis) {
-    return original.requiresMainAxisParentSize(mainAxis);
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return original.getRequiredInputs(
+      mainAxis: mainAxis,
+      crossRequiresSize: crossRequiresSize,
+    );
   }
+
+  @override
+  bool get needsCrossAxis => original.needsCrossAxis;
 
   @override
   double? computeTotalFlex(double? biggestFlex) {
+    // do not negate this, the total flex needs to be positive
+    // to compute the flex factor
     return original.computeTotalFlex(biggestFlex);
   }
 
   @override
-  ({bool recomputeFlex, double result, double flexResult}) computeSize({
+  ({bool recomputeFlex, double result, double flexResult})? computeSize({
     required RenderBox child,
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -566,7 +898,15 @@ class NegatedBoxSize extends BoxSize {
       mainAxisParentSize: mainAxisParentSize,
       crossAxisParentSize: crossAxisParentSize,
       crossAxisSize: crossAxisSize,
+      dependencies: dependencies,
+      dependsOn: dependsOn,
     );
+    if (result == null) {
+      return null;
+    }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = -result.result + -result.flexResult;
+    }
     return (
       recomputeFlex: result.recomputeFlex,
       result: -result.result,
@@ -591,65 +931,274 @@ class NegatedBoxSize extends BoxSize {
   }
 }
 
-class CompoundBoxSize extends BoxSize {
-  final Iterable<BoxSize> sizes;
+typedef BoxSizeComputerOperation = double Function(double first, double second);
 
-  CompoundBoxSize(this.sizes);
+class BoxSizeComputer extends BoxSize {
+  static double addition(double first, double second) => first + second;
+  // NOTE: multiplication and such is not supported here
+  // because it can lead to very weird results
+  // static double multiplication(double first, double second) => first * second;
+  // static double division(double first, double second) => first / second;
+  // static double modulo(double first, double second) => first % second;
+  static double subtraction(double first, double second) => first - second;
+  static double max(double first, double second) =>
+      first > second ? first : second;
+  static double min(double first, double second) =>
+      first < second ? first : second;
+  // static double floorDivision(double first, double second) =>
+  //     (first / second).floorToDouble();
+  final BoxSize first;
+  final BoxSize second;
+  final BoxSizeComputerOperation operation;
+
+  BoxSizeComputer(this.first, this.second, this.operation, {super.key});
 
   @override
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) {
-    for (var size in sizes) {
-      if (size.requiresCrossAxisSize(mainAxis, crossRequires)) {
-        return true;
-      }
-    }
-    return false;
+  void debugIsValid() {
+    first.debugIsValid();
+    second.debugIsValid();
   }
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    for (var size in sizes) {
-      if (size.requiresCrossAxisParentSize(mainAxis)) {
-        return true;
-      }
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double? firstResult = first.computeIntrinsicSize(
+      child: child,
+      direction: direction,
+      extent: extent,
+      dependencies: dependencies,
+      computeMax: computeMax,
+    );
+    double? secondResult = second.computeIntrinsicSize(
+      child: child,
+      direction: direction,
+      extent: extent,
+      dependencies: dependencies,
+      computeMax: computeMax,
+    );
+    if (firstResult == null || secondResult == null) {
+      return null;
     }
-    return false;
+    double result = operation(firstResult, secondResult);
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
   }
 
   @override
-  bool requiresMainAxisParentSize(bool mainAxis) {
-    for (var size in sizes) {
-      if (size.requiresMainAxisParentSize(mainAxis)) {
-        return true;
-      }
-    }
-    return false;
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    final firstDep = first.getRequiredInputs(
+      mainAxis: mainAxis,
+      crossRequiresSize: crossRequiresSize,
+    );
+    final secondDep = second.getRequiredInputs(
+      mainAxis: mainAxis,
+      crossRequiresSize: crossRequiresSize,
+    );
+    return (
+      needsCrossAxisParentSize:
+          firstDep.needsCrossAxisParentSize ||
+          secondDep.needsCrossAxisParentSize,
+      needsMainAxisParentSize:
+          firstDep.needsMainAxisParentSize || secondDep.needsMainAxisParentSize,
+      needsFlexFactor: firstDep.needsFlexFactor || secondDep.needsFlexFactor,
+    );
   }
 
   @override
-  bool requiresFlexFactor(bool mainAxis) {
-    for (var size in sizes) {
-      if (size.requiresFlexFactor(mainAxis)) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool get needsCrossAxis => first.needsCrossAxis || second.needsCrossAxis;
+
+  @override
+  Iterable<Key> get dependencies =>
+      first.dependencies.followedBy(second.dependencies);
 
   @override
   double? computeTotalFlex(double? biggestFlex) {
+    // always add the flexes together
+    // do not apply the operation here
     double total = 0;
-    for (var size in sizes) {
-      var flex = size.computeTotalFlex(biggestFlex);
-      if (flex != null) {
-        total += flex;
-      }
+    var firstFlex = first.computeTotalFlex(biggestFlex);
+    if (firstFlex != null) {
+      total += firstFlex;
+    }
+    var secondFlex = second.computeTotalFlex(biggestFlex);
+    if (secondFlex != null) {
+      total += secondFlex;
     }
     return total > 0 ? total : null;
   }
 
   @override
-  ({bool recomputeFlex, double result, double flexResult}) computeSize({
+  ({bool recomputeFlex, double result, double flexResult})? computeSize({
+    required RenderBox child,
+    required Axis direction,
+    required bool mainAxis,
+    required bool computeFlex,
+    required Iterable<Key> dependsOn,
+    double? flexFactor,
+    double? biggestFlex,
+    double? mainAxisParentSize,
+    double? crossAxisParentSize,
+    double? crossAxisSize,
+    required Map<Key, double> dependencies,
+  }) {
+    final firstResult = first.computeSize(
+      child: child,
+      direction: direction,
+      mainAxis: mainAxis,
+      computeFlex: computeFlex,
+      flexFactor: flexFactor,
+      biggestFlex: biggestFlex,
+      mainAxisParentSize: mainAxisParentSize,
+      crossAxisParentSize: crossAxisParentSize,
+      crossAxisSize: crossAxisSize,
+      dependencies: dependencies,
+      dependsOn: dependsOn,
+    );
+    final secondResult = second.computeSize(
+      child: child,
+      direction: direction,
+      mainAxis: mainAxis,
+      computeFlex: computeFlex,
+      flexFactor: flexFactor,
+      biggestFlex: biggestFlex,
+      mainAxisParentSize: mainAxisParentSize,
+      crossAxisParentSize: crossAxisParentSize,
+      crossAxisSize: crossAxisSize,
+      dependencies: dependencies,
+      dependsOn: dependsOn,
+    );
+    if (firstResult == null || secondResult == null) {
+      return null;
+    }
+    final result = operation(firstResult.result, secondResult.result);
+    final flexResult = operation(
+      firstResult.flexResult,
+      secondResult.flexResult,
+    );
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result + flexResult;
+    }
+    return (
+      recomputeFlex: firstResult.recomputeFlex || secondResult.recomputeFlex,
+      result: result,
+      flexResult: flexResult,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'PairBoxSize(first: $first, second: $second)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BoxSizeComputer &&
+        other.first == first &&
+        other.second == second;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, first, second);
+  }
+}
+
+// same as BoxSizeComputer, but only allow
+// computation against double
+class PrimitiveSizeComputer extends BoxSize {
+  static double multiplication(double first, double second) => first * second;
+  static double division(double first, double second) => first / second;
+  static double modulo(double first, double second) => first % second;
+  static double floorDivision(double first, double second) =>
+      (first / second).floorToDouble();
+  final BoxSize original;
+  final double operand;
+  final BoxSizeComputerOperation operation;
+  PrimitiveSizeComputer(
+    this.original,
+    this.operand,
+    this.operation, {
+    super.key,
+  });
+
+  @override
+  void debugIsValid() {
+    original.debugIsValid();
+    if (operand.isNaN || operand.isInfinite) {
+      throw FlutterError(
+        'PrimitiveBoxSizeComputer operand must be a finite number, got $operand',
+      );
+    }
+  }
+
+  @override
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double? result = original.computeIntrinsicSize(
+      child: child,
+      direction: direction,
+      extent: extent,
+      dependencies: dependencies,
+      computeMax: computeMax,
+    );
+    if (result == null) {
+      return null;
+    }
+    result = operation(result, operand);
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
+  }
+
+  @override
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    return original.getRequiredInputs(
+      mainAxis: mainAxis,
+      crossRequiresSize: crossRequiresSize,
+    );
+  }
+
+  @override
+  bool get needsCrossAxis => original.needsCrossAxis;
+
+  @override
+  Iterable<Key> get dependencies => original.dependencies;
+
+  @override
+  double? computeTotalFlex(double? biggestFlex) {
+    final result = original.computeTotalFlex(biggestFlex);
+    if (result == null) {
+      return null;
+    }
+    return operation(result, operand);
+  }
+
+  @override
+  ({bool recomputeFlex, double result, double flexResult})? computeSize({
     required RenderBox child,
     required Axis direction,
     required bool mainAxis,
@@ -659,107 +1208,195 @@ class CompoundBoxSize extends BoxSize {
     double? mainAxisParentSize,
     double? crossAxisParentSize,
     double? crossAxisSize,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
   }) {
-    double total = 0;
-    double flexTotal = 0;
-    bool recomputeFlex = false;
-    for (var size in sizes) {
-      final result = size.computeSize(
-        child: child,
-        direction: direction,
-        mainAxis: mainAxis,
-        computeFlex: computeFlex,
-        flexFactor: flexFactor,
-        biggestFlex: biggestFlex,
-        mainAxisParentSize: mainAxisParentSize,
-        crossAxisParentSize: crossAxisParentSize,
-        crossAxisSize: crossAxisSize,
-      );
-      total += result.result;
-      flexTotal += result.flexResult;
-      recomputeFlex |= result.recomputeFlex;
+    final result = original.computeSize(
+      child: child,
+      direction: direction,
+      mainAxis: mainAxis,
+      computeFlex: computeFlex,
+      flexFactor: flexFactor,
+      biggestFlex: biggestFlex,
+      mainAxisParentSize: mainAxisParentSize,
+      crossAxisParentSize: crossAxisParentSize,
+      crossAxisSize: crossAxisSize,
+      dependencies: dependencies,
+      dependsOn: dependsOn,
+    );
+    if (result == null) {
+      return null;
     }
-    return (recomputeFlex: recomputeFlex, result: total, flexResult: flexTotal);
+    final value = operation(result.result, operand);
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = value + result.flexResult;
+    }
+    return (
+      recomputeFlex: result.recomputeFlex,
+      result: value,
+      // do NOT apply operation to flexResult
+      // because its already done in computeTotalFlex
+      flexResult: result.flexResult,
+    );
   }
 
   @override
   String toString() {
-    return 'CompoundBoxSize(sizes: $sizes)';
+    return 'PrimitiveBoxSizeComputer(original: $original, operand: $operand)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is CompoundBoxSize &&
-        other.sizes.length == sizes.length &&
-        other.sizes.every((size) => sizes.contains(size));
+    return other is PrimitiveSizeComputer &&
+        other.original == original &&
+        other.operand == operand;
   }
 
   @override
   int get hashCode {
-    return Object.hash(runtimeType, Object.hashAll(sizes));
+    return Object.hash(runtimeType, original, operand);
   }
 }
 
-class ClampedBoxSize extends BoxSize {
+class ClampedSize extends BoxSize {
   final BoxSize original;
   final BoxSize? min;
   final BoxSize? max;
 
-  ClampedBoxSize(this.original, {this.min, this.max});
+  ClampedSize(this.original, {this.min, this.max, super.key});
 
   @override
-  bool requiresFlexFactor(bool mainAxis) {
-    return original.requiresFlexFactor(mainAxis) ||
-        (min?.requiresFlexFactor(mainAxis) ?? false) ||
-        (max?.requiresFlexFactor(mainAxis) ?? false);
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double? originalSize = original.computeIntrinsicSize(
+      child: child,
+      direction: direction,
+      extent: extent,
+      dependencies: dependencies,
+      computeMax: computeMax,
+    );
+    if (originalSize == null) {
+      return null;
+    }
+    double? minSize;
+    if (min != null) {
+      minSize = min!.computeIntrinsicSize(
+        child: child,
+        direction: direction,
+        extent: extent,
+        dependencies: dependencies,
+        computeMax: computeMax,
+      );
+      if (minSize == null) {
+        // has not resolved its dependencies yet
+        return null;
+      }
+    }
+    double? maxSize;
+    if (max != null) {
+      maxSize = max!.computeIntrinsicSize(
+        child: child,
+        direction: direction,
+        extent: extent,
+        dependencies: dependencies,
+        computeMax: computeMax,
+      );
+      if (maxSize == null) {
+        // has not resolved its dependencies yet
+        return null;
+      }
+    }
+    double result = _clamp(originalSize, minSize, maxSize);
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
   }
 
   @override
-  bool requiresCrossAxisParentSize(bool mainAxis) {
-    return original.requiresCrossAxisParentSize(mainAxis) ||
-        (min?.requiresCrossAxisParentSize(mainAxis) ?? false) ||
-        (max?.requiresCrossAxisParentSize(mainAxis) ?? false);
+  ({
+    bool needsCrossAxisParentSize,
+    bool needsFlexFactor,
+    bool needsMainAxisParentSize,
+  })
+  getRequiredInputs({required bool mainAxis, bool? crossRequiresSize}) {
+    final originalDep = original.getRequiredInputs(
+      mainAxis: mainAxis,
+      crossRequiresSize: crossRequiresSize,
+    );
+    final minDep =
+        min?.getRequiredInputs(
+          mainAxis: mainAxis,
+          crossRequiresSize: crossRequiresSize,
+        ) ??
+        _noDependency;
+    final maxDep =
+        max?.getRequiredInputs(
+          mainAxis: mainAxis,
+          crossRequiresSize: crossRequiresSize,
+        ) ??
+        _noDependency;
+    return (
+      needsCrossAxisParentSize:
+          originalDep.needsCrossAxisParentSize ||
+          minDep.needsCrossAxisParentSize ||
+          maxDep.needsCrossAxisParentSize,
+      needsMainAxisParentSize:
+          originalDep.needsMainAxisParentSize ||
+          minDep.needsMainAxisParentSize ||
+          maxDep.needsMainAxisParentSize,
+      needsFlexFactor:
+          originalDep.needsFlexFactor ||
+          minDep.needsFlexFactor ||
+          maxDep.needsFlexFactor,
+    );
   }
 
   @override
-  bool requiresCrossAxisSize(bool mainAxis, bool crossRequires) {
-    return original.requiresCrossAxisSize(mainAxis, crossRequires) ||
-        (min?.requiresCrossAxisSize(mainAxis, crossRequires) ?? false) ||
-        (max?.requiresCrossAxisSize(mainAxis, crossRequires) ?? false);
+  void debugIsValid() {
+    original.debugIsValid();
+    min?.debugIsValid();
+    max?.debugIsValid();
   }
 
   @override
-  bool requiresMainAxisParentSize(bool mainAxis) {
-    return original.requiresMainAxisParentSize(mainAxis) ||
-        (min?.requiresMainAxisParentSize(mainAxis) ?? false) ||
-        (max?.requiresMainAxisParentSize(mainAxis) ?? false);
+  bool get needsCrossAxis =>
+      original.needsCrossAxis ||
+      (min?.needsCrossAxis ?? false) ||
+      (max?.needsCrossAxis ?? false);
+
+  @override
+  Iterable<Key> get dependencies {
+    var originalDep = original.dependencies;
+    if (min != null) {
+      originalDep = originalDep.followedBy(min!.dependencies);
+    }
+    if (max != null) {
+      originalDep = originalDep.followedBy(max!.dependencies);
+    }
+    return originalDep;
   }
 
   @override
   double? computeTotalFlex(double? biggestFlex) {
-    double? total = original.computeTotalFlex(biggestFlex);
-    double? minFlex = min?.computeTotalFlex(biggestFlex);
-    double? maxFlex = max?.computeTotalFlex(biggestFlex);
-    if (minFlex != null) {
-      if (total == null || minFlex > total) {
-        total = minFlex;
-      }
-    }
-    if (maxFlex != null) {
-      if (total == null || maxFlex < total) {
-        total = maxFlex;
-      }
-    }
-    return total;
+    // do not clamp total flex
+    return original.computeTotalFlex(biggestFlex);
   }
 
   @override
-  ({double flexResult, bool recomputeFlex, double result}) computeSize({
+  ({double flexResult, bool recomputeFlex, double result})? computeSize({
     required RenderBox child,
     required Axis direction,
     required bool mainAxis,
     required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
     double? flexFactor,
     double? biggestFlex,
     double? mainAxisParentSize,
@@ -776,7 +1413,12 @@ class ClampedBoxSize extends BoxSize {
       mainAxisParentSize: mainAxisParentSize,
       crossAxisParentSize: crossAxisParentSize,
       crossAxisSize: crossAxisSize,
+      dependencies: dependencies,
+      dependsOn: dependsOn,
     );
+    if (result == null) {
+      return null;
+    }
     bool recomputeFlex = result.recomputeFlex;
     double combined = result.result + result.flexResult;
     bool hasFlexResult = result.flexResult > 0;
@@ -792,10 +1434,15 @@ class ClampedBoxSize extends BoxSize {
         mainAxisParentSize: mainAxisParentSize,
         crossAxisParentSize: crossAxisParentSize,
         crossAxisSize: crossAxisSize,
+        dependencies: dependencies,
+        dependsOn: dependsOn,
       );
+      if (minResult == null) {
+        return null;
+      }
       minSize = minResult.result + minResult.flexResult;
       recomputeFlex |= minResult.recomputeFlex;
-      hasFlexResult |= minResult.flexResult > 0;
+      // hasFlexResult |= minResult.flexResult > 0;
     }
     double? maxSize;
     if (max != null) {
@@ -809,27 +1456,124 @@ class ClampedBoxSize extends BoxSize {
         mainAxisParentSize: mainAxisParentSize,
         crossAxisParentSize: crossAxisParentSize,
         crossAxisSize: crossAxisSize,
+        dependencies: dependencies,
+        dependsOn: dependsOn,
       );
+      if (maxResult == null) {
+        return null;
+      }
       maxSize = maxResult.result + maxResult.flexResult;
       recomputeFlex |= maxResult.recomputeFlex;
-      hasFlexResult |= maxResult.flexResult > 0;
+      // hasFlexResult |= maxResult.flexResult > 0;
     }
     final clamped = _clamp(combined, minSize, maxSize);
     if (clamped != combined) {
+      if (key != null && dependsOn.contains(key)) {
+        dependencies[key!] = clamped;
+      }
+
       if (hasFlexResult) {
         return (recomputeFlex: true, result: clamped, flexResult: 0.0);
       }
+
       return (
         recomputeFlex: recomputeFlex,
         result: clamped,
         flexResult: 0.0,
       );
     }
+
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = combined;
+    }
     return (
       recomputeFlex: recomputeFlex,
       result: result.result,
       flexResult: result.flexResult,
     );
+  }
+}
+
+class _SingleIterable<T> extends Iterable<T> {
+  final T value;
+
+  _SingleIterable(this.value);
+
+  @override
+  Iterator<T> get iterator => _SingleIterator(value);
+}
+
+class _SingleIterator<T> implements Iterator<T> {
+  final T value;
+  bool _hasNext = true;
+
+  _SingleIterator(this.value);
+
+  @override
+  T get current => _hasNext ? value : throw StateError('No more elements');
+
+  @override
+  bool moveNext() {
+    if (_hasNext) {
+      _hasNext = false;
+      return true;
+    }
+    return false;
+  }
+}
+
+class LinkedSize extends BoxSize {
+  final Key targetKey;
+
+  const LinkedSize(this.targetKey, {super.key});
+
+  @override
+  Iterable<Key> get dependencies => _SingleIterable(targetKey);
+
+  @override
+  double? computeIntrinsicSize({
+    required RenderBox? child,
+    required Axis direction,
+    required double extent,
+    required Map<Key, double> dependencies,
+    required bool computeMax,
+  }) {
+    double? result = dependencies[targetKey];
+    if (result == null) {
+      return null;
+    }
+    if (key != null) {
+      dependencies[key!] = result;
+    }
+    return result;
+  }
+
+  @override
+  ({double flexResult, bool recomputeFlex, double result})? computeSize({
+    required RenderBox child,
+    required Axis direction,
+    required bool mainAxis,
+    required bool computeFlex,
+    required Map<Key, double> dependencies,
+    required Iterable<Key> dependsOn,
+    double? flexFactor,
+    double? biggestFlex,
+    double? mainAxisParentSize,
+    double? crossAxisParentSize,
+    double? crossAxisSize,
+  }) {
+    // here we assume no circular dependency
+    // because its already handled in the flexbox render object
+    // here we also assume that our dependency
+    // is completed
+    final result = dependencies[targetKey];
+    if (result == null) {
+      return null;
+    }
+    if (key != null && dependsOn.contains(key)) {
+      dependencies[key!] = result;
+    }
+    return (flexResult: 0.0, recomputeFlex: false, result: result);
   }
 }
 
@@ -992,15 +1736,4 @@ enum BoxPositionType {
 
   /// Sticky position, but it will only stick to the lower bound of the viewport bounds
   stickyEnd,
-}
-
-enum FlexSpacing {
-  /// Equal spacing between children, with no spacing at the start and end
-  between,
-
-  /// Equal spacing between children, with equal spacing at the start and end
-  around,
-
-  /// Equal spacing between children, with double spacing at the start and end
-  evenly,
 }

@@ -33,7 +33,6 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   ),
                   child: FlexBox(
                     direction: Axis.horizontal,
-                    spacing: 0,
                     children: [
                       _buildBox('A', Colors.red[300]!),
                       _buildBox('B', Colors.green[300]!),
@@ -52,7 +51,7 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   ),
                   child: FlexBox(
                     direction: Axis.horizontal,
-                    spacing: 16,
+                    spacing: BoxSize.fixed(16),
                     children: [
                       _buildBox('A', Colors.red[300]!),
                       _buildBox('B', Colors.green[300]!),
@@ -72,7 +71,7 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   ),
                   child: FlexBox(
                     direction: Axis.horizontal,
-                    spacing: double.infinity,
+                    spacing: BoxSize.expanding(),
                     children: [
                       _buildBox('A', Colors.red[300]!),
                       _buildBox('B', Colors.green[300]!),
@@ -103,7 +102,7 @@ class AdvancedLayoutDemo extends BaseDemoPage {
                   ),
                   child: FlexBox(
                     direction: Axis.vertical,
-                    spacing: double.infinity,
+                    spacing: BoxSize.expanding(),
                     children: [
                       _buildBox('Top', Colors.deepOrange[400]!),
                       _buildBox('Mid', Colors.deepPurple[400]!),

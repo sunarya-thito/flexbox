@@ -183,7 +183,10 @@ class IntrinsicSizingDemo extends BaseDemoPage {
                 direction: Axis.horizontal,
                 children: [
                   FlexBoxChild(
-                    width: BoxSize.intrinsic(min: 100, max: 150),
+                    width: BoxSize.intrinsic().clamp(
+                      min: BoxSize.fixed(100),
+                      max: BoxSize.fixed(150),
+                    ),
                     height: BoxSize.fixed(80),
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 12),
@@ -202,7 +205,7 @@ class IntrinsicSizingDemo extends BaseDemoPage {
                     ),
                   ),
                   FlexBoxChild(
-                    width: BoxSize.intrinsic(min: 200),
+                    width: BoxSize.intrinsic().clamp(min: BoxSize.fixed(200)),
                     height: BoxSize.fixed(80),
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 12),
@@ -221,7 +224,7 @@ class IntrinsicSizingDemo extends BaseDemoPage {
                     ),
                   ),
                   FlexBoxChild(
-                    width: BoxSize.intrinsic(max: 100),
+                    width: BoxSize.intrinsic().clamp(max: BoxSize.fixed(100)),
                     height: BoxSize.fixed(80),
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 12),

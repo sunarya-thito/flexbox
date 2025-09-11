@@ -276,7 +276,11 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                     ),
                   ),
                   FlexBoxChild(
-                    width: BoxSize.expanding(min: 150, max: 200),
+                    // width: BoxSize.expanding(min: 150, max: 200),
+                    width: BoxSize.expanding().clamp(
+                      min: BoxSize.fixed(150),
+                      max: BoxSize.fixed(200),
+                    ),
                     height: BoxSize.fixed(80),
                     child: Container(
                       color: Colors.deepOrange[400],
@@ -294,7 +298,7 @@ class UnconstrainedSizingDemo extends BaseDemoPage {
                     ),
                   ),
                   FlexBoxChild(
-                    width: BoxSize.expanding(min: 100),
+                    width: BoxSize.expanding().clamp(min: BoxSize.fixed(100)),
                     height: BoxSize.fixed(80),
                     child: Container(
                       color: Colors.deepPurple[400],

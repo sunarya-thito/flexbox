@@ -11,8 +11,8 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
   BoxPosition? bottom;
   BoxPosition? left;
   BoxPosition? right;
-  BoxSize? width = BoxSize.intrinsic();
-  BoxSize? height = BoxSize.intrinsic();
+  BoxSize? width;
+  BoxSize? height;
   BoxPositionType? horizontalPosition;
   BoxPositionType? verticalPosition;
   bool horizontalScrollAffected = true;
@@ -23,20 +23,13 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
 
   bool needsRelayout = true;
 
-  // double cachedMainSize = 0;
-  // double cachedCrossSize = 0;
-  // double unconstrainedFlex = 0;
-  // double mainFlex = 0; // Store the actual flex value from FlexSize
-  // bool isConstrainedByMinMax =
-  //     false; // Track if this child is constrained by min/max
-
+  // temporary storage during layout
+  // will be cleared after layout
   double? resolvedMainSize;
   double? resolvedCrossSize;
-  double? resolvedMainStart;
-  double? resolvedCrossStart;
-  double? resolvedMainEnd;
-  double? resolvedCrossEnd;
-
+  double? resolvedMainFlexSize;
+  BoxSize? temporaryWidth;
+  BoxSize? temporaryHeight;
   int? zOrder;
 
   bool debugLayout = false;
@@ -49,20 +42,19 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
         right != null;
   }
 
-  BoxConstraints get constraints {
-    return BoxConstraints(
-      minWidth: width?.min ?? 0.0,
-      maxWidth: width?.max ?? double.infinity,
-      minHeight: height?.min ?? 0.0,
-      maxHeight: height?.max ?? double.infinity,
-    );
-  }
-
   BoxSize? getSize(Axis axis) {
     if (axis == Axis.horizontal) {
-      return width;
+      return width ?? temporaryWidth;
     } else {
-      return height;
+      return height ?? temporaryHeight;
+    }
+  }
+
+  BoxSize setTemporarySize(Axis axis, BoxSize size) {
+    if (axis == Axis.horizontal) {
+      return temporaryWidth = size;
+    } else {
+      return temporaryHeight = size;
     }
   }
 
@@ -190,8 +182,12 @@ class RenderFlexBox extends RenderBox
         ContainerRenderObjectMixin<RenderBox, FlexBoxParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, FlexBoxParentData>
     implements RenderAbstractViewport {
+  static const maxComputePass = 10;
   Axis direction;
-  double spacing;
+  // double spacing;
+  BoxSize? spacing;
+  BoxSize? spacingBefore;
+  BoxSize? spacingAfter;
   Alignment alignment;
   ViewportOffset horizontal;
   ViewportOffset vertical;
@@ -202,11 +198,12 @@ class RenderFlexBox extends RenderBox
   bool clipPaint;
   EdgeInsets padding;
   TextDirection textDirection;
-  FlexSpacing spacingBehavior;
 
   RenderFlexBox({
     required this.direction,
     required this.spacing,
+    required this.spacingBefore,
+    required this.spacingAfter,
     required this.alignment,
     required this.horizontal,
     required this.vertical,
@@ -217,7 +214,6 @@ class RenderFlexBox extends RenderBox
     required this.reverse,
     required this.padding,
     required this.textDirection,
-    required this.spacingBehavior,
   });
 
   FlexBoxLayoutChange layoutChange = FlexBoxLayoutChange.both;
@@ -328,12 +324,26 @@ class RenderFlexBox extends RenderBox
       maxViewportMainSize: maxViewportMainSize,
       maxViewportCrossSize: maxViewportCrossSize,
       // we don't need to layout or getDryLayout the children
-      // because the we handle the size of the children here
+      // because the we handle the size of the children here,
+      // also we only need to layout non-absolute children
+      // because absolute children does not affect the size of the flexbox
       layoutChange: FlexBoxLayoutChange.nonAbsolute,
     );
-    return _createSize(
-      constraints.constrainWidth(result.mainContentSize),
-      constraints.constrainHeight(result.crossContentSize),
+    double width;
+    double height;
+    switch (direction) {
+      case Axis.horizontal:
+        width = result.mainContentSize;
+        height = result.crossContentSize;
+        break;
+      case Axis.vertical:
+        width = result.crossContentSize;
+        height = result.mainContentSize;
+        break;
+    }
+    return Size(
+      constraints.constrainWidth(width),
+      constraints.constrainHeight(height),
     );
   }
 
@@ -547,18 +557,6 @@ class RenderFlexBox extends RenderBox
     return direction == Axis.horizontal ? Axis.vertical : Axis.horizontal;
   }
 
-  double _computeMaxIntrinsicMain(RenderBox child, double crossSize) {
-    return direction == Axis.horizontal
-        ? child.getMaxIntrinsicWidth(crossSize)
-        : child.getMaxIntrinsicHeight(crossSize);
-  }
-
-  double _computeMaxIntrinsicCross(RenderBox child, double mainSize) {
-    return direction == Axis.horizontal
-        ? child.getMaxIntrinsicHeight(mainSize)
-        : child.getMaxIntrinsicWidth(mainSize);
-  }
-
   Size _createSize(double mainSize, double crossSize) {
     return direction == Axis.horizontal
         ? Size(mainSize, crossSize)
@@ -581,6 +579,8 @@ class RenderFlexBox extends RenderBox
   double? _flexUnit;
   bool? shouldSortChildren;
   double? _spacing;
+  double? _spacingBefore;
+  double? _spacingAfter;
   _Store<RenderBox?>? _firstAbsoluteChild;
   _Store<RenderBox?>? _firstNonAbsoluteChild;
 
@@ -670,6 +670,7 @@ class RenderFlexBox extends RenderBox
         );
         _flexUnit = layoutChildren.flexUnit;
         _spacing = layoutChildren.spacing;
+        _spacingBefore = layoutChildren.spacing;
       }
     }
 
@@ -685,6 +686,8 @@ class RenderFlexBox extends RenderBox
         mainViewportSize: _getMain(size),
         crossViewportSize: _getCross(size),
         spacing: _spacing!,
+        spacingBefore: _spacingBefore!,
+        spacingAfter: _spacingAfter!,
         change: positionChange,
       );
     }
@@ -714,18 +717,16 @@ class RenderFlexBox extends RenderBox
     needsResort = false;
   }
 
-  double _maxNullable(double? a, double b) {
-    if (a == null) return b;
-    return max(a, b);
-  }
-
   ({
     double mainContentSize,
     double crossContentSize,
     bool shouldSortChildren,
-    double flexUnit,
+    double flexUnit, // <- i need this for personal reason 😘 (@sunarya-thito)
     // the spacing returned has the same behavior as empty unconstrained child
+    // if the spacing from the flex box is empty,
     double spacing,
+    double spacingBefore,
+    double spacingAfter,
   })
   _layoutChildren({
     required double maxViewportMainSize,
@@ -733,43 +734,6 @@ class RenderFlexBox extends RenderBox
     ChildLayouter? layoutChild,
     required FlexBoxLayoutChange layoutChange,
   }) {
-    /*
-    Note:
-    - Absolute children does not affect size
-    - BoxSizes are (7):
-      - IntrinsicSize
-        Intrinsic depends on cross axis size, so if cross axis size
-        is not resolved, resolve it in the next pass until cross
-        axis size is resolved.
-      - FixedSize (does not have min/max)
-        Fixed size can be resolved immediately
-      - UnconstrainedSize
-        Unconstrained size acts as the biggest flex, if there are flex
-        children (flex: 1, and flex: 2), then the unconstrained size
-        has flex: 2, but if there are no flex children, then unconstrained
-        size has flex: 1. But if constrained is on the cross axis, then
-        the unconstrained size resolves to the max cross size, which means
-        UnconstrainedSize can be resolved immediately if the max cross size
-        is done resolved.
-      - RatioSize
-        Ratio depends on cross axis size
-      - RelativeSize
-        Relative can be resolved immediately if the parent size is known
-      - FlexSize
-        Flex size depends on available space after fixed and unconstrained
-        sizes are resolved, and also depends on min/max constraints. If flex
-        is on the cross size, it acts like relativeSize, which depends
-        on the max cross size. BUT if the spaceRemaining is infinite,
-        we resolve flex
-      - relativeSize
-        Similar to RelativeSize, but depends on the content size instead of
-        the viewport size. WARNING: This only applies to cross axis, not main axis.
-        Applying this to main axis would create a circular dependency.
-        This also means that relativeSize depends on the max cross size.
-        Different from RelativeSize, which depends on the viewport size.
-        This cannot be resolved until the max cross size is resolved.
-    */
-
     if (childCount == 0) {
       return (
         mainContentSize: 0.0,
@@ -777,1859 +741,553 @@ class RenderFlexBox extends RenderBox
         shouldSortChildren: false,
         flexUnit: 0.0,
         spacing: 0.0,
+        spacingBefore: 0.0,
+        spacingAfter: 0.0,
       );
     }
 
-    if (true) {
-      // use the new sizing option
-      bool resolved = false;
-      int resolveCount = 0;
-      bool flexFactorAvailable = false;
-      bool mainContentSizeAvailable = false;
-      bool crossContentSizeAvailable = false;
-      bool mainViewportSizeAvailable = maxViewportMainSize.isFinite;
-      bool crossViewportSizeAvailable = maxViewportCrossSize.isFinite;
-      bool minimalMainContentSizeAvailable = false;
-
-      double mainContentSize = 0.0;
-      // separate this to get easy remaining space for flexes
-      double mainFlexContentSize = 0.0;
-      double? crossContentSize;
-      double? biggestMainFlex;
-      double? biggestCrossFlex;
-      double totalFlex = 0.0;
-      double spacePerFlex = 0.0;
-
-      bool recomputeMainFlex = false;
-      // there is no such thing as recomputeCrossFlex
-      // because cross flex factor takes the biggest cross flex
-      // instead of total cross flex
-
-      bool shouldSortChildren = false;
-
-      const maxResolveCount = 10;
-
-      while (!resolved && resolveCount < maxResolveCount) {
-        bool desparateLayout = resolveCount >= maxResolveCount - 1;
-        print('PASS: $resolveCount (desparate: $desparateLayout)');
-
-        bool fullyResolvedMain = true;
-        bool fullyResolvedCross = true;
-        bool fullyResolvedAbsolute = true;
-
-        // resolvedMinimalMain indicates that all children
-        // that computes main axis has been resolved (except flex)
-        bool fullyResolvedMinimalMain = true;
-
-        bool hasFlex = false;
-
-        bool shouldRecomputeFlex = false;
-
-        RenderBox? child = firstChild;
-
-        while (child != null) {
-          final data = child.parentData as FlexBoxParentData;
-          // reset
-          if (resolveCount == 0) {
-            data.resolvedMainSize = null;
-            data.resolvedCrossSize = null;
-          }
-
-          // count
-          BoxSize? mainSize = data.getSize(direction);
-          BoxSize? crossSize = data.getSize(crossDirection);
-
-          final mainContentRelative = data.isRelativeToContent(direction);
-          final crossContentRelative = data.isRelativeToContent(crossDirection);
-
-          bool readyToResolveMain = true;
-          bool readyToResolveCross = true;
-
-          final mainParentSizeAvailable = mainContentRelative
-              ? mainContentSizeAvailable
-              : mainViewportSizeAvailable;
-          final crossParentSizeAvailable = crossContentRelative
-              ? crossContentSizeAvailable
-              : crossViewportSizeAvailable;
-          final mainParentSize = mainContentRelative
-              ? mainContentSize
-              : maxViewportMainSize;
-          final crossParentSize = crossContentRelative
-              ? crossContentSize
-              : maxViewportCrossSize;
-
-          if (data.zOrder != null) {
-            shouldSortChildren = true;
-          }
-
-          if (mainSize == null) {
-            if (data.isAbsolute) {
-              final mainStart = data.getStartPosition(direction);
-              final mainEnd = data.getEndPosition(direction);
-              if (mainStart != null && mainEnd != null) {
-                if (mainParentSizeAvailable) {
-                  mainSize =
-                      const BoxSize.relative(1.0) -
-                      BoxSize.fixed(mainStart.computePosition(mainParentSize)) -
-                      BoxSize.fixed(mainEnd.computePosition(mainParentSize));
-                } else {
-                  readyToResolveMain = false;
-                }
-              } else {
-                mainSize = const BoxSize.intrinsic();
-              }
-            } else {
-              mainSize = const BoxSize.intrinsic();
-            }
-          }
-
-          if (crossSize == null) {
-            if (data.isAbsolute) {
-              final crossStart = data.getStartPosition(crossDirection);
-              final crossEnd = data.getEndPosition(crossDirection);
-              if (crossStart != null && crossEnd != null) {
-                if (crossParentSizeAvailable && crossParentSize != null) {
-                  crossSize =
-                      BoxSize.relative(1.0) -
-                      BoxSize.fixed(
-                        crossStart.computePosition(crossParentSize),
-                      ) -
-                      BoxSize.fixed(crossEnd.computePosition(crossParentSize));
-                } else {
-                  readyToResolveCross = false;
-                }
-              } else {
-                crossSize = BoxSize.intrinsic();
-              }
-            } else {
-              crossSize = BoxSize.intrinsic();
-            }
-          }
-
-          bool mainRequiresFlexFactor =
-              mainSize?.requiresFlexFactor(true) == true;
-          bool crossRequiresFlexFactor =
-              crossSize?.requiresFlexFactor(false) == true;
-
-          if (mainRequiresFlexFactor) {
-            // if it has flex, wait until flex factor become available
-            // flex factor become available after a consensus of
-            // flex sizes are resolved
-            readyToResolveMain &= flexFactorAvailable;
-            hasFlex = true;
-          }
-
-          if (mainSize?.requiresMainAxisParentSize(true) == true) {
-            bool canResolve = mainContentRelative
-                ? mainContentSizeAvailable
-                : mainViewportSizeAvailable;
-            readyToResolveMain &= canResolve;
-            fullyResolvedMinimalMain &= canResolve;
-          }
-
-          if (mainSize?.requiresCrossAxisParentSize(true) == true) {
-            bool canResolve = crossContentRelative
-                ? crossContentSizeAvailable
-                : crossViewportSizeAvailable;
-            readyToResolveMain &= canResolve;
-            fullyResolvedMinimalMain &= canResolve;
-          }
-
-          bool crossRequiresCrossAxisSize =
-              crossSize?.requiresCrossAxisSize(false, true) == true;
-
-          if (mainSize?.requiresCrossAxisSize(
-                false,
-                crossRequiresCrossAxisSize,
-              ) ==
-              true) {
-            readyToResolveMain &= data.resolvedCrossSize != null;
-          }
-
-          // check for cross requirements
-          if (crossRequiresFlexFactor) {
-            readyToResolveCross &= flexFactorAvailable;
-          }
-
-          if (crossSize?.requiresMainAxisParentSize(false) == true) {
-            readyToResolveCross &= mainContentRelative
-                ? mainContentSizeAvailable
-                : mainViewportSizeAvailable;
-          }
-
-          if (crossSize?.requiresCrossAxisParentSize(false) == true) {
-            readyToResolveCross &= crossContentRelative
-                ? crossContentSizeAvailable
-                : crossViewportSizeAvailable;
-          }
-
-          if (crossRequiresCrossAxisSize) {
-            readyToResolveCross &= data.resolvedMainSize != null;
-          }
-
-          // Compute cross first
-          if ((readyToResolveCross && data.resolvedCrossSize == null) ||
-              desparateLayout) {
-            final result = crossSize?.computeSize(
-              child: child,
-              direction: crossDirection,
-              mainAxis: false,
-              computeFlex: true,
-              biggestFlex: biggestCrossFlex,
-              crossAxisSize: data.resolvedMainSize,
-              mainAxisParentSize: mainContentRelative
-                  ? (mainContentSizeAvailable ? mainContentSize : null)
-                  : (mainViewportSizeAvailable ? maxViewportMainSize : null),
-              crossAxisParentSize: crossContentRelative
-                  ? (crossContentSizeAvailable ? crossContentSize : null)
-                  : (crossViewportSizeAvailable ? maxViewportCrossSize : null),
-              flexFactor: flexFactorAvailable ? spacePerFlex : null,
-            );
-            if (result != null) {
-              data.resolvedCrossSize = result.result;
-            }
-          }
-
-          if ((readyToResolveMain && data.resolvedMainSize == null) ||
-              desparateLayout) {
-            final result = mainSize?.computeSize(
-              child: child,
-              direction: direction,
-              mainAxis: true,
-              // do not compute flex until at least theres
-              // content size available
-              computeFlex: minimalMainContentSizeAvailable,
-              biggestFlex: biggestMainFlex,
-              crossAxisSize: data.resolvedCrossSize,
-              mainAxisParentSize: mainContentRelative
-                  ? (mainContentSizeAvailable ? mainContentSize : null)
-                  : (mainViewportSizeAvailable ? maxViewportMainSize : null),
-              crossAxisParentSize: crossContentRelative
-                  ? (crossContentSizeAvailable ? crossContentSize : null)
-                  : (crossViewportSizeAvailable ? maxViewportCrossSize : null),
-              flexFactor: flexFactorAvailable ? spacePerFlex : null,
-            );
-            if (result != null) {
-              data.resolvedMainSize = result.result;
-              if (result.recomputeFlex) {
-                // clamping flex size/unconstrained size
-                // would affect the space per flex
-                // we need to recalculate flex sizes
-                if (mainRequiresFlexFactor) {
-                  shouldRecomputeFlex = true;
-                  double? selfTotalFlex = mainSize?.computeTotalFlex(
-                    biggestMainFlex,
-                  );
-                  assert(selfTotalFlex != null);
-                  totalFlex -= selfTotalFlex!;
-                  fullyResolvedMain = false;
-                }
-              }
-            }
-          }
-
-          double? mainTotalFlex = mainSize?.computeTotalFlex(
-            biggestMainFlex,
-          );
-          double? crossTotalFlex = crossSize?.computeTotalFlex(
-            biggestCrossFlex,
-          );
-
-          if (resolveCount == 0) {
-            // only set total flex on the first pass
-            if (mainTotalFlex != null) {
-              totalFlex += mainTotalFlex;
-            }
-            if (crossTotalFlex != null) {
-              biggestCrossFlex = _maxNullable(biggestCrossFlex, crossTotalFlex);
-            }
-          }
-
-          if (!data.isAbsolute) {
-            if (data.resolvedMainSize == null) {
-              fullyResolvedMain = false;
-            } else {
-              mainContentSize = mainContentSize == null
-                  ? data.resolvedMainSize!
-                  : mainContentSize + data.resolvedMainSize!;
-            }
-            if (data.resolvedCrossSize == null) {
-              fullyResolvedCross = false;
-            } else {
-              crossContentSize = _maxNullable(
-                crossContentSize,
-                data.resolvedCrossSize!,
-              );
-            }
-          }
-
-          child = data.nextSibling;
-        }
-
-        if (resolveCount > 0 &&
-            minimalMainContentSizeAvailable &&
-            (!flexFactorAvailable || shouldRecomputeFlex)) {
-          double remainingSpace = max(
-            0.0,
-            maxViewportMainSize - mainContentSize,
-          );
-          spacePerFlex = totalFlex > 0 ? remainingSpace / totalFlex : 0.0;
-          print(
-            'New space per flex: $spacePerFlex = ($maxViewportMainSize - $mainContentSize)=($remainingSpace) / $totalFlex',
-          );
-          flexFactorAvailable = true;
-          recomputeMainFlex = false;
-        }
-
-        if (shouldRecomputeFlex) {
-          recomputeMainFlex = true;
-        }
-
-        if (fullyResolvedMinimalMain) {
-          minimalMainContentSizeAvailable = true;
-        }
-        // fully resolved main and flex has been resolved
-        if (fullyResolvedMain && (!hasFlex || flexFactorAvailable)) {
-          mainContentSizeAvailable = true;
-        }
-
-        if (recomputeMainFlex) {
-          // requires another pass
-          fullyResolvedMain = false;
-        }
-
-        if (fullyResolvedCross) {
-          crossContentSizeAvailable = true;
-        }
-
-        switch (layoutChange) {
-          case FlexBoxLayoutChange.none:
-            // should not happen
-            resolved = true;
-            break;
-          case FlexBoxLayoutChange.nonAbsolute:
-            resolved = fullyResolvedMain && fullyResolvedCross;
-            break;
-          case FlexBoxLayoutChange.absolute:
-            resolved = fullyResolvedAbsolute;
-            break;
-          case FlexBoxLayoutChange.both:
-            resolved =
-                fullyResolvedMain &&
-                fullyResolvedCross &&
-                fullyResolvedAbsolute;
-            break;
-        }
-        if (resolved) {
-          print(
-            'Resolved in $resolveCount passes $fullyResolvedMain $fullyResolvedCross',
-          );
-        } else {
-          print('Not resolved in $resolveCount passes');
-        }
-        resolveCount++;
-      }
-
-      // layout
-      if (layoutChild != null) {
-        RenderBox? child = firstChild;
-        while (child != null) {
-          final data = child.parentData as FlexBoxParentData;
-          layoutChild(
-            child,
-            BoxConstraints.tightFor(
-              width: direction == Axis.horizontal
-                  ? data.resolvedMainSize
-                  : data.resolvedCrossSize,
-              height: direction == Axis.horizontal
-                  ? data.resolvedCrossSize
-                  : data.resolvedMainSize,
-            ),
-          );
-          child = data.nextSibling;
-        }
-      }
-
-      print(
-        'content: $mainContentSize x $crossContentSize ${layoutChange.name} $maxViewportMainSize x $maxViewportCrossSize in $resolveCount passes',
-      );
-
-      return (
-        mainContentSize: mainContentSize + mainFlexContentSize,
-        crossContentSize: crossContentSize ?? 0.0,
-        shouldSortChildren: shouldSortChildren,
-        flexUnit: spacePerFlex,
-        spacing: 0.0,
-      );
-    }
-
-    double mainContentSize = 0.0;
-    double? crossContentSize;
-
+    // pass-1: consensus pass (find out the total flex, biggest main flex, biggest cross flex, and dependencies)
+    double? totalFlex;
     double? biggestMainFlex;
-    double totalMainFlex = 0.0;
-    double? maxCrossFlex = 0.0;
+    double? biggestCrossFlex;
 
-    double spaceRemaining = maxViewportMainSize;
-    double spacing = this.spacing;
+    Iterable<Key> dependsOn = Iterable.empty();
 
-    // a little bit of note: if one of the axis size is 0,
-    // you might think we should not resolve the other axis or just set it to 0,
-    // but its wrong. You need to resolve the other axis because
-    // the children might need it. For example,
-    // FlexBox(
-    //   FlexBoxChild(
-    //     size: 0,
-    //     child: Stack(
-    //       children: [
-    //         Positioned(
-    //           left: 0, bottom: 0, width: 100, height: 100,
-    //           child: Container(color: Colors.red),
-    //         ),
-    //       ],
-    //     )
-    //   )
-    // )
-    // without the other axis, the positioned child inside the stack
-    // would have trouble positioning it to the bottom.
+    void runConsensus({
+      bool consensusForDependencies = true,
+      bool consensusForCross = true,
+    }) {
+      biggestMainFlex = null;
+      biggestCrossFlex = null;
+      totalFlex = null;
+      double? totalFlexBeforeDisaster;
+      RenderBox? requiresBiggestFlex;
+      RenderBox? child = firstChild;
+      while (child != null) {
+        final data = child.parentData as FlexBoxParentData;
+        final mainSize = data.getSize(direction);
+        final crossSize = data.getSize(crossDirection);
 
-    // int resolvedMainAxisCount = 0;
-    int absoluteCount = 0;
-    int unresolvedFlexCount = 0;
-    int unresolvedUnconstrainedCount = 0;
-    int crossDependedCount = 0;
+        bool mainRequiresCross = false;
+        bool crossRequiresMain = false;
+        if (mainSize != null && data.resolvedMainSize == null) {
+          final result = mainSize.computeTotalFlex(null);
+          if (result?.isNaN == true) {
+            // typically caused by ExpandingSize
+            // consensusRequiresMainBiggestFlex = true;
+            requiresBiggestFlex ??= child;
+            totalFlexBeforeDisaster ??= totalFlex;
+          } else {
+            totalFlex = _addNullable(result, totalFlex);
+            biggestMainFlex = _maxNulls(biggestMainFlex, result);
+          }
+          final mainDependencies = mainSize.dependencies;
+          if (consensusForDependencies) {
+            dependsOn = dependsOn.followedBy(mainDependencies);
+          }
+          mainRequiresCross = mainSize.needsCrossAxis;
+        }
+        if (crossSize != null && consensusForCross) {
+          final result = crossSize.computeTotalFlex(null);
+          if (result?.isNaN == true) {
+            // typically caused by ExpandingSize
+            // consensusRequiresCrossBiggestFlex = true;
+            requiresBiggestFlex ??= child;
+            totalFlexBeforeDisaster ??= totalFlex;
+          } else {
+            biggestCrossFlex = _maxNulls(biggestCrossFlex, result);
+          }
+          final crossDependencies = crossSize.dependencies;
+          if (consensusForDependencies) {
+            dependsOn = dependsOn.followedBy(crossDependencies);
+          }
+          crossRequiresMain = crossSize.needsCrossAxis;
+        }
 
-    bool hasFlexIntrinsicFallback = false;
-    bool hasRelativeIntrinsicFallback = false;
+        if (mainRequiresCross && crossRequiresMain) {
+          // circular dependency,
+          // caused by RatioSize x RatioSize
+          throw FlutterError.fromParts([
+            ErrorSummary('Circular dependency detected'),
+            ErrorDescription(
+              'A child of FlexBox has a size that depends on both main axis and cross axis size.',
+            ),
+            ErrorHint(
+              'This is not supported because it would cause an infinite loop during layout.',
+            ),
+          ]);
+        }
+
+        child = data.nextSibling;
+      }
+
+      // second consensus pass now that we have biggest flex
+      // the one that requires biggest flex usually is ExpandingSize
+      if (requiresBiggestFlex != null) {
+        totalFlex = totalFlexBeforeDisaster;
+      }
+      while (requiresBiggestFlex != null) {
+        final data = requiresBiggestFlex.parentData as FlexBoxParentData;
+
+        final mainSize = data.getSize(direction);
+
+        if (mainSize != null) {
+          final result = mainSize.computeTotalFlex(biggestMainFlex);
+          totalFlex = _addNullable(result, totalFlex);
+        }
+
+        requiresBiggestFlex = data.nextSibling;
+      }
+    }
+
+    runConsensus();
+
+    bool resolved = false;
+    int passCount = 0;
+
+    bool mainViewportSizeAvailable = maxViewportMainSize.isFinite;
+    bool crossViewportSizeAvailable = maxViewportCrossSize.isFinite;
 
     bool shouldSortChildren = false;
 
-    double? spacePerFlex;
+    // these values reflect state from previous pass (and default if hasn't passed)
+    double? crossContentSize;
+    double? mainContentSize;
+    // separate this to get easy remaining space for flexes
+    double? mainFlexContentSize;
+    double? flexFactor; // flex factor is space per flex unit
+    //
 
-    if (layoutChange.affectsNonAbsolute) {
-      RenderBox? firstFlexibleChild;
+    while (!resolved && passCount < maxComputePass) {
+      bool desparateLayout = passCount >= maxComputePass - 1;
+      print('------------------------------------------------------');
+      print('PASS: $passCount (desparate: $desparateLayout)');
 
-      // First pass
-      RenderBox? child = relativeFirstChild;
+      if (flexFactor != null) {
+        mainContentSize = null;
+      }
+      // the reason why we don't reset mainContentSize
+      // when flexFactor is null is that
+      // mainContentSize is required to determine
+      // the remaining space for flexes
+      // when flexFactor is null, it means
+      // we have not yet determined the space per flex unit
+      // so we need to keep the mainContentSize
+      mainFlexContentSize = null;
+      crossContentSize = null;
+      // we set it to null because each pass
+      // might recompute and layout from previous pass might change
+
+      // state for current pass
+      bool mainContentSizeReady = true;
+      // if mainContentSizeReady is false, it means
+      // at least one child cannot compute its main size
+      // (except for child that has flex size)
+      // this is typically caused by child with
+      // RatioSize (has not gotten cross size yet)
+      // RelativeSize (relative to content, and has not gotten content size yet)
+      // IntrinsicSize (same as relative)
+      bool mainFlexContentSizeReady = true;
+      // if mainFlexContentSizeReady is false, it means
+      // at least one child with flex size cannot compute its main size
+      bool crossContentSizeReady = true;
+      // these will be toggled to false
+      // if one of the children is not ready
+      bool absolutesReady = true;
+      // if absolutesReady is false, it means
+      // at least one absolute child cannot compute its size
+      // mostly due to RelativeSize (relative to content, and has not gotten content size yet)
+      bool recomputeFlexFactor = false;
+      bool hasNewFlexes = false;
+      //
+      // the order usually goes like this:
+      // 1. compute children that does not depend on content size
+      // 2. some of the size are ready, compute children that depends on content size
+      // 3. repeat number 2 until all children are resolved (except for when they depend on the flex size)
+      // 4. compute flex size if any
+      //    after this, main content size and main flex content size should be ready
+      // 5. compute dependant cross sizes
+      //    after this, cross content size should be ready
+      // 6. both main content size (with flex size) and cross content size are ready, we are done 😘
+
+      // only keys that are from dependsOn are stored here
+      Map<Key, double> dependencies = {};
+
+      RenderBox? child = firstChild;
+      int childIndex = 0;
+
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
-        // reset resolved sizes
-        data.resolvedMainSize = null;
-        data.resolvedCrossSize = null;
+        print('child: ${childIndex++}');
+        // reset
+        if (passCount == 0) {
+          data.resolvedMainSize = null;
+          data.resolvedCrossSize = null;
+        }
 
+        bool shouldComputeMain = true;
+        bool shouldComputeCross = true;
+
+        // count
+        BoxSize? mainSize = data.getSize(direction);
+        BoxSize? crossSize = data.getSize(crossDirection);
+
+        final mainContentRelative = data.isRelativeToContent(direction);
+        final crossContentRelative = data.isRelativeToContent(crossDirection);
+
+        // state for parent size availability
+        // relative to what the child is relative to
+        final mainParentSizeAvailable = mainContentRelative
+            ? (mainContentSize != null && mainFlexContentSize != null)
+            : mainViewportSizeAvailable;
+        final crossParentSizeAvailable = crossContentRelative
+            ? crossContentSize != null
+            : crossViewportSizeAvailable;
+
+        // the parent size it self
+        final mainParentSize = mainContentRelative
+            ? mainContentSize
+            : maxViewportMainSize;
+        final crossParentSize = crossContentRelative
+            ? crossContentSize
+            : maxViewportCrossSize;
+
+        // if a child with non-null zOrder was found,
+        // mark shouldSortChildren indicates at the end
+        // if this, the flexbox should sort out the children
         if (data.zOrder != null) {
           shouldSortChildren = true;
         }
 
-        // skip absolute children
-        if (data.isAbsolute) {
-          _firstAbsoluteChild ??= _Store(child);
-          absoluteCount++;
-          child = relativeNextSibling(child);
+        // fill in defaults for main
+        if (mainSize == null) {
+          if (data.isAbsolute) {
+            // if absolute, default will be taken from start and end positions
+            // or intrinsic if both are not available
+            final mainStart = data.getStartPosition(direction);
+            final mainEnd = data.getEndPosition(direction);
+            if (mainStart != null && mainEnd != null) {
+              if (mainParentSizeAvailable) {
+                data.setTemporarySize(
+                  direction,
+                  mainSize =
+                      const BoxSize.relative(1.0) -
+                      BoxSize.fixed(
+                        mainStart.computePosition(mainParentSize!),
+                      ) -
+                      BoxSize.fixed(mainEnd.computePosition(mainParentSize)),
+                );
+              } else {
+                // main size depends on parent size that is not available yet
+                shouldComputeMain = false;
+              }
+            } else {
+              data.setTemporarySize(
+                direction,
+                mainSize = const BoxSize.intrinsic(),
+              );
+            }
+          } else {
+            // non-absolute default to intrinsic
+            data.setTemporarySize(
+              direction,
+              mainSize = const BoxSize.intrinsic(),
+            );
+          }
+        }
+        // fill in defaults for cross
+        if (crossSize == null) {
+          if (data.isAbsolute) {
+            final crossStart = data.getStartPosition(crossDirection);
+            final crossEnd = data.getEndPosition(crossDirection);
+            if (crossStart != null && crossEnd != null) {
+              if (crossParentSizeAvailable && crossParentSize != null) {
+                data.setTemporarySize(
+                  crossDirection,
+                  crossSize =
+                      const BoxSize.relative(1.0) -
+                      BoxSize.fixed(
+                        crossStart.computePosition(crossParentSize),
+                      ) -
+                      BoxSize.fixed(crossEnd.computePosition(crossParentSize)),
+                );
+              } else {
+                // cross size depends on parent size that is not available yet
+                shouldComputeCross = false;
+              }
+            } else {
+              data.setTemporarySize(
+                crossDirection,
+                crossSize = BoxSize.intrinsic(),
+              );
+            }
+          } else {
+            data.setTemporarySize(
+              crossDirection,
+              crossSize = BoxSize.intrinsic(),
+            );
+          }
+        }
+
+        if (mainSize == null || crossSize == null) {
+          // cannot resolve anything without size
+          if (!data.isAbsolute) {
+            if (mainSize == null) {
+              mainContentSizeReady = false;
+            }
+            if (crossSize == null) {
+              crossContentSizeReady = false;
+            }
+          }
+          child = data.nextSibling;
           continue;
         }
 
-        _firstNonAbsoluteChild ??= _Store(child);
-
-        final mainSize = data.getSize(direction);
-        final crossSize = data.getSize(crossDirection);
-        switch (mainSize) {
-          case FixedSize():
-            data.resolvedMainSize = _clamp(
-              mainSize.size,
-              mainSize.min,
-              mainSize.max,
-            );
-            mainContentSize += data.resolvedMainSize!;
-            // resolvedMainAxisCount++;
-            // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
-            // impossible to handle: UnconstrainedSize (need max content cross size),
-            //   relativeSize (need max content cross size),
-            //   FlexSize (need max content cross size)
-            switch (crossSize) {
-              case FlexSize():
-                maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-              // case ContentRelativeSize():
-              case ExpandingSize():
-                crossDependedCount++;
-                break;
-              case FixedSize():
-                data.resolvedCrossSize = _clamp(
-                  crossSize.size,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case IntrinsicSize():
-                data.resolvedCrossSize = _clamp(
-                  _computeMaxIntrinsicCross(child, data.resolvedMainSize!),
-                  crossSize.min,
-                  crossSize.max,
-                );
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case RatioSize():
-                data.resolvedCrossSize = _clamp(
-                  data.resolvedMainSize! * crossSize.ratio,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case RelativeSize():
-                if (data.isRelativeToContent(crossDirection)) {
-                  // cannot resolve relative size on cross axis
-                  // because it depends on content size,
-                  crossDependedCount++;
-                } else {
-                  if (maxViewportCrossSize.isFinite) {
-                    data.resolvedCrossSize = _clamp(
-                      maxViewportCrossSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  } else {
-                    // cannot resolve relative size on cross axis
-                    // because max cross size is infinite, so as a
-                    // safe fallback, we resolve it to 0
-                    data.resolvedCrossSize = _clamp(
-                      0.0,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  }
-                }
-                break;
-            }
-            break;
-          case IntrinsicSize():
-            // handles: FixedSize, RelativeSize, Ratio, Intrinsic
-            // impossible to handle: UnconstrainedSize (need max content cross size),
-            //  relativeSize (need max content cross size),
-            //  FlexSize (need max content cross size)
-            switch (crossSize) {
-              case FlexSize():
-                maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-              // case ContentRelativeSize():
-              case ExpandingSize():
-                crossDependedCount++;
-                break;
-              case FixedSize():
-                data.resolvedCrossSize = _clamp(
-                  crossSize.size,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                data.resolvedMainSize = _clamp(
-                  _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                  mainSize.min,
-                  mainSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case RelativeSize():
-                if (data.isRelativeToContent(crossDirection)) {
-                  // cannot resolve relative size on cross axis
-                  // because it depends on content size,
-                  crossDependedCount++;
-                } else {
-                  if (maxViewportCrossSize.isFinite) {
-                    data.resolvedCrossSize = _clamp(
-                      maxViewportCrossSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                    mainContentSize += data.resolvedMainSize!;
-                    // resolvedMainAxisCount++;
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  } else {
-                    // cannot resolve relative size on cross axis
-                    // because max cross size is infinite, so as a
-                    // safe fallback, we resolve it to 0
-                    data.resolvedCrossSize = _clamp(
-                      0.0,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                    mainContentSize += data.resolvedMainSize!;
-                    // resolvedMainAxisCount++;
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  }
-                }
-                break;
-              case RatioSize():
-                // since both depends on each other, we resolve
-                // Intrinsic by using double.infinite for its cross size
-                data.resolvedMainSize = _clamp(
-                  _computeMaxIntrinsicMain(child, double.infinity),
-                  mainSize.min,
-                  mainSize.max,
-                );
-                data.resolvedCrossSize = _clamp(
-                  data.resolvedMainSize! * crossSize.ratio,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case IntrinsicSize():
-                // both main and cross depends on each other
-                // we resolve Intrinsic by using double.infinite for its cross size
-                data.resolvedMainSize = _clamp(
-                  _computeMaxIntrinsicMain(child, double.infinity),
-                  mainSize.min,
-                  mainSize.max,
-                );
-                data.resolvedCrossSize = _clamp(
-                  _computeMaxIntrinsicCross(child, double.infinity),
-                  crossSize.min,
-                  crossSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-            }
-            break;
-          case RelativeSize():
-            if (data.isRelativeToContent(direction)) {
-              throw FlutterError(
-                'RelativeSize that is relative to content cannot be used on the main axis. It can only be used on the cross axis.',
-              );
-            }
-            if (maxViewportMainSize.isFinite) {
-              // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
-              // impossible to handle: UnconstrainedSize (need max content cross size),
-              //   relativeSize (need max content cross size),
-              //   FlexSize (need max content cross size)
-              data.resolvedMainSize = _clamp(
-                maxViewportMainSize * mainSize.relative,
-                mainSize.min,
-                mainSize.max,
-              );
-              mainContentSize += data.resolvedMainSize!;
-              // resolvedMainAxisCount++;
-              switch (crossSize) {
-                case FlexSize():
-                  maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-                // case ContentRelativeSize():
-                case ExpandingSize():
-                  crossDependedCount++;
-                  break;
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case IntrinsicSize():
-                  data.resolvedCrossSize = _clamp(
-                    _computeMaxIntrinsicCross(child, data.resolvedMainSize!),
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case RatioSize():
-                  data.resolvedCrossSize = _clamp(
-                    data.resolvedMainSize! * crossSize.ratio,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    // relative to content size, cannot be resolved yet
-                    // because content size is not known yet
-                    crossDependedCount++;
-                  } else {
-                    if (maxViewportCrossSize.isFinite) {
-                      data.resolvedCrossSize = _clamp(
-                        maxViewportCrossSize * crossSize.relative,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    } else {
-                      // cannot resolve relative size on cross axis
-                      // because max cross size is infinite, so as a
-                      // safe fallback, we resolve it to 0
-                      data.resolvedCrossSize = _clamp(
-                        0.0,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                  }
-                  break;
-              }
-            } else {
-              // relative size needs viewport size to be finite
-              // so as a safe fallback, we resolve it to 0.
-              // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
-              // impossible to handle: UnconstrainedSize (need max content cross size),
-              //   relativeSize (need max content cross size),
-              //   FlexSize (need max content cross size)
-              // data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
-              if (mainSize.intrinsicFallback) {
-                // data.resolvedMainSize = _clamp(
-                //   _computeMaxIntrinsicMain(child, double.infinity),
-                //   mainSize.min,
-                //   mainSize.max,
-                // );
-                hasFlexIntrinsicFallback = true;
-                continue;
-              } else {
-                data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
-              }
-              mainContentSize += data.resolvedMainSize!;
-              // resolvedMainAxisCount++;
-              switch (crossSize) {
-                case FlexSize():
-                  maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-                // case ContentRelativeSize():
-                case ExpandingSize():
-                  crossDependedCount++;
-                  break;
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case IntrinsicSize():
-                  data.resolvedCrossSize = _clamp(
-                    _computeMaxIntrinsicCross(child, double.infinity),
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    // relative to content size, cannot be resolved yet
-                    // because content size is not known yet
-                    crossDependedCount++;
-                  } else {
-                    if (maxViewportCrossSize.isFinite) {
-                      data.resolvedCrossSize = _clamp(
-                        maxViewportCrossSize * crossSize.relative,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    } else {
-                      // cannot resolve relative size on cross axis
-                      // because max cross size is infinite, so as a
-                      // safe fallback, we resolve it to 0
-                      data.resolvedCrossSize = _clamp(
-                        0.0,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                  }
-                  break;
-                case RatioSize():
-                  // ratio simply resolves to 0
-                  data.resolvedCrossSize = _clamp(
-                    0.0,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-              }
-            }
-            break;
-          case FlexSize():
-            if (spaceRemaining.isInfinite) {
-              // flex requires space to resolve, but since spaceRemaining is infinite,
-              // we cannot resolve flex. Flex always requires space to resolve.
-              // A safe fallback is done by treating flex as zero or intrinsic depending on the option
-              // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
-              // impossible to handle: UnconstrainedSize (need max content cross size),
-              //   relativeSize (need max content cross size),
-              //   FlexSize (need max content cross size)
-              // data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
-              if (mainSize.intrinsicFallback) {
-                // data.resolvedMainSize = _clamp(
-                //   _computeMaxIntrinsicMain(child, double.infinity),
-                //   mainSize.min,
-                //   mainSize.max,
-                // );
-                hasFlexIntrinsicFallback = true;
-                continue;
-              } else {
-                data.resolvedMainSize = _clamp(0.0, mainSize.min, mainSize.max);
-              }
-              mainContentSize += data.resolvedMainSize!;
-              // resolvedMainAxisCount++;
-              switch (crossSize) {
-                case FlexSize():
-                  maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-                // case ContentRelativeSize():
-                case ExpandingSize():
-                  crossDependedCount++;
-                  break;
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case IntrinsicSize():
-                  data.resolvedCrossSize = _clamp(
-                    _computeMaxIntrinsicCross(child, double.infinity),
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    // relative to content size, cannot be resolved yet
-                    // because content size is not known yet
-                    crossDependedCount++;
-                  } else {
-                    if (maxViewportCrossSize.isFinite) {
-                      data.resolvedCrossSize = _clamp(
-                        maxViewportCrossSize * crossSize.relative,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    } else {
-                      // cannot resolve relative size on cross axis
-                      // because max cross size is infinite, so as a
-                      // safe fallback, we resolve it to 0
-                      data.resolvedCrossSize = _clamp(
-                        0.0,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                  }
-                  break;
-                case RatioSize():
-                  // ratio simply resolves to 0
-                  data.resolvedCrossSize = _clamp(
-                    0.0,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-              }
-            } else {
-              // only record flex values for now
-              // handles: FixedSize, RelativeSize
-              // impossible to handle: UnconstrainedSize (need max content cross size),
-              //   relativeSize (need max content cross size),
-              //   IntrinsicSize (need cross axis size), RatioSize (need cross axis size),
-              //   FlexSize (need max content cross size),
-              if (biggestMainFlex == null || mainSize.flex > biggestMainFlex) {
-                biggestMainFlex = mainSize.flex;
-              }
-              totalMainFlex += mainSize.flex;
-              unresolvedFlexCount++;
-              firstFlexibleChild ??= child;
-              // resolve cross axis if possible
-              switch (crossSize) {
-                case FlexSize():
-                  maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-                // case ContentRelativeSize():
-                case ExpandingSize():
-                  crossDependedCount++;
-                  break;
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  crossContentSize = _maxNullable(
-                    crossContentSize,
-                    data.resolvedCrossSize!,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    // relative to content size, cannot be resolved yet
-                    // because content size is not known yet
-                    crossDependedCount++;
-                  } else {
-                    if (maxViewportCrossSize.isFinite) {
-                      data.resolvedCrossSize = _clamp(
-                        maxViewportCrossSize * crossSize.relative,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    } else {
-                      // cannot resolve relative size on cross axis
-                      // because max cross size is infinite, so as a
-                      // safe fallback, we resolve it to 0
-                      data.resolvedCrossSize = _clamp(
-                        0.0,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                  }
-                  break;
-              }
-              // do not resolve IntrinsicSize for now, because
-              // it requires main axis size to be resolved
-            }
-            break;
-          case ExpandingSize():
-            // only record unconstrained count for now
-            unresolvedUnconstrainedCount++;
-            firstFlexibleChild ??= child;
-            break;
-          case RatioSize():
-            // handles: FixedSize, RelativeSize, IntrinsicSize, RatioSize
-            // impossible to handle: UnconstrainedSize (need max content cross size),
-            //   relativeSize (need max content cross size),
-            //   FlexSize (need max content cross size)
-            switch (crossSize) {
-              case FlexSize():
-                maxCrossFlex = _maxNullable(maxCrossFlex, crossSize.flex);
-              // case ContentRelativeSize():
-              case ExpandingSize():
-                crossDependedCount++;
-                break;
-              case FixedSize():
-                data.resolvedCrossSize = _clamp(
-                  crossSize.size,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                data.resolvedMainSize = _clamp(
-                  data.resolvedCrossSize! * mainSize.ratio,
-                  mainSize.min,
-                  mainSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-              case RatioSize():
-                // both main and cross depends on each other
-                throw FlutterError(
-                  'RatioSize cannot be used on both main and cross axis at the same time. It can only be used on one axis.',
-                );
-              case RelativeSize():
-                if (data.isRelativeToContent(crossDirection)) {
-                  // relative to content size, cannot be resolved yet
-                  // because content size is not known yet
-                  crossDependedCount++;
-                } else {
-                  if (maxViewportCrossSize.isFinite) {
-                    data.resolvedCrossSize = _clamp(
-                      maxViewportCrossSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      data.resolvedCrossSize! * mainSize.ratio,
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                    mainContentSize += data.resolvedMainSize!;
-                    // resolvedMainAxisCount++;
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  } else {
-                    // infinite max cross size, cannot resolve
-                    // so, as a safe fallback, we resolve both
-                    // as 0/intrinsic
-                    if (crossSize.intrinsicFallback) {
-                      data.resolvedCrossSize = _clamp(
-                        _computeMaxIntrinsicCross(child, double.infinity),
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                    } else {
-                      data.resolvedCrossSize = _clamp(
-                        0.0,
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                    }
-                    data.resolvedMainSize = _clamp(
-                      data.resolvedCrossSize! * mainSize.ratio,
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                    mainContentSize += data.resolvedMainSize!;
-                    // resolvedMainAxisCount++;
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                  }
-                }
-                break;
-              case IntrinsicSize():
-                // since both depends on each other, we resolve
-                data.resolvedMainSize = _clamp(
-                  _computeMaxIntrinsicMain(child, double.infinity),
-                  mainSize.min,
-                  mainSize.max,
-                );
-                data.resolvedCrossSize = _clamp(
-                  data.resolvedMainSize! * mainSize.ratio,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                crossContentSize = _maxNullable(
-                  crossContentSize,
-                  data.resolvedCrossSize!,
-                );
-                break;
-            }
-            break;
-        }
-        child = relativeNextSibling(child);
-      }
-
-      spaceRemaining -= mainContentSize;
-
-      int gapCount = childCount - absoluteCount - 1;
-      bool expandingSpacing = spacing.isInfinite;
-      if (gapCount > 0) {
-        if (!expandingSpacing) {
-          // takes the exact amount of spacing
-          // from the remaining space
-          mainContentSize += gapCount * spacing;
-          spaceRemaining -= gapCount * spacing;
-        }
-      }
-
-      if (spacingBehavior != FlexSpacing.between) {
-        // there is spacing at the edges
-        // and if the spacing is expanding,
-        // it forces
-      }
-
-      // At this point, these children have been laid out:
-      // - Size(Fixed, Fixed)
-      // - Size(Fixed, Intrinsic)
-      // - Size(Fixed, Ratio)
-      // - Size(Fixed, Relative) * CARE FOR INFINITE CROSS SIZE
-      // - Size(Intrinsic, Fixed)
-      // - Size(Intrinsic, Relative) * CARE FOR INFINITE CROSS SIZE
-      // - Size(Intrinsic, Intrinsic)
-      // - Size(Intrinsic, Ratio)
-      // - Size(Relative, Fixed) * CASE FOR INFINITE MAIN SIZE
-      // - Size(Relative, Intrinsic) * CARE FOR INFINITE MAIN SIZE
-      // - Size(Relative, Ratio) * CARE FOR INFINITE MAIN SIZE
-      // - Size(Relative, Relative) * CARE FOR INFINITE SIZES
-      // - Size(relative, *) * NOT ALLOWED
-      // - Size(Flex (infinite, treat as 0 Fixed), Fixed)
-      // - Size(Flex (infinite), Intrinsic)
-      // - Size(Flex (infinite), Relative) * CARE FOR INFINITE CROSS SIZE
-      // - Size(Flex (infinite), Ratio)
-      // - Size(Ratio, Fixed)
-      // - Size(Ratio, Relative) * CARE FOR INFINITE CROSS SIZE
-      // - Size(Ratio, Intrinsic)
-      // - Size(Ratio, Ratio) * NOT ALLOWED
-      // mainContentSize now the sum size of all fixeds
-      // crossContentSize is now the max of fixed, intrinsic, and ratio
-      // not yet solved:
-      // - Size(Unconstrained, *)
-      // - Size(Flex, *) (if spaceRemaining is finite)
-      // - Size(*, Unconstrained)
-      // - Size(*, Flex)
-      // - Size(*, relative)
-
-      bool shouldResolveFlex =
-          spaceRemaining.isFinite &&
-          (unresolvedFlexCount > 0 || unresolvedUnconstrainedCount > 0);
-      // The reason canResolveFlex is false could be:
-      // 1. main RatioSize is not yet solved
-
-      // at this point, main RatioSize depends on each other (with cross FlexSize, UnconstrainedSize, relativeSize)
-      // for the next phase, we prioritize resolving main FlexSize, and UnconstrainedSize first
-      // so that we can have a resolved max cross content size to resolve main RatioSize and cross relativeSize
-
-      // Second Phase
-      if (shouldResolveFlex) {
-        biggestMainFlex ??= 1.0;
-        totalMainFlex += biggestMainFlex * unresolvedUnconstrainedCount;
-        bool keepResolving = true;
-        int resolvePassCount = 0;
-        int totalFlexChildren =
-            unresolvedFlexCount + unresolvedUnconstrainedCount;
-        while (keepResolving && resolvePassCount < 10) {
-          keepResolving = false;
-          spacePerFlex = totalMainFlex > 0
-              ? spaceRemaining / totalMainFlex
-              : 0.0;
-          child = firstFlexibleChild;
-          while (child != null) {
-            final data = child.parentData as FlexBoxParentData;
-            if (data.isAbsolute) {
-              child = relativeNextSibling(child);
-              continue;
-            }
-            final mainSize = data.getSize(direction);
-            final crossSize = data.getSize(crossDirection);
-            switch (mainSize) {
-              case FlexSize():
-                if (data.resolvedMainSize != null) {
-                  // already resolved on a previous pass
-                  child = relativeNextSibling(child);
-                  continue;
-                }
-                double proposedSize = spacePerFlex * mainSize.flex;
-                data.resolvedMainSize = _clamp(
-                  proposedSize,
-                  mainSize.min,
-                  mainSize.max,
-                );
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                bool wasConstrained = proposedSize != data.resolvedMainSize;
-                // already handled previously:
-                // FixedSize, RelativeSize
-                // not yet handled:
-                // - IntrinsicSize (need cross axis size)
-                // - UnconstrainedSize (need max content cross size) * we don't do this here just yet
-                // - relativeSize (need max content cross size) * we don't do this here just yet
-                // - FlexSize (need max content cross size) * we don't do this here just yet
-                // - RatioSize (need cross axis size)
-                switch (crossSize) {
-                  case IntrinsicSize():
-                    if (data.resolvedMainSize != null) {
-                      data.resolvedCrossSize = _clamp(
-                        _computeMaxIntrinsicCross(
-                          child,
-                          data.resolvedMainSize!,
-                        ),
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                    break;
-                  case RatioSize():
-                    data.resolvedCrossSize = _clamp(
-                      data.resolvedMainSize! * crossSize.ratio,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                    break;
-                }
-                if (wasConstrained && totalFlexChildren > 1) {
-                  // the resolved main size does not reflect the actual
-                  // flex size, therefore recalculation is needed.
-                  // This happens when a flex child has min/max constraints
-                  // and it affects other flex children.
-                  totalMainFlex -= mainSize.flex;
-                  spaceRemaining -= data.resolvedMainSize!;
-                  totalFlexChildren--;
-                  keepResolving = true;
-                }
-                break;
-              case ExpandingSize():
-                if (data.resolvedMainSize != null) {
-                  // already resolved on a previous pass
-                  child = relativeNextSibling(child);
-                  continue;
-                }
-                // unconstrained size acts as the biggest flex
-                double proposedSize = spacePerFlex * biggestMainFlex;
-                data.resolvedMainSize = _clamp(
-                  proposedSize,
-                  mainSize.min,
-                  mainSize.max,
-                );
-                bool wasConstrained = proposedSize != data.resolvedMainSize;
-                mainContentSize += data.resolvedMainSize!;
-                // resolvedMainAxisCount++;
-                switch (crossSize) {
-                  case IntrinsicSize():
-                    if (data.resolvedMainSize != null) {
-                      data.resolvedCrossSize = _clamp(
-                        _computeMaxIntrinsicCross(
-                          child,
-                          data.resolvedMainSize!,
-                        ),
-                        crossSize.min,
-                        crossSize.max,
-                      );
-                      crossContentSize = _maxNullable(
-                        crossContentSize,
-                        data.resolvedCrossSize!,
-                      );
-                    }
-                    break;
-                  case RatioSize():
-                    data.resolvedCrossSize = _clamp(
-                      data.resolvedMainSize! * crossSize.ratio,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    crossContentSize = _maxNullable(
-                      crossContentSize,
-                      data.resolvedCrossSize!,
-                    );
-                    break;
-                }
-                if (wasConstrained && totalFlexChildren > 1) {
-                  // the resolved main size does not reflect the actual
-                  // flex size, therefore recalculation is needed.
-                  // This happens when a flex child has min/max constraints
-                  // and it affects other flex children.
-                  totalMainFlex -= biggestMainFlex;
-                  spaceRemaining -= data.resolvedMainSize!;
-                  totalFlexChildren--;
-                  keepResolving = true;
-                }
-                break;
-            }
-            if (keepResolving) {
-              // force restart from the beginning
-              // due to recalculation of flex units
-              break;
-            }
-            child = relativeNextSibling(child);
-          }
-          resolvePassCount++;
-        }
-      }
-      assert(() {
-        RenderBox? child = relativeFirstChild;
-        while (child != null) {
-          final data = child.parentData as FlexBoxParentData;
-          final mainSize = data.getSize(direction);
-          final crossSize = data.getSize(crossDirection);
-          // make sure all main axis are resolved except for relativeSize
-          if (!data.isAbsolute &&
-              !(mainSize is RelativeSize &&
-                  data.isRelativeToContent(direction)) &&
-              data.resolvedMainSize == null) {
-            throw FlutterError(
-              'Main axis size is not resolved for a non-absolute child. '
-              'This is likely a bug. Please report it to the package maintainer. '
-              'Child: $child, MainSize: $mainSize, CrossSize: $crossSize',
-            );
-          }
-          // make sure all cross axis are resolved except for relativeSize, FlexSize, UnconstrainedSize
-
-          if (!data.isAbsolute &&
-              !(crossSize is RelativeSize &&
-                  data.isRelativeToContent(crossDirection)) &&
-              crossSize is! FlexSize &&
-              crossSize is! ExpandingSize &&
-              data.resolvedCrossSize == null) {
-            throw FlutterError(
-              'Cross axis size is not resolved for a non-absolute child. '
-              'This is likely a bug. Please report it to the package maintainer. '
-              'Child: $child, MainSize: $mainSize, CrossSize: $crossSize',
-            );
-          }
-          child = relativeNextSibling(child);
-        }
-        return true;
-      }(), 'Conditions does not meet expectations');
-    }
-
-    // At this point, these children have been laid out:
-    // - Size(Flex (finite), Fixed)
-    // - Size(Flex (finite), Relative) * CARE FOR INFINITE CROSS SIZE
-    // - Size(Flex (finite), Intrinsic)
-    // - Size(Flex (finite), Ratio)
-    // - Size(Unconstrained, Fixed)
-    // - Size(Unconstrained, Relative) * CARE FOR INFINITE CROSS SIZE
-    // - Size(Unconstrained, Intrinsic)
-    // - Size(Unconstrained, Ratio)
-    // not yet solved:
-    // - Size(*, Unconstrained)
-    // - Size(*, Flex)
-    // - Size(*, relative)
-    // now cross content size is resolved.
-
-    bool shouldResolveCross = crossDependedCount > 0;
-
-    // the next phase requires viewport size to be finite
-    // so for that, when the viewport size is infinite,
-    // we refer them to the content size instead.
-    if (maxViewportMainSize.isInfinite) {
-      maxViewportMainSize = mainContentSize;
-    }
-    if (maxViewportCrossSize.isInfinite) {
-      // maxViewportCrossSize = crossContentSize;
-      if (crossContentSize == null) {
-        // if crossContentSize is still null, it means all children
-        // are either UnconstrainedSize, FlexSize, or relativeSize
-        // in this case, we set it to 0
-        maxViewportCrossSize = 0.0;
-        crossContentSize = 0.0;
-      } else {
-        maxViewportCrossSize = crossContentSize;
-      }
-    } else {
-      crossContentSize ??= maxViewportCrossSize;
-    }
-
-    // Third Phase
-    // now we resolve cross axis that depends on max cross content size
-    // we can also lay out the absolute children
-    if (shouldResolveCross ||
-        absoluteCount > 0 ||
-        layoutChange == FlexBoxLayoutChange.absolute) {
-      maxCrossFlex ??= 1.0;
-      double crossSpacePerFlex = maxCrossFlex > 0
-          ? crossContentSize / maxCrossFlex
-          : 0.0;
-      RenderBox? child;
-      if (layoutChange == FlexBoxLayoutChange.absolute) {
-        final firstAbsolute = _firstAbsoluteChild;
-        if (firstAbsolute == null) {
-          child = relativeFirstChild;
-        } else {
-          child = firstAbsolute.value;
-        }
-      } else {
-        child = relativeFirstChild;
-      }
-      // note: no need to set for _firstAbsoluteChild here,
-      // because it is already set in the first phase
-      while (child != null) {
-        final data = child.parentData as FlexBoxParentData;
-        if (data.isAbsolute) {
-          _firstAbsoluteChild ??= _Store(child);
-          // reset resolved sizes and positions
-          data.resolvedMainStart = data.resolvedMainEnd =
-              data.resolvedCrossStart = data.resolvedCrossEnd = null;
-
-          assert(
-            data.resolvedMainSize == null && data.resolvedCrossSize == null,
-            'Absolute children should not have resolved sizes. Child: $child',
-          );
-          final mainSize = data.getSize(direction);
-          final crossSize = data.getSize(crossDirection);
-          double maxMainSize;
-          double maxCrossSize;
-          if (data.isRelativeToContent(direction)) {
-            maxMainSize = mainContentSize;
-          } else {
-            maxMainSize = maxViewportMainSize;
-          }
-          if (data.isRelativeToContent(crossDirection)) {
-            maxCrossSize = crossContentSize;
-          } else {
-            maxCrossSize = maxViewportCrossSize;
-          }
-          BoxPosition? mainStart = data.getStartPosition(direction);
-          BoxPosition? crossStart = data.getStartPosition(crossDirection);
-          BoxPosition? mainEnd = data.getEndPosition(direction);
-          BoxPosition? crossEnd = data.getEndPosition(crossDirection);
-          // resolve positions
-          double mainFixedStart =
-              (data.resolvedMainStart = mainStart?.computePosition(
-                maxMainSize,
-              )) ??
-              0;
-          double mainFixedEnd =
-              (data.resolvedMainEnd = mainEnd?.computePosition(maxMainSize)) ??
-              0;
-          double crossFixedStart =
-              (data.resolvedCrossStart = crossStart?.computePosition(
-                maxCrossSize,
-              )) ??
-              0;
-          double crossFixedEnd =
-              (data.resolvedCrossEnd = crossEnd?.computePosition(
-                maxCrossSize,
-              )) ??
-              0;
-          double usedMain = mainFixedStart + mainFixedEnd;
-          double usedCross = crossFixedStart + crossFixedEnd;
-          // resolve size
-          switch (mainSize) {
-            case ExpandingSize():
-              data.resolvedMainSize = _clamp(
-                maxMainSize - usedMain,
-                mainSize.min,
-                mainSize.max,
-              );
-              break;
-            case FixedSize():
-              data.resolvedMainSize = _clamp(
-                mainSize.size,
-                mainSize.min,
-                mainSize.max,
-              );
-              break;
-            case FlexSize():
-              throw FlutterError(
-                'FlexSize cannot be used for absolute children. Child: $child',
-              );
-            case RelativeSize():
-              if (data.isRelativeToContent(direction)) {
-                // useless
-                data.resolvedMainSize = _clamp(
-                  mainSize.relative * mainContentSize,
-                  mainSize.min,
-                  mainSize.max,
-                );
-              } else {
-                data.resolvedMainSize = _clamp(
-                  maxMainSize * mainSize.relative,
-                  mainSize.min,
-                  mainSize.max,
-                );
-              }
-              break;
-            case IntrinsicSize():
-              switch (crossSize) {
-                case IntrinsicSize():
-                  // need each other to work, so we use double.infinity instead
-                  data.resolvedMainSize = _clamp(
-                    _computeMaxIntrinsicMain(child, double.infinity),
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  data.resolvedCrossSize = _clamp(
-                    _computeMaxIntrinsicCross(child, data.resolvedMainSize!),
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  break;
-                case RatioSize():
-                  // need each other to work, so we use double.infinity instead
-                  data.resolvedMainSize = _clamp(
-                    _computeMaxIntrinsicMain(child, double.infinity),
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  data.resolvedCrossSize = _clamp(
-                    data.resolvedMainSize! * crossSize.ratio,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  break;
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  data.resolvedMainSize = _clamp(
-                    _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    // this is basically useless if the box position type it self
-                    // set to content-relative type
-                    data.resolvedCrossSize = _clamp(
-                      crossContentSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                  } else {
-                    data.resolvedCrossSize = _clamp(
-                      maxCrossSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                  }
-                  break;
-                case ExpandingSize():
-                  data.resolvedCrossSize = _clamp(
-                    maxCrossSize - usedCross,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  data.resolvedMainSize = _clamp(
-                    _computeMaxIntrinsicMain(child, data.resolvedCrossSize!),
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  break;
-                case FlexSize():
-                  throw FlutterError(
-                    'FlexSize cannot be used for absolute children. Child: $child',
-                  );
-              }
-              break;
-            case RatioSize():
-              switch (crossSize) {
-                case IntrinsicSize():
-                  // need each other to work, so we use double.infinity instead
-                  data.resolvedCrossSize = _clamp(
-                    _computeMaxIntrinsicCross(child, double.infinity),
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! * mainSize.ratio,
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  break;
-                case RatioSize():
-                  // both main and cross depends on each other
-                  throw FlutterError(
-                    'RatioSize cannot be used on both main and cross axis at the same time. It can only be used on one axis. Child: $child',
-                  );
-                case FixedSize():
-                  data.resolvedCrossSize = _clamp(
-                    crossSize.size,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! * mainSize.ratio,
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  break;
-                case RelativeSize():
-                  if (data.isRelativeToContent(crossDirection)) {
-                    data.resolvedCrossSize = _clamp(
-                      crossContentSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      data.resolvedCrossSize! * mainSize.ratio,
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                  } else {
-                    data.resolvedCrossSize = _clamp(
-                      maxCrossSize * crossSize.relative,
-                      crossSize.min,
-                      crossSize.max,
-                    );
-                    data.resolvedMainSize = _clamp(
-                      data.resolvedCrossSize! * mainSize.ratio,
-                      mainSize.min,
-                      mainSize.max,
-                    );
-                  }
-                  break;
-                case ExpandingSize():
-                  data.resolvedCrossSize = _clamp(
-                    maxCrossSize - usedCross,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                  data.resolvedMainSize = _clamp(
-                    data.resolvedCrossSize! * mainSize.ratio,
-                    mainSize.min,
-                    mainSize.max,
-                  );
-                  break;
-                case FlexSize():
-                  throw FlutterError(
-                    'FlexSize cannot be used for absolute children. Child: $child',
-                  );
-              }
-              break;
-          }
-
-          // resolve cross sizing
-          if (data.resolvedCrossSize == null) {
-            switch (crossSize) {
-              case FixedSize():
-                data.resolvedCrossSize = _clamp(
-                  crossSize.size,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                break;
-              case RelativeSize():
-                if (data.isRelativeToContent(crossDirection)) {
-                  data.resolvedCrossSize = _clamp(
-                    crossContentSize * crossSize.relative,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                } else {
-                  data.resolvedCrossSize = _clamp(
-                    maxCrossSize * crossSize.relative,
-                    crossSize.min,
-                    crossSize.max,
-                  );
-                }
-                break;
-              case FlexSize():
-                throw FlutterError(
-                  'FlexSize cannot be used for absolute children. Child: $child',
-                );
-              case ExpandingSize():
-                data.resolvedCrossSize = _clamp(
-                  maxCrossSize - usedCross,
-                  crossSize.min,
-                  crossSize.max,
-                );
-                break;
-              case IntrinsicSize():
-              case RatioSize():
-                throw FlutterError(
-                  'IntrinsicSize and RatioSize should have been handled above. Child: $child',
-                );
-            }
-          }
-        } else {
-          if (!layoutChange.affectsAbsolute) {
-            child = relativeNextSibling(child);
-            continue;
-          }
-          final crossSize = data.getSize(crossDirection);
-          switch (crossSize) {
-            case ExpandingSize():
-              data.resolvedCrossSize = _clamp(
-                crossContentSize,
-                crossSize.min,
-                crossSize.max,
-              );
-              break;
-            case FlexSize():
-              data.resolvedCrossSize = _clamp(
-                crossSpacePerFlex * crossSize.flex,
-                crossSize.min,
-                crossSize.max,
-              );
-              break;
-            case RelativeSize():
-              if (data.isRelativeToContent(crossDirection)) {
-                assert(
-                  data.resolvedCrossSize == null,
-                  'Cross size should not be resolved yet for relative to content size',
-                );
-                data.resolvedCrossSize = _clamp(
-                  crossContentSize * crossSize.relative,
-                  crossSize.min,
-                  crossSize.max,
-                );
-              }
-              break;
-          }
-        }
-
-        // finally layout the children
-        double? resolvedMain = data.resolvedMainSize;
-        double? resolvedCross = data.resolvedCrossSize;
-        assert(
-          resolvedMain != null && resolvedCross != null,
-          'Resolved sizes should not be null at this point for size (${data.getSize(direction)}, ${data.getSize(crossDirection)})',
+        // requires flex factor means theres FlexSize or ExpandingSize in the calculation
+        final mainInputs = mainSize.getRequiredInputs(
+          mainAxis: true,
+          crossRequiresSize: null,
         );
-        // layoutChild(
-        //   child,
-        //   BoxConstraints.tightFor(
-        //     width: direction == Axis.horizontal ? resolvedMain : resolvedCross,
-        //     height: direction == Axis.horizontal ? resolvedCross : resolvedMain,
-        //   ),
-        // );
-        data.resolvedMainSize = data.resolvedCrossSize = null;
-        child = relativeNextSibling(child);
-      }
-    } else {
-      // layout all children
-      RenderBox? child = relativeFirstChild;
-      while (child != null) {
-        final data = child.parentData as FlexBoxParentData;
-        if (!data.isAbsolute) {
-          double? resolvedMain = data.resolvedMainSize;
-          double? resolvedCross = data.resolvedCrossSize;
-          assert(
-            resolvedMain != null && resolvedCross != null,
-            'Resolved sizes should not be null at this point for size (${data.getSize(direction)}, ${data.getSize(crossDirection)})',
-          );
-          // layoutChild(
-          //   child,
-          //   BoxConstraints.tightFor(
-          //     width: direction == Axis.horizontal
-          //         ? resolvedMain
-          //         : resolvedCross,
-          //     height: direction == Axis.horizontal
-          //         ? resolvedCross
-          //         : resolvedMain,
-          //   ),
-          // );
+        final crossInputs = crossSize.getRequiredInputs(
+          mainAxis: false,
+          crossRequiresSize: null,
+        );
+        final mainSizeDependencies = mainSize.dependencies;
+        final crossSizeDependencies = crossSize.dependencies;
+
+        if (mainInputs.needsFlexFactor) {
+          mainFlexContentSizeReady &= flexFactor != null;
+          // needsFlexFactor does not prevent child from computing it size,
+          // because if flexFactor is null, it will only try
+          // to compute non-flex sizes first so that mainContentSize
+          // become available to compute remaining space and flex factor
+          // it will however mark that main flex content size is not ready
+          // because it cannot compute flex size yet
         }
-        data.resolvedMainSize = data.resolvedCrossSize = null;
-        child = relativeNextSibling(child);
+
+        // there is an issue where the dependencies
+        // are from the main size itself. Preventing main
+        // from being computed will also prevent
+        // the dependencies from being resolved.
+        // if (!_containsAllKeys(dependencies, mainSizeDependencies)) {
+        //   shouldComputeMain = false;
+        // }
+
+        // if (!_containsAllKeys(dependencies, crossSizeDependencies)) {
+        //   shouldComputeCross = false;
+        // }
+
+        if (mainInputs.needsMainAxisParentSize) {
+          if (mainContentRelative) {
+            throw FlutterError.fromParts([
+              ErrorSummary(
+                'Child with main axis size relative to content cannot be inside a FlexBox with main axis size relative to content.',
+              ),
+              ErrorDescription(
+                'This is not supported because it would cause an infinite loop during layout.',
+              ),
+              ErrorHint(
+                'Try setting the main axis size to be relative to viewport instead of content.',
+              ),
+            ]);
+          }
+          shouldComputeMain &= mainParentSizeAvailable;
+        }
+
+        if (crossInputs.needsMainAxisParentSize) {
+          if (crossContentRelative) {
+            throw FlutterError.fromParts([
+              ErrorSummary(
+                'Child with cross axis size relative to content cannot be inside a FlexBox with cross axis size relative to content.',
+              ),
+              ErrorDescription(
+                'This is not supported because it would cause an infinite loop during layout.',
+              ),
+              ErrorHint(
+                'Try setting the cross axis size to be relative to viewport instead of content.',
+              ),
+            ]);
+          }
+          shouldComputeCross &= crossParentSizeAvailable;
+        }
+
+        if (mainInputs.needsCrossAxisParentSize) {
+          shouldComputeMain &= crossParentSizeAvailable;
+        }
+
+        if (crossInputs.needsCrossAxisParentSize) {
+          shouldComputeCross &= mainParentSizeAvailable;
+        }
+
+        if (mainSize.needsCrossAxis) {
+          shouldComputeMain &= data.resolvedCrossSize != null;
+        }
+
+        if (shouldComputeMain || hasNewFlexes) {
+          final result = mainSize.computeSize(
+            child: child,
+            direction: direction,
+            mainAxis: true,
+            computeFlex: flexFactor != null,
+            dependencies: dependencies,
+            dependsOn: dependsOn,
+            biggestFlex: biggestMainFlex,
+            crossAxisParentSize: crossParentSize,
+            crossAxisSize: data.resolvedCrossSize,
+            flexFactor: flexFactor,
+            mainAxisParentSize: mainParentSize,
+          );
+          if (result == null) {
+            mainContentSizeReady = false;
+          } else {
+            if (result.recomputeFlex) {
+              // when a size is marked to recompute flex,
+              // it means that FlexSize or ExpandingSize
+              // has been clamped and no longer contribute
+              // to the flex size, so we need to recompute
+              // the flex factor. To do this, we need to
+              // convert the flex size to fixed size
+              // so that in the next pass, the flex size
+              // will not be counted towards the flex size
+              recomputeFlexFactor = true;
+              mainContentSize = _addNullable(
+                mainContentSize,
+                result.result + result.flexResult,
+              );
+              // when resolvedMainSize is not null,
+              // the next pass will not reconsensus this
+              // child again
+              data.resolvedMainSize = result.result + result.flexResult;
+            } else {
+              mainFlexContentSize = _addNullable(
+                mainFlexContentSize,
+                result.flexResult,
+              );
+              mainContentSize = _addNullable(mainContentSize, result.result);
+              data.resolvedMainSize = result.result;
+              data.resolvedMainFlexSize = result.flexResult;
+            }
+          }
+        } else {
+          mainContentSizeReady = false;
+        }
+
+        if (crossSize.needsCrossAxis) {
+          shouldComputeCross &= data.resolvedMainSize != null;
+        }
+
+        if (shouldComputeCross) {
+          final result = crossSize.computeSize(
+            child: child,
+            direction: crossDirection,
+            mainAxis: false,
+            computeFlex: true,
+            dependencies: dependencies,
+            dependsOn: dependsOn,
+            biggestFlex: biggestCrossFlex,
+            crossAxisParentSize: crossParentSize,
+            crossAxisSize: data.resolvedMainSize,
+            flexFactor: null, // cross axis does not have flex factor
+            mainAxisParentSize: mainParentSize,
+          );
+          if (result == null) {
+            crossContentSizeReady = false;
+          } else {
+            crossContentSize = _maxNullable(
+              crossContentSize,
+              result.result,
+            );
+            // no need to separate flex size for cross axis
+            // because cross axis does not have flex factor
+            data.resolvedCrossSize = result.result + result.flexResult;
+          }
+        } else {
+          crossContentSizeReady = false;
+        }
+
+        child = data.nextSibling;
       }
+
+      if ((recomputeFlexFactor || flexFactor == null) && totalFlex != null) {
+        if (recomputeFlexFactor) {
+          // recompute flex factory only needs to be done
+          // to the main axis
+          runConsensus(
+            consensusForDependencies: false,
+            consensusForCross: false,
+          );
+        }
+        assert(totalFlex != null);
+        double remainingSpace = max(
+          0.0,
+          maxViewportMainSize - (mainContentSize ?? 0.0),
+        );
+        flexFactor = totalFlex! > 0 ? remainingSpace / totalFlex! : 0.0;
+        hasNewFlexes = true;
+      }
+
+      recomputeFlexFactor = false;
+
+      switch (layoutChange) {
+        case FlexBoxLayoutChange.none:
+          // should not happen
+          resolved = true;
+          break;
+        case FlexBoxLayoutChange.nonAbsolute:
+          resolved =
+              mainContentSizeReady &&
+              mainFlexContentSizeReady &&
+              crossContentSizeReady;
+          break;
+        case FlexBoxLayoutChange.absolute:
+          resolved = absolutesReady;
+          break;
+        case FlexBoxLayoutChange.both:
+          resolved =
+              mainContentSizeReady &&
+              mainFlexContentSizeReady &&
+              crossContentSizeReady &&
+              absolutesReady;
+          break;
+      }
+      print('-------------------------------');
+      passCount++;
     }
 
-    // make sure all children has been laid out
-    assert(() {
-      RenderBox? child = relativeFirstChild;
+    // layout
+    if (layoutChild != null) {
+      RenderBox? child = firstChild;
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
-        if (!child.hasSize) {
-          if (!data.isAbsolute &&
-              layoutChange == FlexBoxLayoutChange.absolute) {
-            child = relativeNextSibling(child);
-            continue;
-          }
-          throw FlutterError(
-            'Child has not been laid out. This is likely a bug. Please report it to the package maintainer. Child: $child, isAbsolute: ${data.isAbsolute}, mainSize: ${data.getSize(direction)}, crossSize: ${data.getSize(crossDirection)}',
-          );
-        }
-        child = relativeNextSibling(child);
+        layoutChild(
+          child,
+          BoxConstraints.tightFor(
+            width: direction == Axis.horizontal
+                ? data.resolvedMainSize
+                : data.resolvedCrossSize,
+            height: direction == Axis.horizontal
+                ? data.resolvedCrossSize
+                : data.resolvedMainSize,
+          ),
+        );
+        data.temporaryHeight = null;
+        data.temporaryWidth = null;
+        data.resolvedMainSize = null;
+        data.resolvedMainFlexSize = null;
+        data.resolvedCrossSize = null;
+        child = data.nextSibling;
       }
-      return true;
-    }(), 'Conditions does not meet expectations');
+    }
 
     return (
-      mainContentSize: mainContentSize,
-      crossContentSize: crossContentSize,
+      mainContentSize: (mainContentSize ?? 0) + (mainFlexContentSize ?? 0),
+      crossContentSize: crossContentSize ?? 0.0,
       shouldSortChildren: shouldSortChildren,
-      flexUnit: spacePerFlex ?? 0.0,
-      spacing: spacing,
+      flexUnit: flexFactor ?? 0.0,
+      spacing: 0.0,
+      spacingBefore: 0.0,
+      spacingAfter: 0.0,
     );
-  }
-
-  double _clamp(double value, double? lower, double? upper) {
-    lower ??= double.negativeInfinity;
-    upper ??= double.infinity;
-    return _clampIgnoreSign(value, lower, upper);
   }
 
   void _positionsChildren({
@@ -2637,16 +1295,16 @@ class RenderFlexBox extends RenderBox
     required double crossContentSize,
     required double mainViewportSize,
     required double crossViewportSize,
+    // we assume spacing has been resolved (not infinite)
     required double spacing,
+    required double spacingBefore,
+    required double spacingAfter,
     required FlexBoxPositionChange change,
   }) {
+    assert(spacing.isFinite && spacingBefore.isFinite && spacingAfter.isFinite);
     if (childCount == 0) {
       return;
     }
-
-    print(
-      'mainViewportSize: $mainViewportSize, crossViewportSize: $crossViewportSize',
-    );
 
     double mainAdditionalOffset = 0;
     double crossAdditionalOffset = 0;
@@ -2704,14 +1362,19 @@ class RenderFlexBox extends RenderBox
         break;
     }
 
-    double spacing = this.spacing;
-    if (spacing.isInfinite) {
-      // attempt to evenly distribute the spacing
-      // we need to get
-    }
+    // double spacing = this.spacing;
+    // if (spacing.isInfinite) {
+    //   // attempt to evenly distribute the spacing
+    //   // we need to get
+    // }
 
-    RenderBox? child = firstChild; // do NOT use relativeFirstChild here
-    // we handle reverse here
+    RenderBox? child = firstChild;
+    // STOP KING 👑 do NOT use relativeFirstChild here
+    // relativeFirstChild is used whether when reverse is true
+    // (the order of the children is reversed)
+    // although it was used in the legacy code to reverse the
+    // order of positioning, it is not needed anymore (here) 🍷
+    // because we will just handle it in the mainOffset calculation
     while (child != null) {
       final data = child.parentData as FlexBoxParentData;
 
@@ -2928,20 +1591,6 @@ class RenderFlexBox extends RenderBox
         }
       }
 
-      // if (reverseOffsetMain) {
-      //   // swap excess start and end
-      //   final temp = mainExcessStart;
-      //   mainExcessStart = mainExcessEnd;
-      //   mainExcessEnd = temp;
-      // }
-
-      // if (reverseOffsetCross) {
-      //   // swap excess start and end
-      //   final temp = crossExcessStart;
-      //   crossExcessStart = crossExcessEnd;
-      //   crossExcessEnd = temp;
-      // }
-
       data.setOffset(mainPosition, crossPosition, direction);
 
       child = data.nextSibling;
@@ -3101,12 +1750,6 @@ class RenderFlexBox extends RenderBox
     return false;
   }
 
-  Offset _createOffset(double mainOffset, double crossOffset) {
-    return direction == Axis.horizontal
-        ? Offset(mainOffset, crossOffset)
-        : Offset(crossOffset, mainOffset);
-  }
-
   double _getMain(Size size) {
     return direction == Axis.horizontal ? size.width : size.height;
   }
@@ -3115,155 +1758,153 @@ class RenderFlexBox extends RenderBox
     return direction == Axis.horizontal ? size.height : size.width;
   }
 
-  double _computeIntrinsicSize(
-    double size,
-    double Function(RenderBox item, double size) computeIntrinsicSize,
-  ) {
-    var totalSpacing = 0;
-    RenderBox? child = firstChild;
-    var totalSize = 0.0;
-    while (child != null) {
-      var layoutData = child.parentData as FlexBoxParentData;
-      if (!layoutData.isAbsolute) {
-        var mainSizeConstraint = layoutData.getSize(direction);
-        double childSize;
-        if (mainSizeConstraint is FixedSize) {
-          childSize = mainSizeConstraint.size;
-        } else if (mainSizeConstraint is IntrinsicSize) {
-          childSize = computeIntrinsicSize(child, size);
-        } else if (mainSizeConstraint is ExpandingSize) {
-          childSize = 0.0;
-        } else if (mainSizeConstraint is RelativeSize) {
-          childSize = 0.0;
-        } else if (mainSizeConstraint is FlexSize) {
-          // Skip FlexSize children in main-axis intrinsic computation
-          child = (child.parentData as FlexBoxParentData).nextSibling;
-          continue;
-        } else if (mainSizeConstraint is RatioSize) {
-          // For ratio sizing in main direction, we need the cross axis size
-          // If the cross-axis size is infinite (unconstrained), we can't compute the ratio
-          // so we skip ratio children in main-axis intrinsic computation to avoid infinity
-          if (size.isInfinite) {
-            childSize =
-                0.0; // Skip ratio sizing when cross-axis is unconstrained
-          } else {
-            childSize = mainSizeConstraint.ratio * size;
-          }
+  double _computeIntrinsicSize(double size, bool computeMax) {
+    double totalSize = 0.0;
+    Map<Key, double> dependencies = {};
+    bool resolved = false;
+    int iteration = 0;
+    while (!resolved && iteration < maxComputePass) {
+      bool desparate = iteration == maxComputePass - 1;
+      bool dependenciesResolved = true;
+      RenderBox? child = firstChild;
+      totalSize = 0.0;
+      final spacing = this.spacing;
+      final spacingBefore = this.spacingBefore;
+      final spacingAfter = this.spacingAfter;
+      if (spacing != null) {
+        final resolvedSpacing = spacing.computeIntrinsicSize(
+          child: null,
+          direction: direction,
+          extent: size,
+          dependencies: dependencies,
+          computeMax: computeMax,
+        );
+        if (resolvedSpacing == null && !desparate) {
+          dependenciesResolved = false;
         } else {
-          throw ArgumentError(
-            'Invalid main size constraint: $mainSizeConstraint',
-          );
+          totalSize += resolvedSpacing ?? 0.0;
         }
-        // Note: Don't apply min/max clamping during intrinsic computation
-        // Min/max constraints are applied during actual layout
-        totalSize += childSize;
-        totalSpacing++;
       }
-      child = (child.parentData as FlexBoxParentData).nextSibling;
-    }
-    if (totalSpacing > 0) {
-      totalSize += spacing * (totalSpacing - 1);
+      if (spacingBefore != null) {
+        final resolvedSpacingBefore = spacingBefore.computeIntrinsicSize(
+          child: null,
+          direction: direction,
+          extent: size,
+          dependencies: dependencies,
+          computeMax: computeMax,
+        );
+        if (resolvedSpacingBefore == null && !desparate) {
+          dependenciesResolved = false;
+        } else {
+          totalSize += resolvedSpacingBefore ?? 0.0;
+        }
+      }
+      if (spacingAfter != null) {
+        final resolvedSpacingAfter = spacingAfter.computeIntrinsicSize(
+          child: null,
+          direction: direction,
+          extent: size,
+          dependencies: dependencies,
+          computeMax: computeMax,
+        );
+        if (resolvedSpacingAfter == null && !desparate) {
+          dependenciesResolved = false;
+        } else {
+          totalSize += resolvedSpacingAfter ?? 0.0;
+        }
+      }
+      while (child != null) {
+        final data = child.parentData as FlexBoxParentData;
+        BoxSize? mainSize = data.getSize(direction);
+        if (mainSize != null) {
+          double? result = mainSize.computeIntrinsicSize(
+            child: child,
+            direction: direction,
+            extent: size,
+            dependencies: dependencies,
+            computeMax: computeMax,
+          );
+          if (result == null && !desparate) {
+            dependenciesResolved = false;
+          } else {
+            totalSize += result ?? 0.0;
+          }
+        }
+        child = data.nextSibling;
+      }
+      if (dependenciesResolved) {
+        resolved = true;
+      }
+      iteration++;
     }
     return totalSize;
   }
 
-  double _computeCrossIntrinsicSize(
-    double size,
-    double Function(RenderBox item, double size) computeIntrinsicSize,
-  ) {
-    var totalSize = 0.0;
-    RenderBox? child = firstChild;
-    while (child != null) {
-      var layoutData = child.parentData as FlexBoxParentData;
-      if (!layoutData.isAbsolute) {
-        var crossSizeConstraint = layoutData.getSize(crossDirection);
-        double childSize;
-        if (crossSizeConstraint is FixedSize) {
-          childSize = crossSizeConstraint.size;
-        } else if (crossSizeConstraint is IntrinsicSize) {
-          childSize = computeIntrinsicSize(child, size);
-        } else if (crossSizeConstraint is ExpandingSize) {
-          childSize = 0.0;
-        } else if (crossSizeConstraint is RelativeSize) {
-          childSize = 0.0;
-        } else if (crossSizeConstraint is FlexSize) {
-          // Skip FlexSize children in cross-axis intrinsic computation
-          child = (child.parentData as FlexBoxParentData).nextSibling;
-          continue;
-        } else if (crossSizeConstraint is RatioSize) {
-          // For ratio sizing in cross direction, we need the main axis size
-          // If the main-axis size is infinite (unconstrained), we can't compute the ratio
-          // so we skip ratio children in cross-axis intrinsic computation to avoid infinity
-          if (size.isInfinite) {
-            childSize =
-                0.0; // Skip ratio sizing when main-axis is unconstrained
-          } else {
-            childSize = size * crossSizeConstraint.ratio;
-          }
-        } else {
-          throw ArgumentError(
-            'Invalid cross size constraint: $crossSizeConstraint',
+  double _computeCrossIntrinsicSize(double size, bool computeMax) {
+    double maxSize = 0.0;
+    Map<Key, double> dependencies = {};
+    bool resolved = false;
+    int iteration = 0;
+    while (!resolved && iteration < maxComputePass) {
+      // no need to compute spacing for cross size
+      // spacing only affects main size
+      bool desparate = iteration == maxComputePass - 1;
+      bool dependenciesResolved = true;
+      RenderBox? child = firstChild;
+      maxSize = 0.0;
+      while (child != null) {
+        final data = child.parentData as FlexBoxParentData;
+        BoxSize? crossSize = data.getSize(crossDirection);
+        if (crossSize != null) {
+          double? result = crossSize.computeIntrinsicSize(
+            child: child,
+            direction: crossDirection,
+            extent: size,
+            dependencies: dependencies,
+            computeMax: computeMax,
           );
+          if (result == null && !desparate) {
+            dependenciesResolved = false;
+          } else {
+            maxSize = max(maxSize, result ?? 0.0);
+          }
         }
-        // Note: Don't apply min/max clamping during intrinsic computation
-        // Min/max constraints are applied during actual layout
-        totalSize = max(totalSize, childSize);
+        child = data.nextSibling;
       }
-      child = (child.parentData as FlexBoxParentData).nextSibling;
+      if (dependenciesResolved) {
+        resolved = true;
+      }
+      iteration++;
     }
-    return totalSize;
+    return maxSize;
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
     return direction == Axis.horizontal
-        ? _computeCrossIntrinsicSize(
-            width,
-            (item, size) => item.getMaxIntrinsicHeight(size),
-          )
-        : _computeIntrinsicSize(
-            width,
-            (item, size) => item.getMaxIntrinsicHeight(size),
-          );
+        ? _computeCrossIntrinsicSize(width, true)
+        : _computeIntrinsicSize(width, true);
   }
 
   @override
   double computeMaxIntrinsicWidth(double height) {
     return direction == Axis.horizontal
-        ? _computeIntrinsicSize(
-            height,
-            (item, size) => item.getMaxIntrinsicWidth(size),
-          )
-        : _computeCrossIntrinsicSize(
-            height,
-            (item, size) => item.getMaxIntrinsicWidth(size),
-          );
+        ? _computeIntrinsicSize(height, true)
+        : _computeCrossIntrinsicSize(height, true);
   }
 
   @override
   double computeMinIntrinsicHeight(double width) {
     return direction == Axis.horizontal
-        ? _computeCrossIntrinsicSize(
-            width,
-            (item, size) => item.getMinIntrinsicHeight(size),
-          )
-        : _computeIntrinsicSize(
-            width,
-            (item, size) => item.getMinIntrinsicHeight(size),
-          );
+        ? _computeCrossIntrinsicSize(width, false)
+        : _computeIntrinsicSize(width, false);
   }
 
   @override
   double computeMinIntrinsicWidth(double height) {
     return direction == Axis.horizontal
-        ? _computeIntrinsicSize(
-            height,
-            (item, size) => item.getMinIntrinsicWidth(size),
-          )
-        : _computeCrossIntrinsicSize(
-            height,
-            (item, size) => item.getMinIntrinsicWidth(size),
-          );
+        ? _computeIntrinsicSize(height, false)
+        : _computeCrossIntrinsicSize(height, false);
   }
 
   int _compareChildren(RenderBox a, RenderBox b) {
@@ -3432,42 +2073,47 @@ double _clampIgnoreSign(double value, double min, double max) {
   }
 }
 
-Size _constrainIgnoreSign(Size size, BoxConstraints? constraints) {
-  if (constraints == null) {
-    return size;
+double? _addNullable(double? a, double? b) {
+  if (a == null && b == null) {
+    return null;
   }
-  double minWidth = constraints.minWidth;
-  double minHeight = constraints.minHeight;
-  double maxWidth = constraints.maxWidth;
-  double maxHeight = constraints.maxHeight;
-  return Size(
-    _clampIgnoreSign(size.width, minWidth, maxWidth),
-    _clampIgnoreSign(size.height, minHeight, maxHeight),
-  );
+  if (a == null) {
+    return b;
+  }
+  if (b == null) {
+    return a;
+  }
+  return a + b;
 }
 
-double _alignValue({
-  required double min,
-  required double max,
-  required double alignment,
-}) {
-  final center = (min + max) / 2;
-  final halfRange = (max - min) / 2;
-  return center + (halfRange * alignment);
+double? _addNull(double? a, double b) {
+  if (a == null) return null;
+  return a + b;
 }
 
-class FlexLayoutResult {
-  final bool needSorting;
-  final double mainContentSize;
-  final double crossContentSize;
-  final double mainViewportSize;
-  final double crossViewportSize;
+double _maxNullable(double? a, double b) {
+  if (a == null) return b;
+  return max(a, b);
+}
 
-  FlexLayoutResult({
-    required this.needSorting,
-    required this.mainContentSize,
-    required this.crossContentSize,
-    required this.mainViewportSize,
-    required this.crossViewportSize,
-  });
+double? _maxNulls(double? a, double? b) {
+  if (a == null && b == null) {
+    return null;
+  }
+  if (a == null) {
+    return b;
+  }
+  if (b == null) {
+    return a;
+  }
+  return max(a, b);
+}
+
+bool _containsAllKeys(Map<Key, double> map, Iterable<Key> keys) {
+  for (var key in keys) {
+    if (!map.containsKey(key)) {
+      return false;
+    }
+  }
+  return true;
 }

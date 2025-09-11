@@ -235,7 +235,10 @@ class RatioSizingDemo extends BaseDemoPage {
                 direction: Axis.horizontal,
                 children: [
                   FlexBoxChild(
-                    width: BoxSize.ratio(1.0, min: 100, max: 120),
+                    // width: BoxSize.ratio(1.0, min: 100, max: 120),
+                    width: BoxSize.ratio(
+                      1.0,
+                    ).clamp(min: BoxSize.fixed(100), max: BoxSize.fixed(120)),
                     height: BoxSize.fixed(80),
                     child: Container(
                       color: Colors.pink[400],
@@ -255,7 +258,9 @@ class RatioSizingDemo extends BaseDemoPage {
                   SizedBox(width: 8),
                   FlexBoxChild(
                     width: BoxSize.fixed(150),
-                    height: BoxSize.ratio(0.6, min: 60, max: 100),
+                    height: BoxSize.ratio(
+                      0.6,
+                    ).clamp(min: BoxSize.fixed(60), max: BoxSize.fixed(100)),
                     child: Container(
                       color: Colors.cyan[600],
                       child: Center(
