@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-class FixedFlexBox extends MultiChildRenderObjectWidget {
+class FlexBoxViewport extends MultiChildRenderObjectWidget {
   final Axis direction;
-  final BoxSize? spacing;
-  final BoxSize? spacingBefore;
-  final BoxSize? spacingAfter;
+  final BoxValue? spacing;
+  final BoxValue? spacingBefore;
+  final BoxValue? spacingAfter;
   final Alignment alignment;
   final ViewportOffset horizontal;
   final ViewportOffset vertical;
@@ -23,7 +23,7 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
   final EdgeInsets padding;
   final TextDirection textDirection;
 
-  const FixedFlexBox({
+  const FlexBoxViewport({
     super.key,
     required this.direction,
     required this.spacing,
@@ -158,15 +158,15 @@ class FixedFlexBox extends MultiChildRenderObjectWidget {
 
 class FlexBoxSpacer extends StatelessWidget {
   final double? flex;
-  final BoxSize? min;
-  final BoxSize? max;
+  final BoxValue? min;
+  final BoxValue? max;
 
   const FlexBoxSpacer({super.key, this.flex, this.min, this.max});
 
   @override
   Widget build(BuildContext context) {
     return DirectionalFlexBoxChild(
-      mainSize: (flex == null ? BoxSize.expanding() : BoxSize.flex(flex!))
+      mainSize: (flex == null ? BoxValue.expanding() : BoxValue.flex(flex!))
           .clamp(min: min, max: max),
       child: const SizedBox.shrink(),
     );
@@ -175,9 +175,9 @@ class FlexBoxSpacer extends StatelessWidget {
 
 class FlexBox extends StatelessWidget {
   final Axis direction;
-  final BoxSize? spacing;
-  final BoxSize? spacingBefore;
-  final BoxSize? spacingAfter;
+  final BoxValue? spacing;
+  final BoxValue? spacingStart;
+  final BoxValue? spacingEnd;
   final AlignmentGeometry alignment;
   final List<Widget> children;
   final bool scrollHorizontalOverflow;
@@ -194,8 +194,8 @@ class FlexBox extends StatelessWidget {
     super.key,
     this.direction = Axis.horizontal,
     this.spacing,
-    this.spacingBefore,
-    this.spacingAfter,
+    this.spacingStart,
+    this.spacingEnd,
     this.alignment = Alignment.center,
     this.reverse = false,
     this.children = const [],
@@ -215,6 +215,19 @@ class FlexBox extends StatelessWidget {
         this.textDirection ??
         Directionality.maybeOf(context) ??
         TextDirection.ltr;
+    var spacingStart = this.spacingStart;
+    var spacingEnd = this.spacingEnd;
+    switch ((textDirection, direction)) {
+      case (TextDirection.rtl, Axis.horizontal):
+        // swap start and end
+        final temp = spacingStart;
+        spacingStart = spacingEnd;
+        spacingEnd = temp;
+        break;
+      default:
+        // no change
+        break;
+    }
     var reverse = this.reverse;
     var reversePaint = this.reversePaint;
     if (textDirection != TextDirection.ltr && direction == Axis.horizontal) {
@@ -243,12 +256,12 @@ class FlexBox extends StatelessWidget {
       builder: (context, vertical, horizontal) {
         return Padding(
           padding: padding ?? EdgeInsets.zero,
-          child: FixedFlexBox(
+          child: FlexBoxViewport(
             textDirection: textDirection,
             direction: direction,
             spacing: spacing,
-            spacingBefore: spacingBefore,
-            spacingAfter: spacingAfter,
+            spacingBefore: spacingStart,
+            spacingAfter: spacingEnd,
             alignment: alignment.resolve(textDirection),
             reverse: reverse,
             horizontal: horizontal,
@@ -277,23 +290,23 @@ class FlexBox extends StatelessWidget {
     super.debugFillProperties(properties);
     properties.add(EnumProperty<Axis>('direction', direction));
     properties.add(
-      DiagnosticsProperty<BoxSize?>(
+      DiagnosticsProperty<BoxValue?>(
         'spacing',
         spacing,
         defaultValue: null,
       ),
     );
     properties.add(
-      DiagnosticsProperty<BoxSize?>(
+      DiagnosticsProperty<BoxValue?>(
         'spacingBefore',
-        spacingBefore,
+        spacingStart,
         defaultValue: null,
       ),
     );
     properties.add(
-      DiagnosticsProperty<BoxSize?>(
+      DiagnosticsProperty<BoxValue?>(
         'spacingAfter',
-        spacingAfter,
+        spacingEnd,
         defaultValue: null,
       ),
     );
@@ -357,35 +370,25 @@ class FlexBox extends StatelessWidget {
   }
 }
 
-class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
+class FlexItem extends ParentDataWidget<FlexBoxParentData> {
   /// Forces the child to be positioned absolutely even
   /// if no position is specified (for this, [alignment] can
   /// be used to position the child within the parent).
   final bool absolute;
 
-  /// Self alignment of the child within its allocated space.
-  /// If its absolute but anchors are not specified,
-  /// the alignment will be used to position the child
-  /// within the parent. But if anchors are specified,
-  /// the alignment will be used to position the child
-  /// based on the anchor positions. But it will not
-  /// have any effect if start and end anchors are both specified.
-  final AlignmentGeometry? alignment;
   final BoxPosition? top;
   final BoxPosition? bottom;
   final BoxPosition? left;
   final BoxPosition? right;
-  final BoxSize? width;
-  final BoxSize? height;
+  final BoxValue? width;
+  final BoxValue? height;
   final BoxPositionType? horizontalPosition;
   final BoxPositionType? verticalPosition;
   final int? zOrder;
   final bool horizontalScrollAffected;
   final bool verticalScrollAffected;
-  final bool horizontalContentRelative;
-  final bool verticalContentRelative;
 
-  const FlexBoxChild({
+  const FlexItem({
     super.key,
     this.top,
     this.bottom,
@@ -398,10 +401,7 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
     this.zOrder,
     this.horizontalScrollAffected = true,
     this.verticalScrollAffected = true,
-    this.horizontalContentRelative = false,
-    this.verticalContentRelative = false,
     this.absolute = false,
-    this.alignment,
     required super.child,
   });
 
@@ -412,8 +412,8 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
   @override
   void applyParentData(covariant RenderBox renderObject) {
     assert(() {
-      width?.debugIsValid();
-      height?.debugIsValid();
+      width?.debugIsSizeValid();
+      height?.debugIsSizeValid();
       return true;
     }());
     if (renderObject.parentData is! FlexBoxParentData) {
@@ -472,33 +472,6 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
         positionChange |= FlexBoxPositionChange.both;
       } else if (isAbsolute && parentData.isAbsolute) {
         positionChange |= FlexBoxPositionChange.absolute;
-      }
-    }
-    if (parentData.horizontalRelativeToContent != horizontalContentRelative) {
-      parentData.horizontalRelativeToContent = horizontalContentRelative;
-      if (isAbsolute) {
-        positionChange |= FlexBoxPositionChange.absolute;
-      } else {
-        // if it was or is relative
-        if (width != parentData.width &&
-            (width is RelativeSize || parentData.width is RelativeSize)) {
-          // this changes both
-          layoutChange |= FlexBoxLayoutChange.both;
-          positionChange |= FlexBoxPositionChange.both;
-        }
-        // else, it has no effect on non-absolute children
-      }
-    }
-    if (parentData.verticalRelativeToContent != verticalContentRelative) {
-      parentData.verticalRelativeToContent = verticalContentRelative;
-      if (isAbsolute) {
-        positionChange |= FlexBoxPositionChange.absolute;
-      } else {
-        if (height != parentData.height &&
-            (height is RelativeSize || parentData.height is RelativeSize)) {
-          layoutChange |= FlexBoxLayoutChange.both;
-          positionChange |= FlexBoxPositionChange.both;
-        }
       }
     }
     if (parentData.width != width) {
@@ -599,8 +572,8 @@ class FlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
     properties.add(
       DiagnosticsProperty<BoxPosition>('right', right, ifNull: ''),
     );
-    properties.add(DiagnosticsProperty<BoxSize>('width', width, ifNull: ''));
-    properties.add(DiagnosticsProperty<BoxSize>('height', height, ifNull: ''));
+    properties.add(DiagnosticsProperty<BoxValue>('width', width, ifNull: ''));
+    properties.add(DiagnosticsProperty<BoxValue>('height', height, ifNull: ''));
     properties.add(
       DiagnosticsProperty<BoxPositionType>(
         'horizontalPosition',
@@ -654,8 +627,8 @@ class DirectionalFlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
   final BoxPosition? mainEnd;
   final BoxPosition? crossStart;
   final BoxPosition? crossEnd;
-  final BoxSize? mainSize;
-  final BoxSize? crossSize;
+  final BoxValue? mainSize;
+  final BoxValue? crossSize;
   final BoxPositionType? mainPosition;
   final BoxPositionType? crossPosition;
   final int? zOrder;
@@ -703,7 +676,7 @@ class DirectionalFlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
 
     // Map main/cross axis to actual fields
     BoxPosition? top, bottom, left, right;
-    BoxSize? width, height;
+    BoxValue? width, height;
     BoxPositionType? horizontalPosition, verticalPosition;
     bool horizontalScrollAffected = true;
     bool verticalScrollAffected = true;
@@ -787,7 +760,7 @@ class DirectionalFlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
         positionChange |= FlexBoxPositionChange.absolute;
       } else {
         if (width != parentData.width &&
-            (width is RelativeSize || parentData.width is RelativeSize)) {
+            (width is RelativeValue || parentData.width is RelativeValue)) {
           layoutChange |= FlexBoxLayoutChange.both;
           positionChange |= FlexBoxPositionChange.both;
         }
@@ -799,7 +772,7 @@ class DirectionalFlexBoxChild extends ParentDataWidget<FlexBoxParentData> {
         positionChange |= FlexBoxPositionChange.absolute;
       } else {
         if (height != parentData.height &&
-            (height is RelativeSize || parentData.height is RelativeSize)) {
+            (height is RelativeValue || parentData.height is RelativeValue)) {
           layoutChange |= FlexBoxLayoutChange.both;
           positionChange |= FlexBoxPositionChange.both;
         }

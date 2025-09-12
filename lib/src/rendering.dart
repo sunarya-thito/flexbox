@@ -7,32 +7,28 @@ import 'package:flutter/rendering.dart';
 
 class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
   bool absolute = false;
-  BoxPosition? top;
-  BoxPosition? bottom;
-  BoxPosition? left;
-  BoxPosition? right;
-  BoxSize? width;
-  BoxSize? height;
+  BoxValue? top;
+  BoxValue? bottom;
+  BoxValue? left;
+  BoxValue? right;
+  BoxValue? width;
+  BoxValue? height;
   BoxPositionType? horizontalPosition;
   BoxPositionType? verticalPosition;
   bool horizontalScrollAffected = true;
   bool verticalScrollAffected = true;
-  bool horizontalRelativeToContent = false;
-  bool verticalRelativeToContent = false;
-  AlignmentGeometry? alignment;
 
   bool needsRelayout = true;
 
   // temporary storage during layout
   // will be cleared after layout
+  bool preventFlex = false;
   double? resolvedMainSize;
   double? resolvedCrossSize;
-  double? resolvedMainFlexSize;
-  BoxSize? temporaryWidth;
-  BoxSize? temporaryHeight;
+  // double? resolvedMainFlexSize;
+  BoxValue? temporaryWidth;
+  BoxValue? temporaryHeight;
   int? zOrder;
-
-  bool debugLayout = false;
 
   bool get isAbsolute {
     return absolute ||
@@ -42,7 +38,7 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
         right != null;
   }
 
-  BoxSize? getSize(Axis axis) {
+  BoxValue? getSize(Axis axis) {
     if (axis == Axis.horizontal) {
       return width ?? temporaryWidth;
     } else {
@@ -50,7 +46,7 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
     }
   }
 
-  BoxSize setTemporarySize(Axis axis, BoxSize size) {
+  BoxValue setTemporarySize(Axis axis, BoxValue size) {
     if (axis == Axis.horizontal) {
       return temporaryWidth = size;
     } else {
@@ -58,7 +54,7 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
     }
   }
 
-  BoxPosition? getStartPosition(Axis axis) {
+  BoxValue? getStartPosition(Axis axis) {
     if (axis == Axis.horizontal) {
       return left;
     } else {
@@ -66,7 +62,7 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
     }
   }
 
-  BoxPosition? getEndPosition(Axis axis) {
+  BoxValue? getEndPosition(Axis axis) {
     if (axis == Axis.horizontal) {
       return right;
     } else {
@@ -87,14 +83,6 @@ class FlexBoxParentData extends ContainerBoxParentData<RenderBox> {
       return horizontalScrollAffected;
     } else {
       return verticalScrollAffected;
-    }
-  }
-
-  bool isRelativeToContent(Axis axis) {
-    if (axis == Axis.horizontal) {
-      return horizontalRelativeToContent;
-    } else {
-      return verticalRelativeToContent;
     }
   }
 
@@ -146,34 +134,33 @@ enum FlexBoxLayoutChange {
   }
 }
 
-enum FlexBoxPositionChange {
+enum FlexBoxValueChange {
   none,
   nonAbsolute,
   absolute,
   both;
 
-  operator |(FlexBoxPositionChange other) {
-    if (this == FlexBoxPositionChange.both ||
-        other == FlexBoxPositionChange.both) {
-      return FlexBoxPositionChange.both;
+  operator |(FlexBoxValueChange other) {
+    if (this == FlexBoxValueChange.both || other == FlexBoxValueChange.both) {
+      return FlexBoxValueChange.both;
     }
-    if (this == FlexBoxPositionChange.none) {
+    if (this == FlexBoxValueChange.none) {
       return other;
     }
-    if (other == FlexBoxPositionChange.none) {
+    if (other == FlexBoxValueChange.none) {
       return this;
     }
-    return FlexBoxPositionChange.both;
+    return FlexBoxValueChange.both;
   }
 
   bool get affectsNonAbsolute {
-    return this == FlexBoxPositionChange.nonAbsolute ||
-        this == FlexBoxPositionChange.both;
+    return this == FlexBoxValueChange.nonAbsolute ||
+        this == FlexBoxValueChange.both;
   }
 
   bool get affectsAbsolute {
-    return this == FlexBoxPositionChange.absolute ||
-        this == FlexBoxPositionChange.both;
+    return this == FlexBoxValueChange.absolute ||
+        this == FlexBoxValueChange.both;
   }
 }
 
@@ -182,12 +169,12 @@ class RenderFlexBox extends RenderBox
         ContainerRenderObjectMixin<RenderBox, FlexBoxParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, FlexBoxParentData>
     implements RenderAbstractViewport {
-  static const maxComputePass = 10;
+  static const maxComputePass = 5;
   Axis direction;
   // double spacing;
-  BoxSize? spacing;
-  BoxSize? spacingBefore;
-  BoxSize? spacingAfter;
+  BoxValue? spacing;
+  BoxValue? spacingBefore;
+  BoxValue? spacingAfter;
   Alignment alignment;
   ViewportOffset horizontal;
   ViewportOffset vertical;
@@ -217,7 +204,7 @@ class RenderFlexBox extends RenderBox
   });
 
   FlexBoxLayoutChange layoutChange = FlexBoxLayoutChange.both;
-  FlexBoxPositionChange positionChange = FlexBoxPositionChange.both;
+  FlexBoxValueChange positionChange = FlexBoxValueChange.both;
   bool needsResort = true;
 
   RenderBox? _firstSortedChild;
@@ -311,7 +298,7 @@ class RenderFlexBox extends RenderBox
     if (hasSize && constraints != this.constraints) {
       // force a full relayout if constraints changed
       layoutChange = FlexBoxLayoutChange.both;
-      positionChange = FlexBoxPositionChange.both;
+      positionChange = FlexBoxValueChange.both;
     }
     super.layout(constraints, parentUsesSize: parentUsesSize);
   }
@@ -538,7 +525,7 @@ class RenderFlexBox extends RenderBox
   }
 
   void _onScrollOffsetChanged() {
-    positionChange |= FlexBoxPositionChange.both;
+    positionChange |= FlexBoxValueChange.both;
     markNeedsLayout();
   }
 
@@ -583,6 +570,7 @@ class RenderFlexBox extends RenderBox
   double? _spacingAfter;
   _Store<RenderBox?>? _firstAbsoluteChild;
   _Store<RenderBox?>? _firstNonAbsoluteChild;
+  Map<Key, double>? dependencies;
 
   @override
   void adoptChild(RenderObject child) {
@@ -590,7 +578,7 @@ class RenderFlexBox extends RenderBox
     _firstAbsoluteChild = null;
     _firstNonAbsoluteChild = null;
     layoutChange |= FlexBoxLayoutChange.both;
-    positionChange |= FlexBoxPositionChange.both;
+    positionChange |= FlexBoxValueChange.both;
     needsResort = true;
   }
 
@@ -613,7 +601,7 @@ class RenderFlexBox extends RenderBox
     _resetAbsoluteChildPointer(child);
     _resetNonAbsoluteChildPointer(child);
     layoutChange |= FlexBoxLayoutChange.both;
-    positionChange |= FlexBoxPositionChange.both;
+    positionChange |= FlexBoxValueChange.both;
     needsResort = true;
     super.dropChild(child);
   }
@@ -670,7 +658,8 @@ class RenderFlexBox extends RenderBox
         );
         _flexUnit = layoutChildren.flexUnit;
         _spacing = layoutChildren.spacing;
-        _spacingBefore = layoutChildren.spacing;
+        _spacingBefore = layoutChildren.spacingBefore;
+        _spacingAfter = layoutChildren.spacingAfter;
       }
     }
 
@@ -679,7 +668,7 @@ class RenderFlexBox extends RenderBox
       constraints.constrainHeight(_contentSize!.height),
     );
 
-    if (positionChange != FlexBoxPositionChange.none) {
+    if (positionChange != FlexBoxValueChange.none) {
       _positionsChildren(
         mainContentSize: _getMain(_contentSize!),
         crossContentSize: _getCross(_contentSize!),
@@ -689,6 +678,7 @@ class RenderFlexBox extends RenderBox
         spacingBefore: _spacingBefore!,
         spacingAfter: _spacingAfter!,
         change: positionChange,
+        dependencies: dependencies!,
       );
     }
 
@@ -713,7 +703,7 @@ class RenderFlexBox extends RenderBox
     }
 
     layoutChange = FlexBoxLayoutChange.none;
-    positionChange = FlexBoxPositionChange.none;
+    positionChange = FlexBoxValueChange.none;
     needsResort = false;
   }
 
@@ -727,6 +717,7 @@ class RenderFlexBox extends RenderBox
     double spacing,
     double spacingBefore,
     double spacingAfter,
+    Map<Key, double> dependencies,
   })
   _layoutChildren({
     required double maxViewportMainSize,
@@ -743,6 +734,7 @@ class RenderFlexBox extends RenderBox
         spacing: 0.0,
         spacingBefore: 0.0,
         spacingAfter: 0.0,
+        dependencies: {}, // do not make this const
       );
     }
 
@@ -750,8 +742,12 @@ class RenderFlexBox extends RenderBox
     double? totalFlex;
     double? biggestMainFlex;
     double? biggestCrossFlex;
+    double? smallestMainFlex;
+    double? smallestCrossFlex;
 
-    Iterable<Key> dependsOn = Iterable.empty();
+    bool preventSpacingFlex = false;
+    bool preventSpacingBeforeFlex = false;
+    bool preventSpacingAfterFlex = false;
 
     void runConsensus({
       bool consensusForDependencies = true,
@@ -760,17 +756,30 @@ class RenderFlexBox extends RenderBox
       biggestMainFlex = null;
       biggestCrossFlex = null;
       totalFlex = null;
+
+      // Both of these also applies to smallest flex
       double? totalFlexBeforeDisaster;
       RenderBox? requiresBiggestFlex;
+
+      final spacingBefore = this.spacingBefore;
+      final spacingAfter = this.spacingAfter;
+      final spacing = this.spacing;
+
+      int nonAbsoluteCount = 0;
+
       RenderBox? child = firstChild;
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
         final mainSize = data.getSize(direction);
         final crossSize = data.getSize(crossDirection);
 
+        if (!data.isAbsolute) {
+          nonAbsoluteCount++;
+        }
+
         bool mainRequiresCross = false;
         bool crossRequiresMain = false;
-        if (mainSize != null && data.resolvedMainSize == null) {
+        if (mainSize != null && !data.preventFlex) {
           final result = mainSize.computeTotalFlex(null);
           if (result?.isNaN == true) {
             // typically caused by ExpandingSize
@@ -780,10 +789,7 @@ class RenderFlexBox extends RenderBox
           } else {
             totalFlex = _addNullable(result, totalFlex);
             biggestMainFlex = _maxNulls(biggestMainFlex, result);
-          }
-          final mainDependencies = mainSize.dependencies;
-          if (consensusForDependencies) {
-            dependsOn = dependsOn.followedBy(mainDependencies);
+            smallestMainFlex = _minNulls(smallestMainFlex, result);
           }
           mainRequiresCross = mainSize.needsCrossAxis;
         }
@@ -796,10 +802,7 @@ class RenderFlexBox extends RenderBox
             totalFlexBeforeDisaster ??= totalFlex;
           } else {
             biggestCrossFlex = _maxNulls(biggestCrossFlex, result);
-          }
-          final crossDependencies = crossSize.dependencies;
-          if (consensusForDependencies) {
-            dependsOn = dependsOn.followedBy(crossDependencies);
+            smallestCrossFlex = _minNulls(smallestCrossFlex, result);
           }
           crossRequiresMain = crossSize.needsCrossAxis;
         }
@@ -821,23 +824,83 @@ class RenderFlexBox extends RenderBox
         child = data.nextSibling;
       }
 
+      if (spacingBefore != null && !preventSpacingBeforeFlex) {
+        final result = spacingBefore.computeTotalFlex(null);
+        if (result?.isNaN == true) {
+          // typically caused by ExpandingSize
+          requiresBiggestFlex ??= firstChild;
+          totalFlexBeforeDisaster ??= totalFlex;
+        } else {
+          totalFlex = _addNullable(result, totalFlex);
+          biggestMainFlex = _maxNulls(biggestMainFlex, result);
+          smallestMainFlex = _minNulls(smallestMainFlex, result);
+        }
+      }
+      if (spacingAfter != null && !preventSpacingAfterFlex) {
+        final result = spacingAfter.computeTotalFlex(null);
+        if (result?.isNaN == true) {
+          // typically caused by ExpandingSize
+          requiresBiggestFlex ??= firstChild;
+          totalFlexBeforeDisaster ??= totalFlex;
+        } else {
+          totalFlex = _addNullable(result, totalFlex);
+          biggestMainFlex = _maxNulls(biggestMainFlex, result);
+          smallestMainFlex = _minNulls(smallestMainFlex, result);
+        }
+      }
+      if (spacing != null && !preventSpacingFlex && nonAbsoluteCount > 1) {
+        final result = spacing.computeTotalFlex(null);
+        if (result?.isNaN == true) {
+          // typically caused by ExpandingSize
+          requiresBiggestFlex ??= firstChild;
+          totalFlexBeforeDisaster ??= totalFlex;
+        } else if (result != null) {
+          totalFlex = _addNullable(result * (nonAbsoluteCount - 1), totalFlex);
+          biggestMainFlex = _maxNulls(biggestMainFlex, result);
+          smallestMainFlex = _minNulls(smallestMainFlex, result);
+        }
+      }
+
       // second consensus pass now that we have biggest flex
       // the one that requires biggest flex usually is ExpandingSize
       if (requiresBiggestFlex != null) {
         totalFlex = totalFlexBeforeDisaster;
+
+        if (spacing != null && !preventSpacingFlex && nonAbsoluteCount > 1) {
+          final result = spacing.computeTotalFlex(biggestMainFlex ?? 1.0);
+          if (result != null) {
+            totalFlex = _addNullable(
+              result * (nonAbsoluteCount - 1),
+              totalFlex,
+            );
+          }
+        }
+        if (spacingBefore != null && !preventSpacingBeforeFlex) {
+          final result = spacingBefore.computeTotalFlex(biggestMainFlex ?? 1.0);
+          totalFlex = _addNullable(result, totalFlex);
+        }
+        if (spacingAfter != null && !preventSpacingAfterFlex) {
+          final result = spacingAfter.computeTotalFlex(biggestMainFlex ?? 1.0);
+          totalFlex = _addNullable(result, totalFlex);
+        }
       }
+
       while (requiresBiggestFlex != null) {
         final data = requiresBiggestFlex.parentData as FlexBoxParentData;
 
         final mainSize = data.getSize(direction);
 
-        if (mainSize != null) {
-          final result = mainSize.computeTotalFlex(biggestMainFlex);
+        if (mainSize != null && !data.preventFlex) {
+          final result = mainSize.computeTotalFlex(biggestMainFlex ?? 1.0);
           totalFlex = _addNullable(result, totalFlex);
         }
 
         requiresBiggestFlex = data.nextSibling;
       }
+
+      biggestMainFlex ??= 1.0;
+      biggestCrossFlex ??= 1.0;
+      totalFlex ??= 0.0;
     }
 
     runConsensus();
@@ -847,6 +910,12 @@ class RenderFlexBox extends RenderBox
 
     bool mainViewportSizeAvailable = maxViewportMainSize.isFinite;
     bool crossViewportSizeAvailable = maxViewportCrossSize.isFinite;
+
+    double? resolvedSpacing;
+    double? resolvedSpacingBefore;
+    double? resolvedSpacingAfter;
+
+    Map<Key, double> dependencies = {};
 
     bool shouldSortChildren = false;
 
@@ -859,10 +928,6 @@ class RenderFlexBox extends RenderBox
     //
 
     while (!resolved && passCount < maxComputePass) {
-      bool desparateLayout = passCount >= maxComputePass - 1;
-      print('------------------------------------------------------');
-      print('PASS: $passCount (desparate: $desparateLayout)');
-
       if (flexFactor != null) {
         mainContentSize = null;
       }
@@ -910,15 +975,111 @@ class RenderFlexBox extends RenderBox
       //    after this, cross content size should be ready
       // 6. both main content size (with flex size) and cross content size are ready, we are done 😘
 
-      // only keys that are from dependsOn are stored here
-      Map<Key, double> dependencies = {};
+      // compute spacing
+      final spacing = this.spacing;
+      final spacingBefore = this.spacingBefore;
+      final spacingAfter = this.spacingAfter;
+      // we assume that the spacing is already textdirection-resolved
+
+      ({double? size, bool preventFlex}) resolveSpacing(BoxValue? spacing) {
+        bool preventFlex = false;
+        double? size;
+        if (spacing != null) {
+          bool shouldComputeSpacing = true;
+          final inputs = spacing.getRequiredInputs(
+            mainAxis: true,
+            crossRequiresSize: false,
+          );
+          if (inputs.needsFlexFactor) {
+            mainFlexContentSizeReady &= flexFactor != null;
+          }
+          if (inputs.needsMainAxisViewportSize) {
+            shouldComputeSpacing &= mainViewportSizeAvailable;
+          }
+          if (inputs.needsCrossAxisViewportSize) {
+            shouldComputeSpacing &= crossViewportSizeAvailable;
+          }
+          if (inputs.needsMainAxisContentSize) {
+            throw FlutterError.fromParts([
+              ErrorSummary('Invalid spacing configuration'),
+              ErrorDescription(
+                'Spacing cannot depend on main axis content size.',
+              ),
+              ErrorHint(
+                'This is not supported because it would cause an infinite loop during layout.',
+              ),
+            ]);
+          }
+          if (inputs.needsCrossAxisContentSize) {
+            throw FlutterError.fromParts([
+              ErrorSummary('Invalid spacing configuration'),
+              ErrorDescription(
+                'Spacing cannot depend on cross axis content size.',
+              ),
+              ErrorHint(
+                'This is not supported because it would cause an infinite loop during layout.',
+              ),
+            ]);
+          }
+          if (spacing.needsCrossAxis) {
+            throw FlutterError.fromParts([
+              ErrorSummary('Invalid spacing configuration'),
+              ErrorDescription(
+                'Spacing cannot depend on cross axis size.',
+              ),
+              ErrorHint(
+                'This is not supported because it would cause an infinite loop during layout.',
+              ),
+            ]);
+          }
+          if (shouldComputeSpacing || hasNewFlexes) {
+            final result = spacing.computeSize(
+              child: null,
+              direction: direction,
+              mainAxis: true,
+              computeFlex: flexFactor != null,
+              dependencies: dependencies,
+              biggestFlex: biggestMainFlex,
+              smallestFlex: smallestMainFlex,
+              crossAxisViewportSize: maxViewportCrossSize,
+              crossAxisSize: crossContentSize,
+            );
+            if (result == null) {
+              mainContentSizeReady = false;
+            } else {
+              if (result.recomputeFlex) {
+                recomputeFlexFactor = true;
+                mainContentSize = _addNullable(mainContentSize, result.result);
+                mainFlexContentSize = _addNullable(
+                  mainFlexContentSize,
+                  result.flexResult,
+                );
+                preventFlex = true;
+              }
+              size = result.result + result.flexResult;
+            }
+          } else {
+            mainContentSizeReady = false;
+          }
+        }
+        return (size: size, preventFlex: preventFlex);
+      }
+
+      // resolvedSpacing = resolveSpacing(spacing);
+      // resolvedSpacingBefore = resolveSpacing(spacingBefore);
+      // resolvedSpacingAfter = resolveSpacing(spacingAfter);
+      final resultSpacing = resolveSpacing(spacing);
+      final resultSpacingBefore = resolveSpacing(spacingBefore);
+      final resultSpacingAfter = resolveSpacing(spacingAfter);
+
+      resolvedSpacing = resultSpacing.size;
+      resolvedSpacingBefore = resultSpacingBefore.size;
+      resolvedSpacingAfter = resultSpacingAfter.size;
 
       RenderBox? child = firstChild;
-      int childIndex = 0;
 
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
-        print('child: ${childIndex++}');
         // reset
         if (passCount == 0) {
           data.resolvedMainSize = null;
@@ -929,28 +1090,22 @@ class RenderFlexBox extends RenderBox
         bool shouldComputeCross = true;
 
         // count
-        BoxSize? mainSize = data.getSize(direction);
-        BoxSize? crossSize = data.getSize(crossDirection);
-
-        final mainContentRelative = data.isRelativeToContent(direction);
-        final crossContentRelative = data.isRelativeToContent(crossDirection);
+        BoxValue? mainSize = data.getSize(direction);
+        BoxValue? crossSize = data.getSize(crossDirection);
 
         // state for parent size availability
         // relative to what the child is relative to
-        final mainParentSizeAvailable = mainContentRelative
-            ? (mainContentSize != null && mainFlexContentSize != null)
-            : mainViewportSizeAvailable;
-        final crossParentSizeAvailable = crossContentRelative
-            ? crossContentSize != null
-            : crossViewportSizeAvailable;
+        final mainContentSizeAvailable =
+            mainContentSize != null && mainFlexContentSize != null;
+        final crossContentSizeAvailable = crossContentSize != null;
 
-        // the parent size it self
-        final mainParentSize = mainContentRelative
-            ? mainContentSize
-            : maxViewportMainSize;
-        final crossParentSize = crossContentRelative
-            ? crossContentSize
-            : maxViewportCrossSize;
+        // // the parent size it self
+        // final mainParentSize = mainContentRelative
+        //     ? mainContentSize
+        //     : maxViewportMainSize;
+        // final crossParentSize = crossContentRelative
+        //     ? crossContentSize
+        //     : maxViewportCrossSize;
 
         // if a child with non-null zOrder was found,
         // mark shouldSortChildren indicates at the end
@@ -967,31 +1122,98 @@ class RenderFlexBox extends RenderBox
             final mainStart = data.getStartPosition(direction);
             final mainEnd = data.getEndPosition(direction);
             if (mainStart != null && mainEnd != null) {
-              if (mainParentSizeAvailable) {
+              final mainStartInputs = mainStart.getRequiredInputs(
+                mainAxis: true,
+                crossRequiresSize: false,
+              );
+              final mainEndInputs = mainEnd.getRequiredInputs(
+                mainAxis: true,
+                crossRequiresSize: false,
+              );
+              bool shouldComputeMainStart = true;
+              bool shouldComputeMainEnd = true;
+              if (mainStartInputs.needsMainAxisContentSize) {
+                shouldComputeMainStart &= mainContentSizeAvailable;
+              }
+              if (mainStartInputs.needsCrossAxisContentSize) {
+                shouldComputeMainStart &= crossContentSizeAvailable;
+              }
+              if (mainStartInputs.needsMainAxisViewportSize) {
+                shouldComputeMainStart &= mainViewportSizeAvailable;
+              }
+              if (mainStartInputs.needsCrossAxisViewportSize) {
+                shouldComputeMainStart &= crossViewportSizeAvailable;
+              }
+              if (mainEndInputs.needsMainAxisContentSize) {
+                shouldComputeMainEnd &= mainContentSizeAvailable;
+              }
+              if (mainEndInputs.needsCrossAxisContentSize) {
+                shouldComputeMainEnd &= crossContentSizeAvailable;
+              }
+              if (mainEndInputs.needsMainAxisViewportSize) {
+                shouldComputeMainEnd &= mainViewportSizeAvailable;
+              }
+              if (mainEndInputs.needsCrossAxisViewportSize) {
+                shouldComputeMainEnd &= crossViewportSizeAvailable;
+              }
+              assert(!mainStart.needsCrossAxis); // cannot depend on cross size
+              assert(
+                !mainStartInputs.needsFlexFactor,
+              ); // why would it need flex factor?
+              assert(!mainEnd.needsCrossAxis);
+              assert(!mainEndInputs.needsFlexFactor);
+              double? resolvedMainStart;
+              double? resolvedMainEnd;
+              if (shouldComputeMainStart) {
+                resolvedMainStart = mainStart.computePosition(
+                  viewportSize: maxViewportMainSize,
+                  contentSize: mainContentSize ?? 0.0,
+                  childSize: 0.0,
+                  textDirection: textDirection,
+                  reverse: reverse,
+                  dependencies: dependencies,
+                );
+                if (resolvedMainStart == null) {
+                  mainContentSizeReady = false;
+                }
+              } else {
+                mainContentSizeReady = false;
+              }
+              if (shouldComputeMainEnd) {
+                resolvedMainEnd = mainEnd.computePosition(
+                  viewportSize: maxViewportMainSize,
+                  contentSize: mainContentSize ?? 0.0,
+                  childSize: 0.0,
+                  textDirection: textDirection,
+                  reverse: reverse,
+                  dependencies: dependencies,
+                );
+                if (resolvedMainEnd == null) {
+                  mainContentSizeReady = false;
+                }
+              } else {
+                mainContentSizeReady = false;
+              }
+              if (resolvedMainStart != null && resolvedMainEnd != null) {
                 data.setTemporarySize(
                   direction,
                   mainSize =
-                      const BoxSize.relative(1.0) -
-                      BoxSize.fixed(
-                        mainStart.computePosition(mainParentSize!),
-                      ) -
-                      BoxSize.fixed(mainEnd.computePosition(mainParentSize)),
+                      const BoxValue.relative(1.0) -
+                      BoxValue.fixed(resolvedMainStart) -
+                      BoxValue.fixed(resolvedMainEnd),
                 );
-              } else {
-                // main size depends on parent size that is not available yet
-                shouldComputeMain = false;
               }
             } else {
               data.setTemporarySize(
                 direction,
-                mainSize = const BoxSize.intrinsic(),
+                mainSize = const BoxValue.intrinsic(),
               );
             }
           } else {
             // non-absolute default to intrinsic
             data.setTemporarySize(
               direction,
-              mainSize = const BoxSize.intrinsic(),
+              mainSize = const BoxValue.intrinsic(),
             );
           }
         }
@@ -1001,30 +1223,97 @@ class RenderFlexBox extends RenderBox
             final crossStart = data.getStartPosition(crossDirection);
             final crossEnd = data.getEndPosition(crossDirection);
             if (crossStart != null && crossEnd != null) {
-              if (crossParentSizeAvailable && crossParentSize != null) {
+              final crossStartInputs = crossStart.getRequiredInputs(
+                mainAxis: false,
+                crossRequiresSize: false,
+              );
+              final crossEndInputs = crossEnd.getRequiredInputs(
+                mainAxis: false,
+                crossRequiresSize: false,
+              );
+              bool shouldComputeCrossStart = true;
+              bool shouldComputeCrossEnd = true;
+              if (crossStartInputs.needsMainAxisContentSize) {
+                shouldComputeCrossStart &= mainContentSizeAvailable;
+              }
+              if (crossStartInputs.needsCrossAxisContentSize) {
+                shouldComputeCrossStart &= crossContentSizeAvailable;
+              }
+              if (crossStartInputs.needsMainAxisViewportSize) {
+                shouldComputeCrossStart &= mainViewportSizeAvailable;
+              }
+              if (crossStartInputs.needsCrossAxisViewportSize) {
+                shouldComputeCrossStart &= crossViewportSizeAvailable;
+              }
+              if (crossEndInputs.needsMainAxisContentSize) {
+                shouldComputeCrossEnd &= mainContentSizeAvailable;
+              }
+              if (crossEndInputs.needsCrossAxisContentSize) {
+                shouldComputeCrossEnd &= crossContentSizeAvailable;
+              }
+              if (crossEndInputs.needsMainAxisViewportSize) {
+                shouldComputeCrossEnd &= mainViewportSizeAvailable;
+              }
+              if (crossEndInputs.needsCrossAxisViewportSize) {
+                shouldComputeCrossEnd &= crossViewportSizeAvailable;
+              }
+              assert(!crossStart.needsCrossAxis); // cannot depend on cross size
+              assert(
+                !crossStartInputs.needsFlexFactor,
+              ); // why would it need flex factor?
+              assert(!crossEnd.needsCrossAxis);
+              assert(!crossEndInputs.needsFlexFactor);
+              double? resolvedCrossStart;
+              double? resolvedCrossEnd;
+              if (shouldComputeCrossStart) {
+                resolvedCrossStart = crossStart.computePosition(
+                  viewportSize: maxViewportCrossSize,
+                  contentSize: crossContentSize ?? 0.0,
+                  childSize: 0.0,
+                  textDirection: textDirection,
+                  reverse: reverse,
+                  dependencies: dependencies,
+                );
+                if (resolvedCrossStart == null) {
+                  crossContentSizeReady = false;
+                }
+              } else {
+                crossContentSizeReady = false;
+              }
+              if (shouldComputeCrossEnd) {
+                resolvedCrossEnd = crossEnd.computePosition(
+                  viewportSize: maxViewportCrossSize,
+                  contentSize: crossContentSize ?? 0.0,
+                  childSize: 0.0,
+                  textDirection: textDirection,
+                  reverse: reverse,
+                  dependencies: dependencies,
+                );
+                if (resolvedCrossEnd == null) {
+                  crossContentSizeReady = false;
+                }
+              } else {
+                crossContentSizeReady = false;
+              }
+              if (resolvedCrossStart != null && resolvedCrossEnd != null) {
                 data.setTemporarySize(
                   crossDirection,
                   crossSize =
-                      const BoxSize.relative(1.0) -
-                      BoxSize.fixed(
-                        crossStart.computePosition(crossParentSize),
-                      ) -
-                      BoxSize.fixed(crossEnd.computePosition(crossParentSize)),
+                      const BoxValue.relative(1.0) -
+                      BoxValue.fixed(resolvedCrossStart) -
+                      BoxValue.fixed(resolvedCrossEnd),
                 );
-              } else {
-                // cross size depends on parent size that is not available yet
-                shouldComputeCross = false;
               }
             } else {
               data.setTemporarySize(
                 crossDirection,
-                crossSize = BoxSize.intrinsic(),
+                crossSize = BoxValue.intrinsic(),
               );
             }
           } else {
             data.setTemporarySize(
               crossDirection,
-              crossSize = BoxSize.intrinsic(),
+              crossSize = BoxValue.intrinsic(),
             );
           }
         }
@@ -1052,8 +1341,8 @@ class RenderFlexBox extends RenderBox
           mainAxis: false,
           crossRequiresSize: null,
         );
-        final mainSizeDependencies = mainSize.dependencies;
-        final crossSizeDependencies = crossSize.dependencies;
+        // final mainSizeDependencies = mainSize.dependencies;
+        // final crossSizeDependencies = crossSize.dependencies;
 
         if (mainInputs.needsFlexFactor) {
           mainFlexContentSizeReady &= flexFactor != null;
@@ -1077,46 +1366,69 @@ class RenderFlexBox extends RenderBox
         //   shouldComputeCross = false;
         // }
 
-        if (mainInputs.needsMainAxisParentSize) {
-          if (mainContentRelative) {
-            throw FlutterError.fromParts([
-              ErrorSummary(
-                'Child with main axis size relative to content cannot be inside a FlexBox with main axis size relative to content.',
-              ),
-              ErrorDescription(
-                'This is not supported because it would cause an infinite loop during layout.',
-              ),
-              ErrorHint(
-                'Try setting the main axis size to be relative to viewport instead of content.',
-              ),
-            ]);
-          }
-          shouldComputeMain &= mainParentSizeAvailable;
+        // if (mainInputs.needsMainAxisParentSize) {
+        //   if (mainContentRelative) {
+        //     throw FlutterError.fromParts([
+        //       ErrorSummary(
+        //         'Child with main axis size relative to content cannot be inside a FlexBox with main axis size relative to content.',
+        //       ),
+        //       ErrorDescription(
+        //         'This is not supported because it would cause an infinite loop during layout.',
+        //       ),
+        //       ErrorHint(
+        //         'Try setting the main axis size to be relative to viewport instead of content.',
+        //       ),
+        //     ]);
+        //   }
+        //   print(
+        //     '  main needs main parent size: $mainParentSizeAvailable ($mainContentRelative)',
+        //   );
+        //   shouldComputeMain &= mainParentSizeAvailable;
+        // }
+        if (mainInputs.needsMainAxisContentSize) {
+          throw FlutterError.fromParts([
+            ErrorSummary('Invalid main size configuration'),
+            ErrorDescription(
+              'Main axis size cannot depend on main axis content size.',
+            ),
+            ErrorHint(
+              'This is not supported because it would cause an infinite loop during layout.',
+            ),
+          ]);
         }
 
-        if (crossInputs.needsMainAxisParentSize) {
-          if (crossContentRelative) {
-            throw FlutterError.fromParts([
-              ErrorSummary(
-                'Child with cross axis size relative to content cannot be inside a FlexBox with cross axis size relative to content.',
-              ),
-              ErrorDescription(
-                'This is not supported because it would cause an infinite loop during layout.',
-              ),
-              ErrorHint(
-                'Try setting the cross axis size to be relative to viewport instead of content.',
-              ),
-            ]);
-          }
-          shouldComputeCross &= crossParentSizeAvailable;
+        if (mainInputs.needsMainAxisViewportSize) {
+          print('  main needs main viewport size: $mainViewportSizeAvailable');
+          shouldComputeMain &= mainViewportSizeAvailable;
         }
 
-        if (mainInputs.needsCrossAxisParentSize) {
-          shouldComputeMain &= crossParentSizeAvailable;
+        if (crossInputs.needsMainAxisContentSize) {
+          shouldComputeCross &= mainContentSizeAvailable;
+        }
+        if (crossInputs.needsMainAxisViewportSize) {
+          shouldComputeCross &= mainViewportSizeAvailable;
         }
 
-        if (crossInputs.needsCrossAxisParentSize) {
-          shouldComputeCross &= mainParentSizeAvailable;
+        // if (mainInputs.needsCrossAxisParentSize) {
+        //   print('  main needs cross parent size: $crossParentSizeAvailable');
+        //   shouldComputeMain &= crossParentSizeAvailable;
+        // }
+        if (mainInputs.needsCrossAxisContentSize) {
+          print('  main needs cross size: $crossContentSize');
+          shouldComputeMain &= crossContentSizeAvailable;
+        }
+        if (mainInputs.needsCrossAxisViewportSize) {
+          print(
+            '  main needs cross viewport size: $crossViewportSizeAvailable',
+          );
+          shouldComputeMain &= crossViewportSizeAvailable;
+        }
+
+        if (crossInputs.needsCrossAxisContentSize) {
+          shouldComputeCross &= crossContentSizeAvailable;
+        }
+        if (crossInputs.needsCrossAxisViewportSize) {
+          shouldComputeCross &= crossViewportSizeAvailable;
         }
 
         if (mainSize.needsCrossAxis) {
@@ -1130,12 +1442,14 @@ class RenderFlexBox extends RenderBox
             mainAxis: true,
             computeFlex: flexFactor != null,
             dependencies: dependencies,
-            dependsOn: dependsOn,
             biggestFlex: biggestMainFlex,
-            crossAxisParentSize: crossParentSize,
             crossAxisSize: data.resolvedCrossSize,
             flexFactor: flexFactor,
-            mainAxisParentSize: mainParentSize,
+            smallestFlex: smallestMainFlex,
+            mainAxisContentSize: mainContentSize,
+            mainAxisViewportSize: maxViewportMainSize,
+            crossAxisContentSize: crossContentSize,
+            crossAxisViewportSize: maxViewportCrossSize,
           );
           if (result == null) {
             mainContentSizeReady = false;
@@ -1152,20 +1466,32 @@ class RenderFlexBox extends RenderBox
               recomputeFlexFactor = true;
               mainContentSize = _addNullable(
                 mainContentSize,
-                result.result + result.flexResult,
+                result.result,
               );
-              // when resolvedMainSize is not null,
-              // the next pass will not reconsensus this
-              // child again
-              data.resolvedMainSize = result.result + result.flexResult;
-            } else {
               mainFlexContentSize = _addNullable(
                 mainFlexContentSize,
+                // the flex that does not need to be recomputed,
+                // otherwise it will be 0
                 result.flexResult,
               );
-              mainContentSize = _addNullable(mainContentSize, result.result);
-              data.resolvedMainSize = result.result;
-              data.resolvedMainFlexSize = result.flexResult;
+              // prevent this child from affecting the
+              // total flex the next pass
+              data.preventFlex = true;
+              data.resolvedMainSize = result.result + result.flexResult;
+              print('  (converted into fixed size)');
+              // some existing flex size might be ready and was not
+              // need to be recomputed, so we need to add it
+            } else {
+              if (!data.isAbsolute) {
+                mainFlexContentSize = _addNullable(
+                  mainFlexContentSize,
+                  result.flexResult,
+                );
+                mainContentSize = _addNullable(mainContentSize, result.result);
+              }
+              data.resolvedMainSize =
+                  result.result +
+                  result.flexResult; // store the resolved main size
             }
           }
         } else {
@@ -1183,20 +1509,24 @@ class RenderFlexBox extends RenderBox
             mainAxis: false,
             computeFlex: true,
             dependencies: dependencies,
-            dependsOn: dependsOn,
             biggestFlex: biggestCrossFlex,
-            crossAxisParentSize: crossParentSize,
             crossAxisSize: data.resolvedMainSize,
             flexFactor: null, // cross axis does not have flex factor
-            mainAxisParentSize: mainParentSize,
+            smallestFlex: smallestCrossFlex,
+            mainAxisContentSize: mainContentSize,
+            mainAxisViewportSize: maxViewportMainSize,
+            crossAxisContentSize: crossContentSize,
+            crossAxisViewportSize: maxViewportCrossSize,
           );
           if (result == null) {
             crossContentSizeReady = false;
           } else {
-            crossContentSize = _maxNullable(
-              crossContentSize,
-              result.result,
-            );
+            if (!data.isAbsolute) {
+              crossContentSize = _maxNullable(
+                crossContentSize,
+                result.result,
+              );
+            }
             // no need to separate flex size for cross axis
             // because cross axis does not have flex factor
             data.resolvedCrossSize = result.result + result.flexResult;
@@ -1228,29 +1558,32 @@ class RenderFlexBox extends RenderBox
 
       recomputeFlexFactor = false;
 
-      switch (layoutChange) {
-        case FlexBoxLayoutChange.none:
-          // should not happen
-          resolved = true;
-          break;
-        case FlexBoxLayoutChange.nonAbsolute:
-          resolved =
-              mainContentSizeReady &&
-              mainFlexContentSizeReady &&
-              crossContentSizeReady;
-          break;
-        case FlexBoxLayoutChange.absolute:
-          resolved = absolutesReady;
-          break;
-        case FlexBoxLayoutChange.both:
-          resolved =
-              mainContentSizeReady &&
-              mainFlexContentSizeReady &&
-              crossContentSizeReady &&
-              absolutesReady;
-          break;
+      // if it has new flex, we need another pass
+      // to compute the flex sizes
+      if (!hasNewFlexes) {
+        switch (layoutChange) {
+          case FlexBoxLayoutChange.none:
+            // should not happen
+            resolved = true;
+            break;
+          case FlexBoxLayoutChange.nonAbsolute:
+            resolved =
+                mainContentSizeReady &&
+                mainFlexContentSizeReady &&
+                crossContentSizeReady;
+            break;
+          case FlexBoxLayoutChange.absolute:
+            resolved = absolutesReady;
+            break;
+          case FlexBoxLayoutChange.both:
+            resolved =
+                mainContentSizeReady &&
+                mainFlexContentSizeReady &&
+                crossContentSizeReady &&
+                absolutesReady;
+            break;
+        }
       }
-      print('-------------------------------');
       passCount++;
     }
 
@@ -1263,18 +1596,18 @@ class RenderFlexBox extends RenderBox
           child,
           BoxConstraints.tightFor(
             width: direction == Axis.horizontal
-                ? data.resolvedMainSize
+                ? data.resolvedMainSize ?? 0
                 : data.resolvedCrossSize,
             height: direction == Axis.horizontal
                 ? data.resolvedCrossSize
-                : data.resolvedMainSize,
+                : data.resolvedMainSize ?? 0,
           ),
         );
         data.temporaryHeight = null;
         data.temporaryWidth = null;
         data.resolvedMainSize = null;
-        data.resolvedMainFlexSize = null;
         data.resolvedCrossSize = null;
+        data.preventFlex = false;
         child = data.nextSibling;
       }
     }
@@ -1284,9 +1617,10 @@ class RenderFlexBox extends RenderBox
       crossContentSize: crossContentSize ?? 0.0,
       shouldSortChildren: shouldSortChildren,
       flexUnit: flexFactor ?? 0.0,
-      spacing: 0.0,
-      spacingBefore: 0.0,
-      spacingAfter: 0.0,
+      spacing: resolvedSpacing ?? 0.0,
+      spacingBefore: resolvedSpacingBefore ?? 0.0,
+      spacingAfter: resolvedSpacingAfter ?? 0.0,
+      dependencies: dependencies,
     );
   }
 
@@ -1296,17 +1630,19 @@ class RenderFlexBox extends RenderBox
     required double mainViewportSize,
     required double crossViewportSize,
     // we assume spacing has been resolved (not infinite)
+    // and is already text-direction resolved
     required double spacing,
     required double spacingBefore,
     required double spacingAfter,
-    required FlexBoxPositionChange change,
+    required FlexBoxValueChange change,
+    required Map<Key, double> dependencies,
   }) {
     assert(spacing.isFinite && spacingBefore.isFinite && spacingAfter.isFinite);
     if (childCount == 0) {
       return;
     }
 
-    double mainAdditionalOffset = 0;
+    double mainAdditionalOffset = spacingBefore;
     double crossAdditionalOffset = 0;
 
     double mainScroll = direction == Axis.horizontal
@@ -1362,238 +1698,226 @@ class RenderFlexBox extends RenderBox
         break;
     }
 
-    // double spacing = this.spacing;
-    // if (spacing.isInfinite) {
-    //   // attempt to evenly distribute the spacing
-    //   // we need to get
-    // }
+    bool resolved = false;
+    int passCount = 0;
+    while (!resolved && passCount < maxComputePass) {
+      bool ready = true;
+      bool desparate = passCount == maxComputePass - 1;
+      RenderBox? child = firstChild;
+      // STOP KING 👑 do NOT use relativeFirstChild here
+      // relativeFirstChild is used whether when reverse is true
+      // (the order of the children is reversed)
+      // although it was used in the legacy code to reverse the
+      // order of positioning, it is not needed anymore (here) 🍷
+      // because we will just handle it in the mainOffset calculation
+      while (child != null) {
+        final data = child.parentData as FlexBoxParentData;
 
-    RenderBox? child = firstChild;
-    // STOP KING 👑 do NOT use relativeFirstChild here
-    // relativeFirstChild is used whether when reverse is true
-    // (the order of the children is reversed)
-    // although it was used in the legacy code to reverse the
-    // order of positioning, it is not needed anymore (here) 🍷
-    // because we will just handle it in the mainOffset calculation
-    while (child != null) {
-      final data = child.parentData as FlexBoxParentData;
+        final isAbsolute = data.isAbsolute;
 
-      final isAbsolute = data.isAbsolute;
-
-      if (change != FlexBoxPositionChange.both &&
-          ((change.affectsAbsolute && !isAbsolute) ||
-              (change.affectsNonAbsolute && isAbsolute))) {
-        child = relativeNextSibling(child);
-        continue;
-      }
-
-      Alignment? childAlignment = data.alignment?.resolve(textDirection);
-      double? horizontalChildAlignment = childAlignment?.x;
-      double? verticalChildAlignment = childAlignment?.y;
-
-      double mainPosition = mainAdditionalOffset;
-      double crossPosition = crossAdditionalOffset;
-
-      BoxPositionType mainBoxPositionType =
-          data.getPositionType(direction) ?? BoxPositionType.fixed;
-      BoxPositionType crossBoxPositionType =
-          data.getPositionType(crossDirection) ?? BoxPositionType.fixed;
-
-      bool mainRelativeContent = data.isRelativeToContent(direction);
-      bool crossRelativeContent = data.isRelativeToContent(crossDirection);
-
-      if (data.isAbsolute) {
-        BoxPosition? mainStart = direction == Axis.horizontal
-            ? data.left
-            : data.top;
-        BoxPosition? mainEnd = direction == Axis.horizontal
-            ? data.right
-            : data.bottom;
-        BoxPosition? crossStart = direction == Axis.horizontal
-            ? data.top
-            : data.left;
-        BoxPosition? crossEnd = direction == Axis.horizontal
-            ? data.bottom
-            : data.right;
-
-        double resolvedMainStart;
-        double resolvedCrossStart;
-
-        if (mainRelativeContent) {
-          if (mainStart != null) {
-            resolvedMainStart = mainStart.computePosition(mainContentSize);
-          } else if (mainEnd != null) {
-            resolvedMainStart =
-                mainContentSize -
-                mainEnd.computePosition(mainContentSize) -
-                _getMain(child.size);
-          } else {
-            resolvedMainStart = 0;
-          }
-        } else {
-          if (mainStart != null) {
-            resolvedMainStart = mainStart.computePosition(mainViewportSize);
-          } else if (mainEnd != null) {
-            resolvedMainStart =
-                mainViewportSize -
-                mainEnd.computePosition(mainViewportSize) -
-                _getMain(child.size);
-          } else {
-            resolvedMainStart = 0;
-          }
+        if (change != FlexBoxValueChange.both &&
+            ((change.affectsAbsolute && !isAbsolute) ||
+                (change.affectsNonAbsolute && isAbsolute))) {
+          child = relativeNextSibling(child);
+          continue;
         }
 
-        if (crossRelativeContent) {
+        double mainPosition = mainAdditionalOffset;
+        double crossPosition = crossAdditionalOffset;
+
+        double childMainSize = _getMain(child.size);
+        double childCrossSize = _getCross(child.size);
+
+        BoxPositionType mainBoxPositionType =
+            data.getPositionType(direction) ?? BoxPositionType.fixed;
+        BoxPositionType crossBoxPositionType =
+            data.getPositionType(crossDirection) ?? BoxPositionType.fixed;
+
+        if (data.isAbsolute) {
+          BoxValue? mainStart = direction == Axis.horizontal
+              ? data.left
+              : data.top;
+          BoxValue? mainEnd = direction == Axis.horizontal
+              ? data.right
+              : data.bottom;
+          BoxValue? crossStart = direction == Axis.horizontal
+              ? data.top
+              : data.left;
+          BoxValue? crossEnd = direction == Axis.horizontal
+              ? data.bottom
+              : data.right;
+
+          double? resolvedMainStart;
+          double? resolvedCrossStart;
+
+          if (mainStart != null) {
+            resolvedMainStart = mainStart.computePosition(
+              viewportSize: mainViewportSize,
+              contentSize: mainContentSize,
+              childSize: childMainSize,
+              textDirection: textDirection,
+              reverse: mainReverseText,
+              dependencies: dependencies,
+            );
+          } else if (mainEnd != null) {
+            resolvedMainStart = mainEnd.computePosition(
+              viewportSize: mainViewportSize,
+              contentSize: mainContentSize,
+              childSize: childMainSize,
+              textDirection: textDirection,
+              reverse: !mainReverseText,
+              dependencies: dependencies,
+            );
+          } else {
+            resolvedMainStart = 0;
+          }
+
           if (crossStart != null) {
-            resolvedCrossStart = crossStart.computePosition(crossContentSize);
+            resolvedCrossStart = crossStart.computePosition(
+              viewportSize: crossViewportSize,
+              contentSize: crossContentSize,
+              childSize: childCrossSize,
+              textDirection: textDirection,
+              reverse: crossReverseText,
+              dependencies: dependencies,
+            );
           } else if (crossEnd != null) {
-            resolvedCrossStart =
-                crossContentSize -
-                crossEnd.computePosition(crossContentSize) -
-                _getCross(child.size);
+            resolvedCrossStart = crossEnd.computePosition(
+              viewportSize: crossViewportSize,
+              contentSize: crossContentSize,
+              childSize: childCrossSize,
+              textDirection: textDirection,
+              reverse: !crossReverseText,
+              dependencies: dependencies,
+            );
           } else {
             resolvedCrossStart = 0;
           }
-        } else {
-          if (crossStart != null) {
-            resolvedCrossStart = crossStart.computePosition(crossViewportSize);
-          } else if (crossEnd != null) {
-            resolvedCrossStart =
-                crossViewportSize -
-                crossEnd.computePosition(crossViewportSize) -
-                _getCross(child.size);
-          } else {
-            throw FlutterError(
-              'For absolute children with horizontalRelativeToContent=false, at least one of start or end position must be specified. Child: $child',
-            );
+
+          if (resolvedMainStart != null) {
+            mainPosition += resolvedMainStart;
+          } else if (!desparate) {
+            ready = false;
           }
+          if (resolvedCrossStart != null) {
+            crossPosition += resolvedCrossStart;
+          } else if (!desparate) {
+            ready = false;
+          }
+        } else {
+          mainPosition += mainOffset;
+          crossPosition += _align(
+            crossContentSize - _getCross(child.size),
+            crossAlignment,
+          );
+          bool isLastChild = relativeNextSibling(child) == null;
+          if (!isLastChild) {
+            mainOffset += spacing;
+          }
+          mainOffset += _getMain(child.size);
         }
 
-        mainPosition += resolvedMainStart;
-        crossPosition += resolvedCrossStart;
-      } else {
-        mainPosition += mainOffset;
-        crossPosition += _align(
-          crossContentSize - _getCross(child.size),
-          crossAlignment,
-        );
-        mainOffset += _getMain(child.size);
-      }
-
-      if (data.isScrollAffected(direction)) {
-        if (reverse && isAbsolute) {
-          mainPosition -= mainContentSize - mainViewportSize - mainScroll;
-        } else {
-          mainPosition -= mainScroll;
-        }
-      }
-      if (data.isScrollAffected(crossDirection)) {
-        crossPosition -= crossScroll;
-      }
-
-      double mainVisibleBoundsStart = 0;
-      double mainVisibleBoundsEnd = mainViewportSize;
-      double crossVisibleBoundsStart = 0;
-      double crossVisibleBoundsEnd = crossScroll + crossViewportSize;
-
-      double mainExcessStart = mainPosition - mainVisibleBoundsStart;
-      double mainExcessEnd =
-          mainPosition - mainVisibleBoundsEnd + _getMain(child.size);
-      double crossExcessStart = crossPosition - crossVisibleBoundsStart;
-      double crossExcessEnd =
-          crossPosition - crossVisibleBoundsEnd + _getCross(child.size);
-
-      switch (mainBoxPositionType) {
-        case BoxPositionType.stickyStart:
-          if (mainExcessStart < 0) {
-            mainPosition -= mainExcessStart;
-          }
-          break;
-        case BoxPositionType.stickyEnd:
-          if (mainExcessEnd > 0) {
-            mainPosition -= mainExcessEnd;
-          }
-          break;
-        case BoxPositionType.sticky:
-          if (reverseOffsetMain) {
-            if (mainExcessEnd > 0) {
-              mainPosition -= mainExcessEnd;
-            } else if (mainExcessStart < 0) {
-              mainPosition -= mainExcessStart;
-            }
+        if (data.isScrollAffected(direction)) {
+          if (reverse && isAbsolute) {
+            mainPosition -= mainContentSize - mainViewportSize - mainScroll;
           } else {
+            mainPosition -= mainScroll;
+          }
+        }
+        if (data.isScrollAffected(crossDirection)) {
+          crossPosition -= crossScroll;
+        }
+
+        double mainVisibleBoundsStart = 0;
+        double mainVisibleBoundsEnd = mainViewportSize;
+        double crossVisibleBoundsStart = 0;
+        double crossVisibleBoundsEnd = crossScroll + crossViewportSize;
+
+        double mainExcessStart = mainPosition - mainVisibleBoundsStart;
+        double mainExcessEnd =
+            mainPosition - mainVisibleBoundsEnd + _getMain(child.size);
+        double crossExcessStart = crossPosition - crossVisibleBoundsStart;
+        double crossExcessEnd =
+            crossPosition - crossVisibleBoundsEnd + _getCross(child.size);
+
+        switch (mainBoxPositionType) {
+          case BoxPositionType.stickyStart:
             if (mainExcessStart < 0) {
               mainPosition -= mainExcessStart;
-            } else if (mainExcessEnd > 0) {
+            }
+            break;
+          case BoxPositionType.stickyEnd:
+            if (mainExcessEnd > 0) {
               mainPosition -= mainExcessEnd;
             }
-          }
-          break;
-        default:
-          break;
-      }
-
-      switch (crossBoxPositionType) {
-        case BoxPositionType.stickyStart:
-          if (crossExcessStart < 0) {
-            crossPosition -= crossExcessStart;
-          }
-          break;
-        case BoxPositionType.stickyEnd:
-          if (crossExcessEnd > 0) {
-            crossPosition -= crossExcessEnd;
-          }
-          break;
-        case BoxPositionType.sticky:
-          if (reverseOffsetCross) {
-            if (crossExcessEnd > 0) {
-              crossPosition -= crossExcessEnd;
-            } else if (crossExcessStart < 0) {
-              crossPosition -= crossExcessStart;
+            break;
+          case BoxPositionType.sticky:
+            if (reverseOffsetMain) {
+              if (mainExcessEnd > 0) {
+                mainPosition -= mainExcessEnd;
+              } else if (mainExcessStart < 0) {
+                mainPosition -= mainExcessStart;
+              }
+            } else {
+              if (mainExcessStart < 0) {
+                mainPosition -= mainExcessStart;
+              } else if (mainExcessEnd > 0) {
+                mainPosition -= mainExcessEnd;
+              }
             }
-          } else {
+            break;
+          default:
+            break;
+        }
+
+        switch (crossBoxPositionType) {
+          case BoxPositionType.stickyStart:
             if (crossExcessStart < 0) {
               crossPosition -= crossExcessStart;
-            } else if (crossExcessEnd > 0) {
+            }
+            break;
+          case BoxPositionType.stickyEnd:
+            if (crossExcessEnd > 0) {
               crossPosition -= crossExcessEnd;
             }
-          }
-          break;
-        default:
-          break;
-      }
+            break;
+          case BoxPositionType.sticky:
+            if (reverseOffsetCross) {
+              if (crossExcessEnd > 0) {
+                crossPosition -= crossExcessEnd;
+              } else if (crossExcessStart < 0) {
+                crossPosition -= crossExcessStart;
+              }
+            } else {
+              if (crossExcessStart < 0) {
+                crossPosition -= crossExcessStart;
+              } else if (crossExcessEnd > 0) {
+                crossPosition -= crossExcessEnd;
+              }
+            }
+            break;
+          default:
+            break;
+        }
 
-      if (!isAbsolute) {
-        switch ((mainRelativeContent, reverseOffsetMain)) {
-          case (true, true):
+        if (!isAbsolute) {
+          if (reverseOffsetMain) {
             mainPosition =
                 mainContentSize - mainPosition - _getMain(child.size);
-            break;
-          case (false, true):
-            mainPosition =
-                mainViewportSize - mainPosition - _getMain(child.size);
-            break;
-          default:
-            break;
-        }
-
-        switch ((crossRelativeContent && !isAbsolute, reverseOffsetCross)) {
-          case (true, true):
+          }
+          if (reverseOffsetCross) {
             crossPosition =
                 crossContentSize - crossPosition - _getCross(child.size);
-            break;
-          case (false, true):
-            crossPosition =
-                crossViewportSize - crossPosition - _getCross(child.size);
-            break;
-          default:
-            break;
+          }
         }
+
+        data.setOffset(mainPosition, crossPosition, direction);
+
+        child = data.nextSibling;
       }
 
-      data.setOffset(mainPosition, crossPosition, direction);
-
-      child = data.nextSibling;
+      resolved = ready;
+      passCount++;
     }
   }
 
@@ -1815,7 +2139,7 @@ class RenderFlexBox extends RenderBox
       }
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
-        BoxSize? mainSize = data.getSize(direction);
+        BoxValue? mainSize = data.getSize(direction);
         if (mainSize != null) {
           double? result = mainSize.computeIntrinsicSize(
             child: child,
@@ -1854,7 +2178,7 @@ class RenderFlexBox extends RenderBox
       maxSize = 0.0;
       while (child != null) {
         final data = child.parentData as FlexBoxParentData;
-        BoxSize? crossSize = data.getSize(crossDirection);
+        BoxValue? crossSize = data.getSize(crossDirection);
         if (crossSize != null) {
           double? result = crossSize.computeIntrinsicSize(
             child: child,
@@ -2078,16 +2402,14 @@ double? _addNullable(double? a, double? b) {
     return null;
   }
   if (a == null) {
+    assert(b?.isNaN == false);
     return b;
   }
   if (b == null) {
+    assert(a.isNaN == false);
     return a;
   }
-  return a + b;
-}
-
-double? _addNull(double? a, double b) {
-  if (a == null) return null;
+  assert(!a.isNaN && !b.isNaN);
   return a + b;
 }
 
@@ -2107,6 +2429,19 @@ double? _maxNulls(double? a, double? b) {
     return a;
   }
   return max(a, b);
+}
+
+double? _minNulls(double? a, double? b) {
+  if (a == null && b == null) {
+    return null;
+  }
+  if (a == null) {
+    return b;
+  }
+  if (b == null) {
+    return a;
+  }
+  return min(a, b);
 }
 
 bool _containsAllKeys(Map<Key, double> map, Iterable<Key> keys) {
