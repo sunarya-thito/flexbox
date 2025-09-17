@@ -1,0 +1,86 @@
+# TODO-List
+
+These are planned features for this package:
+
+- [ ] FlexWrap (Not planned at the moment) What needs to be changed:
+  - Flex recomputation if the line exceeds the main viewport size
+  - Main axis wont become scrollable
+  - There is going to be totalFlex per line, mainContentSize per line,
+    mainFlexContentSize per line, flexFactor per line, line index (stored) in
+    the FlexBoxParentData
+  - Then there is going to be crossSpacing, crossSpacingStart, and
+    crossSpacingEnd 💀
+  - There is also going to be contentRelative, viewportRelative, and line
+    relative
+  - Main concern is how the wrap should behave against flex children:
+    - If in a line is all flex, then there is no possibility the line will wrap
+      into another line (care for min constraint here)
+    - If in a line is just one giant box that exceeds the viewport size then the
+      line is ignored and will not be wrapped into the next line
+- [ ] (WIP) ExpandingSize in absolute children makes the children takes the
+      remaining size (relative to content or to viewport)
+- [ ] (WIP) If content size + spacing exceeds the viewport size and scrolling is
+      disabled, it should align the children based on the flex box alignment
+- [ ] (WIP) ExpandingSize currently does not work in spacing
+- [x] Make contentRelative option per size not per children, on a note that
+      contentRelative ExpandingSize on main axis should still not be allowed
+- [x] Remove error for content relative on non-absolute children
+- [ ] (WIP) Implement flex fit
+- [ ] (WIP) Reverse offset x does not work on non-absolute children
+- [ ] Content still scrollable even after setting scroll to false
+
+Note:
+
+- Multiply spacing size by the amount of children - 1
+
+
+Need to learn:
+- flex basis, the initial fixed size of flex items
+- flex grow
+- redistribution after constraint
+  redistribute clamped flex item into flexible items
+  (that is not frozen).
+  For example, 500px container
+  1. 1 flex
+  2. 3 flex (max 200px)
+  3. 2 flex
+  first we compute the total flex first
+  1 flex + 3 flex + 2 flex = 6 flex
+  then we compute the flex factor size
+  500px / 6 flex = 83.33px
+  we compute the box sizes
+  1. 83.33px * 1 flex = 83.33px
+  2. 83.33px * 3 flex = 250px
+  3. 83.33px * 2 flex = 166.67
+  now we can see that container 2 exceeds the max of 200px
+  we need to redistribute the space
+  500px - 200px (now that its frozen) = 300px
+  now we have to recompute the flexes
+  1 flex + 2 flex = 3 flex (frozen flex does not count)
+  then we compute the flex factor
+  300px / 3 flex = 100px
+  final sizes:
+  1. 100px * 1 flex = 100px
+  2. 200px (frozen)
+  3. 100px * 2 flex = 200px
+  the children size should equal the parent size
+  100px + 200px + 200px = 500px
+  note: same goes for min constraint.
+- flex shrink
+  for example, a container with 500px
+  and children:
+  1. 300px, flex-shrink 1 flex
+  2. 400px, flex-shrink 2 flex
+  now those children overflows the parent by 200px
+  300px + 400px = 700px
+  700px - 500px = 200px
+  we need to compute shrink-factor, that is
+  (300px * 1 flex) + (400 * 2 flex) = 300px + 800px = 1100px
+  now we can determine the amount of shrink every box has
+  1. ((300px * 1 flex) / 1100 px) * 200px = 54.55px
+  2. ((400px * 2 flex) / 1100 px) * 200px = 145.45px
+  final sizes:
+  1. 300px - 54.55px = 245.45px
+  2. 400px - 145.45px = 254.55px
+  now, the sum of sizes of all boxes should equal to the parent size
+  245.45px + 254.55px = 500px (not exactly equal, but its close to equal)

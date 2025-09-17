@@ -1,5 +1,5 @@
 library;
 
-export 'src/foundation.dart' hide FlexBoxWrap;
+export 'src/old_foundation.dart' hide FlexWrap;
 export 'src/widget.dart' hide FlexBoxViewport;
-export 'src/rendering.dart';
+export 'src/old_rendering.dart';

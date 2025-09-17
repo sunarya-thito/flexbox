@@ -2,22 +2,47 @@ library;
 
 import 'package:flexiblebox/flexiblebox.dart';
 
-export 'flexiblebox.dart';
-
 const alignCenter = BoxValue.aligned(
   alignment: BoxAlignmentGeometry.center,
   anchor: BoxAlignmentGeometry.center,
+);
+const alignCenterStart = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.center,
+  anchor: BoxAlignmentGeometry.start,
+);
+const alignCenterEnd = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.center,
+  anchor: BoxAlignmentGeometry.end,
 );
 const alignStart = BoxValue.aligned(
   alignment: BoxAlignmentGeometry.start,
   anchor: BoxAlignmentGeometry.start,
 );
+const alignStartCenter = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.start,
+  anchor: BoxAlignmentGeometry.center,
+);
+const alignStartEnd = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.start,
+  anchor: BoxAlignmentGeometry.end,
+);
 const alignEnd = BoxValue.aligned(
   alignment: BoxAlignmentGeometry.end,
   anchor: BoxAlignmentGeometry.end,
 );
+const alignEndCenter = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.end,
+  anchor: BoxAlignmentGeometry.center,
+);
+const alignEndStart = BoxValue.aligned(
+  alignment: BoxAlignmentGeometry.end,
+  anchor: BoxAlignmentGeometry.start,
+);
 const intrinsicSize = BoxValue.intrinsic();
 const expandingSize = BoxValue.expanding();
+const smallestExpandingSize = BoxValue.expanding(
+  expansion: FlexExpansion.smallest,
+);
 
 // We separate extensions to double and num
 // for better performance

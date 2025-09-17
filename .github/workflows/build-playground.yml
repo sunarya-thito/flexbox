@@ -1,0 +1,40 @@
+name: Deploy Playground to Github Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: subosito/flutter-action@v1
+      with:
+        flutter-version: '3.35.1'
+        channel: 'stable'
+
+    - name: Enable Flutter Web
+      run: flutter config --enable-web
+      working-directory: './docs'
+
+    - name: Build Release Version
+      run: "flutter build web --wasm --base-href \"/flexbox/\""
+      working-directory: './docs'
+
+    - name: Copy to web build directory
+      run: cp -r ./docs/build/web ./docs/public
+      working-directory: './'
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: './docs/public'
+        force_orphan: true
+        user_name: 'github-ci[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Publish to gh-pages'
