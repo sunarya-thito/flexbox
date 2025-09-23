@@ -1,23 +1,13 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flexiblebox/src/basic.dart';
 import 'package:flexiblebox/src/layout.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-final class LayoutBehavior {
-  static const LayoutBehavior none = LayoutBehavior._(1.0);
-  static const LayoutBehavior absolute = LayoutBehavior._(0.0);
-  static LayoutBehavior lerp(LayoutBehavior a, LayoutBehavior b, double t) {
-    if (t <= 0.0) return a;
-    if (t >= 1.0) return b;
-    return LayoutBehavior._(a.value * (1.0 - t) + b.value * t);
-  }
-
-  final double value;
-
-  const LayoutBehavior._(this.value);
+enum LayoutBehavior {
+  none,
+  absolute,
 }
 
 // note: these values must NOT be null in order to lerp
@@ -26,55 +16,42 @@ final class LayoutData {
   final LayoutBehavior behavior;
   final double flexGrow;
   final double flexShrink;
-  final double paintOrder;
-  final SizeUnit width;
-  final SizeUnit height;
-  // by default, top, left, right, and bottom has value of 0
-  // it acts like a padding (to the viewport) for absolute children
-  // for a case like only anchor to bottom and right, we handle
-  // that in alignment, and make sure width and height is set to
-  // max-content/min-content/fit-content
-  final PositionUnit top;
-  final PositionUnit left;
-  final PositionUnit right;
-  final PositionUnit bottom;
-  final Alignment alignment;
-  final AspectRatioUnit aspectRatio;
+  final double crossFlexGrow;
+  final double crossFlexShrink;
+  final int? paintOrder;
+  final SizeUnit? width;
+  final SizeUnit? height;
+  final SizeUnit? minWidth;
+  final SizeUnit? maxWidth;
+  final SizeUnit? minHeight;
+  final SizeUnit? maxHeight;
+  final PositionUnit? top;
+  final PositionUnit? left;
+  final PositionUnit? right;
+  final PositionUnit? bottom;
+  final double? aspectRatio;
+  final BoxAlignmentGeometry? alignSelf;
 
   LayoutData({
     required this.behavior,
     required this.flexGrow,
     required this.flexShrink,
+    required this.crossFlexGrow,
+    required this.crossFlexShrink,
     required this.paintOrder,
     required this.width,
     required this.height,
+    this.minWidth,
+    this.maxWidth,
+    this.minHeight,
+    this.maxHeight,
     required this.top,
     required this.left,
     required this.right,
     required this.bottom,
-    required this.alignment,
     required this.aspectRatio,
+    this.alignSelf,
   });
-
-  static LayoutData lerp(LayoutData a, LayoutData b, double t) {
-    if (identical(a, b)) return a;
-    if (t <= 0) return a;
-    if (t >= 1) return b;
-    return LayoutData(
-      behavior: LayoutBehavior.lerp(a.behavior, b.behavior, t),
-      flexGrow: lerpDouble(a.flexGrow, b.flexGrow, t)!,
-      flexShrink: lerpDouble(a.flexShrink, b.flexShrink, t)!,
-      paintOrder: lerpDouble(a.paintOrder, b.paintOrder, t)!,
-      width: SizeUnit.lerp(a.width, b.width, t),
-      height: SizeUnit.lerp(a.height, b.height, t),
-      top: PositionUnit.lerp(a.top, b.top, t),
-      left: PositionUnit.lerp(a.left, b.left, t),
-      right: PositionUnit.lerp(a.right, b.right, t),
-      bottom: PositionUnit.lerp(a.bottom, b.bottom, t),
-      alignment: Alignment.lerp(a.alignment, b.alignment, t)!,
-      aspectRatio: AspectRatioUnit.lerp(a.aspectRatio, b.aspectRatio, t),
-    );
-  }
 
   @override
   int get hashCode => Object.hash(
@@ -87,7 +64,6 @@ final class LayoutData {
     left,
     right,
     bottom,
-    alignment,
     aspectRatio,
   );
 
@@ -105,7 +81,6 @@ final class LayoutData {
         other.left == left &&
         other.right == right &&
         other.bottom == bottom &&
-        other.alignment == alignment &&
         other.aspectRatio == aspectRatio;
   }
 }
@@ -115,7 +90,7 @@ class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
 
   LayoutData? layoutData;
 
-  double get paintOrder => layoutData!.paintOrder;
+  int? get paintOrder => layoutData!.paintOrder;
 
   RenderBox? _nextSortedSibling;
   RenderBox? _previousSortedSibling;
@@ -127,7 +102,6 @@ class RenderLayoutBox extends RenderBox
         RenderBoxContainerDefaultsMixin<RenderBox, LayoutBoxParentData>,
         ParentLayout
     implements RenderAbstractViewport {
-  bool clipPaint;
   @override
   TextDirection textDirection;
   bool reversePaint;
@@ -136,24 +110,33 @@ class RenderLayoutBox extends RenderBox
   ViewportOffset vertical;
   AxisDirection horizontalAxisDirection;
   AxisDirection verticalAxisDirection;
-  EdgeInsets viewportExpand;
-  late LayoutHandle layoutHandle;
+  LayoutOverflow horizontalOverflow;
+  LayoutOverflow verticalOverflow;
+  Layout boxLayout;
+  @override
+  TextBaseline? textBaseline;
+  BorderRadius borderRadius;
+  Clip clipBehavior;
   RenderLayoutBox({
-    required Layout layout,
-    required this.clipPaint,
+    required this.boxLayout,
     required this.textDirection,
     required this.reversePaint,
     required this.horizontal,
     required this.vertical,
     required this.horizontalAxisDirection,
     required this.verticalAxisDirection,
-    required this.viewportExpand,
     required this.mainScrollDirection,
-  }) {
-    layoutHandle = layout.createLayoutHandle(this);
-  }
+    required this.horizontalOverflow,
+    required this.verticalOverflow,
+    required this.textBaseline,
+    required this.borderRadius,
+    required this.clipBehavior,
+  });
 
   Size? _contentSize;
+
+  // bounds including absolute positioned children
+  Rect? _contentBounds;
 
   @override
   Size get contentSize {
@@ -162,6 +145,10 @@ class RenderLayoutBox extends RenderBox
       'contentSize is not available before layout. Call layout first.',
     );
     return _contentSize!;
+  }
+
+  Rect get contentBounds {
+    return Offset(-horizontal.pixels, -vertical.pixels) & contentSize;
   }
 
   @override
@@ -202,6 +189,16 @@ class RenderLayoutBox extends RenderBox
   }
 
   @override
+  double? computeDistanceToActualBaseline(TextBaseline baseline) {
+    return switch (mainScrollDirection) {
+      Axis.horizontal => defaultComputeDistanceToHighestActualBaseline(
+        baseline,
+      ),
+      Axis.vertical => defaultComputeDistanceToFirstActualBaseline(baseline),
+    };
+  }
+
+  @override
   void performResize() {
     super.performResize();
     horizontal.applyViewportDimension(size.width);
@@ -210,6 +207,58 @@ class RenderLayoutBox extends RenderBox
 
   void _onScrollOffsetChanged() {
     markNeedsPaint();
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    Rect? paintBounds = actualPaintBounds;
+    if (paintBounds == null) {
+      RenderBox? child = sortedFirstPaintChild;
+      while (child != null) {
+        final childParentData = child.parentData as LayoutBoxParentData;
+        context.paintChild(child, childParentData.offset + offset);
+        child = sortedNextPaintSibling(child);
+      }
+    } else {
+      paintBounds = paintBounds.shift(offset);
+      layer = context.pushClipRRect(
+        needsCompositing,
+        offset,
+        paintBounds,
+        borderRadius.toRRect(paintBounds),
+        (PaintingContext context, Offset offset) {
+          RenderBox? child = sortedFirstPaintChild;
+          while (child != null) {
+            final childParentData = child.parentData as LayoutBoxParentData;
+            final childOffset = childParentData.offset + offset;
+            final childBounds = childOffset & child.size;
+            // no need to bother painting children that are out of the paint bounds
+            if (paintBounds!.overlaps(childBounds)) {
+              context.paintChild(child, childOffset);
+            }
+            child = sortedNextPaintSibling(child);
+          }
+        },
+        clipBehavior: clipBehavior,
+      );
+    }
+  }
+
+  Rect? get actualPaintBounds {
+    bool clipHorizontal = horizontalOverflow.clipContent;
+    bool clipVertical = verticalOverflow.clipContent;
+    if (!clipHorizontal && !clipVertical) {
+      return null;
+    }
+    double scrollX = horizontal.pixels;
+    double scrollY = vertical.pixels;
+    Rect contentBounds = this.contentBounds;
+    return Rect.fromLTWH(
+      clipHorizontal ? 0.0 : contentBounds.left - scrollX,
+      clipVertical ? 0.0 : contentBounds.top - scrollY,
+      clipHorizontal ? size.width : contentBounds.width,
+      clipVertical ? size.height : contentBounds.height,
+    );
   }
 
   @override
@@ -437,10 +486,11 @@ class RenderLayoutBox extends RenderBox
   @override
   void performLayout() {
     bool needsSorting = false;
+    LayoutHandle layoutHandle = boxLayout.createLayoutHandle(this);
     RenderBox? child = firstChild;
     while (child != null) {
       final childParentData = child.parentData as LayoutBoxParentData;
-      if (childParentData.paintOrder != 0.0) {
+      if (childParentData.paintOrder != null) {
         needsSorting = true;
       }
       childParentData.cache = layoutHandle.setupCache();
@@ -448,7 +498,7 @@ class RenderLayoutBox extends RenderBox
     }
     Size contentSize = layoutHandle.performLayout(constraints);
     _contentSize = contentSize;
-    layoutHandle.performPositioning(contentSize);
+    layoutHandle.performPositioning(constraints, contentSize);
     child = firstChild;
     while (child != null) {
       final childParentData = child.parentData as LayoutBoxParentData;
@@ -478,20 +528,9 @@ class RenderLayoutBox extends RenderBox
   }
 
   bool _childOutOfViewport(RenderBox child) {
-    final viewportSize = constraints.biggest;
-    final layoutData = child.parentData as LayoutBoxParentData;
-    final childOffset = layoutData.offset;
-    final childSize = child.size;
-    final viewportBounds = Offset.zero & viewportSize;
-    final childBounds = childOffset & childSize;
-    final padding = viewportExpand;
-    final paddedViewportBounds = Rect.fromLTWH(
-      viewportBounds.left - padding.left,
-      viewportBounds.top - padding.top,
-      viewportBounds.width + padding.horizontal,
-      viewportBounds.height + padding.vertical,
-    );
-    return !paddedViewportBounds.overlaps(childBounds);
+    final childParentData = child.parentData as LayoutBoxParentData;
+    final childRect = childParentData.offset & child.size;
+    return !childRect.overlaps(actualPaintBounds ?? paintBounds);
   }
 
   void _sortChildren() {
@@ -508,8 +547,11 @@ class RenderLayoutBox extends RenderBox
 
     RenderBox? headOfListToSort;
 
+    bool clipHorizontal = horizontalOverflow.clipContent;
+    bool clipVertical = verticalOverflow.clipContent;
+
     // Check if we should only consider visible children.
-    if (clipPaint) {
+    if (clipHorizontal || clipVertical) {
       // Build a new linked list containing ONLY visible children.
       RenderBox? visibleHead;
       RenderBox? visibleTail;
@@ -572,14 +614,34 @@ class RenderLayoutBox extends RenderBox
     }
   }
 
+  RRect get visibleContentBounds {
+    Rect bounds = actualPaintBounds ?? paintBounds;
+    return borderRadius.toRRect(bounds);
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!visibleContentBounds.contains(position)) {
+      return false;
+    }
+    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
+  }
+
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    bool clipHorizontal = horizontalOverflow.clipContent;
+    bool clipVertical = verticalOverflow.clipContent;
     RenderBox? child = sortedLastPaintChild;
     while (child != null) {
       final childParentData = child.parentData! as LayoutBoxParentData;
-      if (clipPaint &&
-          _childOutOfViewport(child) &&
-          _firstSortedChild == null) {
+      if (clipHorizontal ||
+          clipVertical &&
+              _childOutOfViewport(child) &&
+              _firstSortedChild == null) {
         child = sortedPreviousPaintSibling(child);
         continue;
       }
@@ -751,7 +813,7 @@ class RenderLayoutBox extends RenderBox
   }
 
   @override
-  ChildLayout? get firstDryLayout {
+  ChildLayout? getFirstDryLayout(LayoutHandle<Layout> layoutHandle) {
     RenderBox? child = firstChild;
     RenderBoxChildDryLayout? first;
     RenderBoxChildDryLayout? last;
@@ -774,7 +836,7 @@ class RenderLayoutBox extends RenderBox
   }
 
   @override
-  ChildLayout? get lastDryLayout {
+  ChildLayout? getLastDryLayout(LayoutHandle<Layout> layoutHandle) {
     RenderBox? child = lastChild;
     RenderBoxChildDryLayout? first;
     RenderBoxChildDryLayout? last;
@@ -816,26 +878,31 @@ class RenderLayoutBox extends RenderBox
 
   @override
   Size computeDryLayout(covariant BoxConstraints constraints) {
+    final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.performLayout(constraints, true);
   }
 
   @override
   double computeMinIntrinsicHeight(double width) {
+    final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMinIntrinsicHeight(width);
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
+    final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMaxIntrinsicHeight(width);
   }
 
   @override
   double computeMinIntrinsicWidth(double height) {
+    final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMinIntrinsicWidth(height);
   }
 
   @override
   double computeMaxIntrinsicWidth(double height) {
+    final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMaxIntrinsicWidth(height);
   }
 }
@@ -846,6 +913,19 @@ class RenderBoxChildLayout with ChildLayout {
 
   @override
   Size get size => renderBox.size;
+
+  @override
+  Offset get offset => (renderBox.parentData as LayoutBoxParentData).offset;
+
+  @override
+  set offset(Offset value) {
+    (renderBox.parentData as LayoutBoxParentData).offset = value;
+  }
+
+  @override
+  double getDistanceToBaseline(TextBaseline baseline) {
+    return renderBox.getDistanceToBaseline(baseline) ?? size.height;
+  }
 
   @override
   ChildLayout? get nextSibling {
@@ -868,22 +948,22 @@ class RenderBoxChildLayout with ChildLayout {
   }
 
   @override
-  double computeMaxIntrinsicHeight(double width) {
+  double getMaxIntrinsicHeight(double width) {
     return renderBox.getMaxIntrinsicHeight(width);
   }
 
   @override
-  double computeMaxIntrinsicWidth(double height) {
+  double getMaxIntrinsicWidth(double height) {
     return renderBox.getMaxIntrinsicWidth(height);
   }
 
   @override
-  double computeMinIntrinsicHeight(double width) {
+  double getMinIntrinsicHeight(double width) {
     return renderBox.getMinIntrinsicHeight(width);
   }
 
   @override
-  double computeMinIntrinsicWidth(double height) {
+  double getMinIntrinsicWidth(double height) {
     return renderBox.getMinIntrinsicWidth(height);
   }
 
@@ -917,26 +997,45 @@ class RenderBoxChildDryLayout with ChildLayout {
   RenderBoxChildDryLayout(this.renderBox, this.layoutCache);
   @override
   Size get size => throw FlutterError(
-    'size is not available in dry layout. ',
+    'size is not available in dry layout.',
   );
 
   @override
-  double computeMaxIntrinsicHeight(double width) {
+  Offset get offset => throw FlutterError(
+    'offset is not available in dry layout.',
+  );
+
+  @override
+  set offset(Offset value) {
+    throw FlutterError(
+      'offset is not available in dry layout.',
+    );
+  }
+
+  @override
+  double getDistanceToBaseline(TextBaseline baseline) {
+    throw FlutterError(
+      'getDistanceToBaseline is not available in dry layout.',
+    );
+  }
+
+  @override
+  double getMaxIntrinsicHeight(double width) {
     return renderBox.getMaxIntrinsicHeight(width);
   }
 
   @override
-  double computeMaxIntrinsicWidth(double height) {
+  double getMaxIntrinsicWidth(double height) {
     return renderBox.getMaxIntrinsicWidth(height);
   }
 
   @override
-  double computeMinIntrinsicHeight(double width) {
+  double getMinIntrinsicHeight(double width) {
     return renderBox.getMinIntrinsicHeight(width);
   }
 
   @override
-  double computeMinIntrinsicWidth(double height) {
+  double getMinIntrinsicWidth(double height) {
     return renderBox.getMinIntrinsicWidth(height);
   }
 

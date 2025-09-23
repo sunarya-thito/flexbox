@@ -1,413 +1,259 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flexiblebox/src/flex.dart';
 import 'package:flexiblebox/src/layout.dart';
+import 'package:flexiblebox/src/layout/flex.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-abstract base class LayoutDirection {
-  static const LayoutDirection horizontal = HorizontalLayoutDirection();
-  static const LayoutDirection vertical = VerticalLayoutDirection();
-  static LayoutDirection lerp(
-    LayoutDirection a,
-    LayoutDirection b,
-    double t,
-  ) {
-    if (t <= 0.0) return a;
-    if (t >= 1.0) return b;
-    return _LerpedLayoutDirection(a, b, t);
-  }
+// supports baseline alignment and stretch alignment
+// and fixed alignment (start center end)
+abstract class BoxAlignmentGeometry {
+  const BoxAlignmentGeometry();
+  static const BoxAlignmentGeometry stretch = _StretchBoxAlignment();
+  static const BoxAlignmentGeometry start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentGeometry center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentGeometry end = DirectionalBoxAlignment.end;
+  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  const factory BoxAlignmentGeometry.directional(double value) =
+      DirectionalBoxAlignment;
+  const factory BoxAlignmentGeometry.absolute(double value) = BoxAlignment;
 
-  const LayoutDirection();
-
-  double getViewportSize(ParentLayout parent) {
-    return lerpDoubleValue(
-      parent.viewportSize.width,
-      parent.viewportSize.height,
-    );
-  }
-
-  double getContentSize(ParentLayout parent) {
-    return lerpDoubleValue(parent.contentSize.width, parent.contentSize.height);
-  }
-
-  double getChildSize(ChildLayout child) {
-    return lerpDoubleValue(child.size.width, child.size.height);
-  }
-
-  double getScrollOffset(ParentLayout parent) {
-    return lerpDoubleValue(parent.scrollOffsetX, parent.scrollOffsetY);
-  }
-
-  double getLayoutOffset(LayoutHandle layout) {
-    return lerpDoubleValue(layout.horizontalOffset, layout.verticalOffset);
-  }
-
-  double getContentOverflow(ParentLayout parent) {
-    Size contentSize = parent.contentSize;
-    Size viewportSize = parent.viewportSize;
-    return (contentSize.width - viewportSize.width).clamp(0.0, double.infinity);
-  }
-
-  double getContentUnderflow(ParentLayout parent) {
-    Size contentSize = parent.contentSize;
-    Size viewportSize = parent.viewportSize;
-    return (viewportSize.width - contentSize.width).clamp(0.0, double.infinity);
-  }
-
-  double getMaxConstraint(BoxConstraints constraints) {
-    return lerpDoubleValue(constraints.maxWidth, constraints.maxHeight);
-  }
-
-  double getMinIntrinsic(ChildLayout child, BoxConstraints constraints) {
-    return lerpDoubleValue(
-      child.computeMinIntrinsicWidth(constraints.maxHeight),
-      child.computeMinIntrinsicHeight(constraints.maxWidth),
-    );
-  }
-
-  double getMaxIntrinsic(ChildLayout child, BoxConstraints constraints) {
-    return lerpDoubleValue(
-      child.computeMaxIntrinsicWidth(constraints.maxHeight),
-      child.computeMaxIntrinsicHeight(constraints.maxWidth),
-    );
-  }
-
-  double getAxisSize(Size size) {
-    return lerpDoubleValue(size.width, size.height);
-  }
-
-  SizeUnit getMainSizeUnit(SizeUnit width, SizeUnit height) {
-    return SizeUnit.lerp(width, height, verticalValue);
-  }
-
-  SizeUnit getCrossSizeUnit(SizeUnit width, SizeUnit height) {
-    return SizeUnit.lerp(width, height, horizontalValue);
-  }
-
-  double get verticalValue;
-  double get horizontalValue;
-  double lerpDoubleValue(double horizontal, double vertical) {
-    return horizontal * horizontalValue + vertical * verticalValue;
-  }
-
-  SpacingUnit getMainSpacingUnit(SpacingUnit horizontal, SpacingUnit vertical) {
-    return SpacingUnit.lerp(horizontal, vertical, verticalValue);
-  }
-
-  SpacingUnit getCrossSpacingUnit(
-    SpacingUnit horizontal,
-    SpacingUnit vertical,
-  ) {
-    return SpacingUnit.lerp(horizontal, vertical, horizontalValue);
-  }
-
-  LayoutDirection operator ~();
-}
-
-final class HorizontalLayoutDirection extends LayoutDirection {
-  const HorizontalLayoutDirection();
-
-  @override
-  double get horizontalValue => 1.0;
-
-  @override
-  double get verticalValue => 0.0;
-
-  @override
-  LayoutDirection operator ~() {
-    return LayoutDirection.vertical;
-  }
-}
-
-final class VerticalLayoutDirection extends LayoutDirection {
-  const VerticalLayoutDirection();
-
-  @override
-  double get horizontalValue => 0.0;
-
-  @override
-  double get verticalValue => 1.0;
-
-  @override
-  LayoutDirection operator ~() {
-    return LayoutDirection.horizontal;
-  }
-}
-
-final class _LerpedLayoutDirection implements LayoutDirection {
-  final LayoutDirection a;
-  final LayoutDirection b;
-  final double t;
-
-  const _LerpedLayoutDirection(this.a, this.b, this.t);
-
-  @override
-  double get horizontalValue =>
-      lerpDouble(a.horizontalValue, b.horizontalValue, t)!;
-
-  @override
-  double get verticalValue => lerpDouble(a.verticalValue, b.verticalValue, t)!;
-
-  @override
-  SizeUnit getMainSizeUnit(SizeUnit width, SizeUnit height) {
-    return SizeUnit.lerp(
-      a.getMainSizeUnit(width, height),
-      b.getMainSizeUnit(width, height),
-      t,
-    );
-  }
-
-  @override
-  SizeUnit getCrossSizeUnit(SizeUnit width, SizeUnit height) {
-    return SizeUnit.lerp(
-      a.getCrossSizeUnit(width, height),
-      b.getCrossSizeUnit(width, height),
-      t,
-    );
-  }
-
-  @override
-  double getAxisSize(Size size) {
-    return lerpDouble(a.getAxisSize(size), b.getAxisSize(size), t)!;
-  }
-
-  @override
-  double getChildSize(ChildLayout child) {
-    return lerpDouble(a.getChildSize(child), b.getChildSize(child), t)!;
-  }
-
-  @override
-  double getContentOverflow(ParentLayout parent) {
-    return lerpDouble(
-      a.getContentOverflow(parent),
-      b.getContentOverflow(parent),
-      t,
-    )!;
-  }
-
-  @override
-  double getContentSize(ParentLayout parent) {
-    return lerpDouble(a.getContentSize(parent), b.getContentSize(parent), t)!;
-  }
-
-  @override
-  double getContentUnderflow(ParentLayout parent) {
-    return lerpDouble(
-      a.getContentUnderflow(parent),
-      b.getContentUnderflow(parent),
-      t,
-    )!;
-  }
-
-  @override
-  double getLayoutOffset(LayoutHandle<Layout> layout) {
-    return lerpDouble(
-      a.getLayoutOffset(layout),
-      b.getLayoutOffset(layout),
-      t,
-    )!;
-  }
-
-  @override
-  double getMaxConstraint(BoxConstraints constraints) {
-    return lerpDouble(
-      a.getMaxConstraint(constraints),
-      b.getMaxConstraint(constraints),
-      t,
-    )!;
-  }
-
-  @override
-  double getMaxIntrinsic(ChildLayout child, BoxConstraints constraints) {
-    return lerpDouble(
-      a.getMaxIntrinsic(child, constraints),
-      b.getMaxIntrinsic(child, constraints),
-      t,
-    )!;
-  }
-
-  @override
-  double getMinIntrinsic(ChildLayout child, BoxConstraints constraints) {
-    return lerpDouble(
-      a.getMinIntrinsic(child, constraints),
-      b.getMinIntrinsic(child, constraints),
-      t,
-    )!;
-  }
-
-  @override
-  double getScrollOffset(ParentLayout parent) {
-    return lerpDouble(
-      a.getScrollOffset(parent),
-      b.getScrollOffset(parent),
-      t,
-    )!;
-  }
-
-  @override
-  double getViewportSize(ParentLayout parent) {
-    return lerpDouble(
-      a.getViewportSize(parent),
-      b.getViewportSize(parent),
-      t,
-    )!;
-  }
-
-  @override
-  LayoutDirection operator ~() {
-    return _LerpedLayoutDirection(~a, ~b, t);
-  }
-
-  @override
-  SpacingUnit getCrossSpacingUnit(
-    SpacingUnit horizontal,
-    SpacingUnit vertical,
-  ) {
-    return SpacingUnit.lerp(
-      a.getCrossSpacingUnit(horizontal, vertical),
-      b.getCrossSpacingUnit(horizontal, vertical),
-      t,
-    );
-  }
-
-  @override
-  SpacingUnit getMainSpacingUnit(SpacingUnit horizontal, SpacingUnit vertical) {
-    return SpacingUnit.lerp(
-      a.getMainSpacingUnit(horizontal, vertical),
-      b.getMainSpacingUnit(horizontal, vertical),
-      t,
-    );
-  }
-
-  @override
-  double lerpDoubleValue(double horizontal, double vertical) {
-    return lerpDouble(
-      a.lerpDoubleValue(horizontal, vertical),
-      b.lerpDoubleValue(horizontal, vertical),
-      t,
-    )!;
-  }
-}
-
-class AspectRatioUnit {
-  static const AspectRatioUnit normal = AspectRatioUnit(
-    1.0,
-    widthFactor: 0.0,
-    heightFactor: 0.0,
-  );
-
-  /// How much should the aspect ratio affect width.
-  final double widthFactor;
-
-  /// How much should the aspect ratio affect height.
-  final double heightFactor;
-  final double value;
-  const AspectRatioUnit(
-    this.value, {
-    this.widthFactor = 1.0,
-    this.heightFactor = 1.0,
+  /// Determines the top/left position
+  double align({
+    required ParentLayout parent,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+    required double maxBaseline,
+    required double childBaseline,
   });
 
-  static AspectRatioUnit lerp(AspectRatioUnit a, AspectRatioUnit b, double t) {
-    if (t <= 0.0) return a;
-    if (t >= 1.0) return b;
-    return AspectRatioUnit(
-      lerpDouble(a.value, b.value, t)!,
-      widthFactor: lerpDouble(a.widthFactor, b.widthFactor, t)!,
-      heightFactor: lerpDouble(a.heightFactor, b.heightFactor, t)!,
-    );
+  double? adjustSize({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+  }) => null;
+
+  bool needsBaseline({
+    required ParentLayout parent,
+    required Axis axis,
+  });
+}
+
+// does not support baseline or stretch,
+// usually used for main-axis alignment
+abstract class BoxAlignmentBase extends BoxAlignmentContent {
+  static const BoxAlignmentBase start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentBase center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentBase end = DirectionalBoxAlignment.end;
+  const BoxAlignmentBase();
+  const factory BoxAlignmentBase.directional(double value) =
+      DirectionalBoxAlignment;
+  const factory BoxAlignmentBase.absolute(double value) = BoxAlignment;
+
+  @override
+  bool needsBaseline({required ParentLayout parent, required Axis axis}) {
+    return false;
   }
 }
 
-enum FlexItemAlignment {
-  start,
-  end,
-  center,
-  spaceBetween,
-  spaceAround,
-  spaceEvenly,
-  flexStart,
-  flexEnd,
-  baseline,
-  firstBaseline,
-  lastBaseline,
+// does not support baseline, but supports stretch and also fixed alignment
+// usually used for cross-axis alignment (specifically in align-content)
+abstract class BoxAlignmentContent extends BoxAlignmentGeometry {
+  static const BoxAlignmentContent stretch = _StretchBoxAlignment();
+  static const BoxAlignmentContent start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentContent center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentContent end = DirectionalBoxAlignment.end;
+  const factory BoxAlignmentContent.directional(double value) =
+      DirectionalBoxAlignment;
+  const factory BoxAlignmentContent.absolute(double value) = BoxAlignment;
+
+  const BoxAlignmentContent();
 }
 
-enum FlexJustifyContent {
-  flexStart,
-  flexEnd,
-  start,
-  end,
-  center,
-  spaceBetween,
-  spaceAround,
-  spaceEvenly,
-  stretch,
-  normal,
+class _StretchBoxAlignment extends BoxAlignmentContent {
+  const _StretchBoxAlignment();
+  @override
+  double align({
+    required ParentLayout parent,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+    required double maxBaseline,
+    required double childBaseline,
+  }) {
+    return 0.0;
+  }
+
+  @override
+  bool needsBaseline({required ParentLayout parent, required Axis axis}) {
+    return false;
+  }
+
+  @override
+  double? adjustSize({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+  }) {
+    return contentSize;
+  }
 }
 
-// enum BoxPosition {
-//   // static positioning is not supported
-//   // static,
-//   // absolute positioning is controlled
-//   // absolute,
-//   relative,
-//   sticky,
-//   // fixed,
-// }
+class BoxAlignment extends BoxAlignmentBase {
+  static const BoxAlignmentBase start = BoxAlignment(-1.0);
+  static const BoxAlignmentBase center = BoxAlignment(0.0);
+  static const BoxAlignmentBase end = BoxAlignment(1.0);
+  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  final double value;
 
-// enum BoxPosition {
-//   fixed,
-//   relative,
-// }
-enum PositionTarget {
-  viewport,
-  content,
+  const BoxAlignment(this.value);
+
+  @override
+  double align({
+    required ParentLayout parent,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+    required double maxBaseline,
+    required double childBaseline,
+  }) {
+    double center = (viewportSize - contentSize) / 2.0;
+    return center * value;
+  }
 }
 
-// enum FlexContentAlignment {
-//   flexStart,
-//   flexEnd,
-//   start,
-//   end,
-//   center,
-//   spaceBetween,
-//   spaceAround,
-//   spaceEvenly,
-//   stretch,
-//   normal,
-//   baseline,
-//   firstBaseline,
-//   lastBaseline,
-// }
+class _BaselineBoxAlignment extends BoxAlignmentGeometry {
+  const _BaselineBoxAlignment();
 
-class BoxInsets {
-  final InsetUnit left;
+  @override
+  double align({
+    required ParentLayout parent,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+    required double maxBaseline,
+    required double childBaseline,
+  }) {
+    return maxBaseline - childBaseline;
+  }
+
+  @override
+  bool needsBaseline({required ParentLayout parent, required Axis axis}) {
+    return true;
+  }
+}
+
+class DirectionalBoxAlignment extends BoxAlignmentBase {
+  static const BoxAlignmentBase start = DirectionalBoxAlignment(-1.0);
+  static const BoxAlignmentBase center = DirectionalBoxAlignment(0.0);
+  static const BoxAlignmentBase end = DirectionalBoxAlignment(1.0);
+  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  final double value;
+
+  const DirectionalBoxAlignment(this.value);
+
+  @override
+  double align({
+    required ParentLayout parent,
+    required Axis axis,
+    required double viewportSize,
+    required double contentSize,
+    required double maxBaseline,
+    required double childBaseline,
+  }) {
+    double center = (viewportSize - contentSize) / 2.0;
+    return switch (parent.textDirection) {
+      TextDirection.ltr => center * value,
+      TextDirection.rtl => center * -value,
+    };
+  }
+}
+
+final class LayoutOverflow {
+  /// Content does not scroll and is not clipped.
+  static const LayoutOverflow visible = LayoutOverflow(false, false);
+
+  /// Content scrolls and is clipped.
+  static const LayoutOverflow hidden = LayoutOverflow(true, true);
+
+  /// Content scrolls but is not clipped.
+  static const LayoutOverflow scroll = LayoutOverflow(true, false);
+
+  /// Content does not scroll but is clipped.
+  static const LayoutOverflow clip = LayoutOverflow(false, true);
+  final bool scrollable;
+  final bool clipContent;
+
+  const LayoutOverflow(this.scrollable, this.clipContent);
+
+  @override
+  String toString() {
+    return 'LayoutOverflow(scrollable: $scrollable, clip: $clipContent)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! LayoutOverflow) return false;
+    return scrollable == other.scrollable && clipContent == other.clipContent;
+  }
+
+  @override
+  int get hashCode => Object.hash(scrollable, clipContent);
+}
+
+// Units:
+// Inset Unit: computed initially to reduce the viewport size
+// Size Unit: computed after the viewport size has been reduced by the padding
+// Spacing Unit: computed before the size unit to add additional flex-basis and after the size unit
+// Position Unit: computed after inset, size, and spacing has been resolved
+
+abstract class BoxInsetsGeometry {
   final InsetUnit top;
-  final InsetUnit right;
   final InsetUnit bottom;
 
-  const BoxInsets.only({
-    this.left = InsetUnit.zero,
+  const BoxInsetsGeometry({
     this.top = InsetUnit.zero,
-    this.right = InsetUnit.zero,
     this.bottom = InsetUnit.zero,
   });
 
+  BoxInsets resolve(TextDirection direction);
+}
+
+class BoxInsets extends BoxInsetsGeometry {
+  final InsetUnit left;
+  final InsetUnit right;
+
+  const BoxInsets.only({
+    this.left = InsetUnit.zero,
+    this.right = InsetUnit.zero,
+    super.top,
+    super.bottom,
+  }) : super();
+
   const BoxInsets.all(InsetUnit value)
     : left = value,
-      top = value,
       right = value,
-      bottom = value;
+      super(
+        top: value,
+        bottom: value,
+      );
 
   const BoxInsets.symmetric({
     InsetUnit horizontal = InsetUnit.zero,
     InsetUnit vertical = InsetUnit.zero,
   }) : left = horizontal,
        right = horizontal,
-       top = vertical,
-       bottom = vertical;
+       super(
+         top: vertical,
+         bottom: vertical,
+       );
 
   static BoxInsets lerp(BoxInsets a, BoxInsets b, double t) {
     if (t <= 0.0) return a;
@@ -420,45 +266,55 @@ class BoxInsets {
     );
   }
 
-  static const BoxInsets zero = BoxInsets.all(InsetUnit.zero);
-
+  @override
   BoxInsets resolve(TextDirection direction) {
     return this;
   }
 }
 
-class DirectionalBoxInsets extends BoxInsets {
-  const DirectionalBoxInsets.only({
-    InsetUnit start = InsetUnit.zero,
-    super.top,
-    InsetUnit end = InsetUnit.zero,
-    super.bottom,
-  }) : super.only(
-         left: start,
-         right: end,
-       );
+class DirectionalBoxInsets extends BoxInsetsGeometry {
+  final InsetUnit start;
+  final InsetUnit end;
 
-  const DirectionalBoxInsets.all(super.value) : super.all();
+  const DirectionalBoxInsets.only({
+    this.start = InsetUnit.zero,
+    super.top,
+    this.end = InsetUnit.zero,
+    super.bottom,
+  }) : super();
+
+  const DirectionalBoxInsets.all(InsetUnit value)
+    : this.only(
+        start: value,
+        end: value,
+        top: value,
+        bottom: value,
+      );
 
   const DirectionalBoxInsets.symmetric({
-    super.horizontal,
-    super.vertical,
-  }) : super.symmetric();
+    InsetUnit horizontal = InsetUnit.zero,
+    InsetUnit vertical = InsetUnit.zero,
+  }) : this.only(
+         start: horizontal,
+         end: horizontal,
+         top: vertical,
+         bottom: vertical,
+       );
 
   @override
   BoxInsets resolve(TextDirection direction) {
     if (direction == TextDirection.ltr) {
       return BoxInsets.only(
-        left: left,
+        left: start,
         top: top,
-        right: right,
+        right: end,
         bottom: bottom,
       );
     } else {
       return BoxInsets.only(
-        left: right,
+        left: end,
         top: top,
-        right: left,
+        right: start,
         bottom: bottom,
       );
     }
@@ -466,65 +322,68 @@ class DirectionalBoxInsets extends BoxInsets {
 }
 
 abstract class InsetUnit {
-  static const InsetUnit viewportSize = InsetViewportSizeReference();
-  static const InsetUnit zero = FixedInset(0);
-  const factory InsetUnit.fixed(double value) = FixedInset;
-  const factory InsetUnit.cross(InsetUnit insets) = CrossInsets;
+  static const InsetUnit viewportSize = _InsetViewportSizeReference();
+  static const InsetUnit zero = _FixedInset(0);
+  const factory InsetUnit.fixed(double value) = _FixedInset;
+  const factory InsetUnit.cross(InsetUnit insets) = _CrossInsets;
   const factory InsetUnit.computed({
     required InsetUnit first,
     required InsetUnit second,
     required CalculationOperation operation,
-  }) = ComputedInsets;
+  }) = _ComputedInsets;
   const factory InsetUnit.constrained({
     required InsetUnit insets,
     InsetUnit min,
     InsetUnit max,
-  }) = ConstrainedInsets;
+  }) = _ConstrainedInsets;
   static InsetUnit lerp(InsetUnit a, InsetUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * FixedInset(1.0 - t) + b * FixedInset(t);
+    return a * _FixedInset(1.0 - t) + b * _FixedInset(t);
   }
 
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   });
 }
 
-class FixedInset implements InsetUnit {
+class _FixedInset implements InsetUnit {
   final double value;
-  const FixedInset(this.value);
+  const _FixedInset(this.value);
 
   @override
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   }) {
     return value;
   }
 }
 
-class InsetViewportSizeReference implements InsetUnit {
-  const InsetViewportSizeReference();
+class _InsetViewportSizeReference implements InsetUnit {
+  const _InsetViewportSizeReference();
 
   @override
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   }) {
-    return axis.getViewportSize(parent);
+    return switch (axis) {
+      Axis.horizontal => parent.viewportSize.width,
+      Axis.vertical => parent.viewportSize.height,
+    };
   }
 }
 
-class ComputedInsets implements InsetUnit {
+class _ComputedInsets implements InsetUnit {
   final InsetUnit first;
   final InsetUnit second;
   final CalculationOperation operation;
-  const ComputedInsets({
+  const _ComputedInsets({
     required this.first,
     required this.second,
     required this.operation,
@@ -534,7 +393,7 @@ class ComputedInsets implements InsetUnit {
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   }) {
     double first = this.first.computeSpacing(
       parent: parent,
@@ -550,22 +409,22 @@ class ComputedInsets implements InsetUnit {
   }
 }
 
-class ConstrainedInsets implements InsetUnit {
+class _ConstrainedInsets implements InsetUnit {
   final InsetUnit insets;
   final InsetUnit min;
   final InsetUnit max;
 
-  const ConstrainedInsets({
+  const _ConstrainedInsets({
     required this.insets,
-    this.min = const FixedInset(0),
-    this.max = const FixedInset(double.infinity),
+    this.min = const _FixedInset(0),
+    this.max = const _FixedInset(double.infinity),
   });
 
   @override
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   }) {
     double sz = insets.computeSpacing(
       parent: parent,
@@ -586,21 +445,24 @@ class ConstrainedInsets implements InsetUnit {
   }
 }
 
-class CrossInsets implements InsetUnit {
+class _CrossInsets implements InsetUnit {
   final InsetUnit insets;
 
-  const CrossInsets(this.insets);
+  const _CrossInsets(this.insets);
 
   @override
   double computeSpacing({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection axis,
+    required Axis axis,
   }) {
     return insets.computeSpacing(
       parent: parent,
       child: child,
-      axis: ~axis,
+      axis: switch (axis) {
+        Axis.horizontal => Axis.vertical,
+        Axis.vertical => Axis.horizontal,
+      },
     );
   }
 }
@@ -609,27 +471,23 @@ abstract class SizeUnit {
   static SizeUnit lerp(SizeUnit a, SizeUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * FixedSize(1.0 - t) + b * FixedSize(t);
+    return a * _FixedSize(1.0 - t) + b * _FixedSize(t);
   }
 
-  static const SizeUnit zero = FixedSize(0);
-  const factory SizeUnit.fixed(double value) = FixedSize;
-  static const SizeUnit minContent = MinContent();
-  static const SizeUnit maxContent = MaxContent();
-  static const SizeUnit fitContent = FitContent();
-  static const SizeUnit viewportSize = SizeViewportSizeReference();
-  static const SizeUnit maxViewportSize = SizeMaxViewportSizeReference();
-  static const SizeUnit auto = AutoSize();
+  static const SizeUnit zero = _FixedSize(0);
+  const factory SizeUnit.fixed(double value) = _FixedSize;
+  static const SizeUnit minContent = _MinContent();
+  static const SizeUnit maxContent = _MaxContent();
+  static const SizeUnit fitContent = _FitContent();
+  static const SizeUnit viewportSize = _SizeViewportSizeReference();
 
   const SizeUnit();
-
-  bool get needsPostAdjustment;
 
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   });
@@ -639,31 +497,32 @@ abstract class PositionUnit {
   static PositionUnit lerp(PositionUnit a, PositionUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * FixedPosition(1.0 - t) + b * FixedPosition(t);
+    return a * _FixedPosition(1.0 - t) + b * _FixedPosition(t);
   }
 
-  static const PositionUnit zero = FixedPosition(0);
-  static const PositionUnit viewportSize = ViewportSizeReference();
-  static const PositionUnit contentSize = ContentSizeReference();
-  static const PositionUnit childSize = ChildSizeReference();
-  static const PositionUnit lineOffset = LineOffset();
-  static const PositionUnit boxOffset = BoxOffset();
-  static const PositionUnit scrollOffset = ScrollOffset();
-  static const PositionUnit contentOverflow = ContentOverflow();
-  static const PositionUnit contentUnderflow = ContentUnderflow();
-  const factory PositionUnit.fixed(double value) = FixedPosition;
-  const factory PositionUnit.cross(PositionUnit position) = CrossPosition;
+  static const PositionUnit zero = _FixedPosition(0);
+  static const PositionUnit viewportSize = _ViewportSizeReference();
+  static const PositionUnit contentSize = _ContentSizeReference();
+  static const PositionUnit childSize = _ChildSizeReference();
+  static const PositionUnit boxOffset = _BoxOffset();
+  static const PositionUnit scrollOffset = _ScrollOffset();
+  static const PositionUnit contentOverflow = _ContentOverflow();
+  static const PositionUnit contentUnderflow = _ContentUnderflow();
+  static const PositionUnit viewportStartBound = _ScrollOffset();
+  static const PositionUnit viewportEndBound = _ViewportEndBound();
+  const factory PositionUnit.fixed(double value) = _FixedPosition;
+  const factory PositionUnit.cross(PositionUnit position) = _CrossPosition;
   const factory PositionUnit.constrained({
     required PositionUnit position,
     PositionUnit min,
     PositionUnit max,
-  }) = ConstrainedPosition;
+  }) = _ConstrainedPosition;
 
   const PositionUnit();
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   });
 }
 
@@ -674,33 +533,29 @@ double calculationSubtract(double a, double b) => a - b;
 double calculationMultiply(double a, double b) => a * b;
 double calculationDivide(double a, double b) => a / b;
 
-class CalculatedSize implements SizeUnit {
+class _CalculatedSize extends SizeUnit {
   final SizeUnit first;
   final SizeUnit second;
   final CalculationOperation operation;
-  const CalculatedSize({
+  const _CalculatedSize({
     required this.first,
     required this.second,
     required this.operation,
   });
 
   @override
-  bool get needsPostAdjustment =>
-      first.needsPostAdjustment || second.needsPostAdjustment;
-
-  @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
     double first = this.first.computeSize(
       parent: parent,
       child: child,
-      constraints: constraints,
+      layoutHandle: layoutHandle,
       axis: axis,
       contentSize: contentSize,
       viewportSize: viewportSize,
@@ -708,7 +563,7 @@ class CalculatedSize implements SizeUnit {
     double second = this.second.computeSize(
       parent: parent,
       child: child,
-      constraints: constraints,
+      layoutHandle: layoutHandle,
       axis: axis,
       contentSize: contentSize,
       viewportSize: viewportSize,
@@ -717,11 +572,11 @@ class CalculatedSize implements SizeUnit {
   }
 }
 
-class CalculatedPosition implements PositionUnit {
+class _CalculatedPosition implements PositionUnit {
   final PositionUnit first;
   final PositionUnit second;
   final CalculationOperation operation;
-  const CalculatedPosition({
+  const _CalculatedPosition({
     required this.first,
     required this.second,
     required this.operation,
@@ -731,7 +586,7 @@ class CalculatedPosition implements PositionUnit {
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
     double first = this.first.computePosition(
       parent: parent,
@@ -747,186 +602,189 @@ class CalculatedPosition implements PositionUnit {
   }
 }
 
-class FixedPosition implements PositionUnit {
+class _FixedPosition implements PositionUnit {
   final double value;
-  const FixedPosition(this.value);
+  const _FixedPosition(this.value);
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
     return value;
   }
 }
 
-class ViewportSizeReference implements PositionUnit {
-  const ViewportSizeReference();
+class _ViewportSizeReference implements PositionUnit {
+  const _ViewportSizeReference();
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
-    return direction.getViewportSize(parent);
+    return switch (direction) {
+      Axis.horizontal => parent.viewportSize.width,
+      Axis.vertical => parent.viewportSize.height,
+    };
   }
 }
 
-class ContentSizeReference implements PositionUnit {
-  const ContentSizeReference();
+class _ContentSizeReference implements PositionUnit {
+  const _ContentSizeReference();
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
-    return direction.getContentSize(parent);
+    return switch (direction) {
+      Axis.horizontal => parent.contentSize.width,
+      Axis.vertical => parent.contentSize.height,
+    };
   }
 }
 
-class ChildSizeReference implements PositionUnit {
-  const ChildSizeReference();
+class _ChildSizeReference implements PositionUnit {
+  const _ChildSizeReference();
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
-    return direction.getChildSize(child);
+    return switch (direction) {
+      Axis.horizontal => child.size.width,
+      Axis.vertical => child.size.height,
+    };
   }
 }
 
-class LineOffset implements PositionUnit {
-  const LineOffset();
+class _BoxOffset implements PositionUnit {
+  const _BoxOffset();
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
-    final layout = parent.layoutHandle;
-    assert(
-      layout is FlexLayoutHandle,
-      'LineSize can only be used in FlexLayout',
+    return switch (direction) {
+      Axis.horizontal => parent.scrollOffsetX,
+      Axis.vertical => parent.scrollOffsetY,
+    };
+  }
+}
+
+class _ScrollOffset implements PositionUnit {
+  const _ScrollOffset();
+
+  @override
+  double computePosition({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required Axis direction,
+  }) {
+    return switch (direction) {
+      Axis.horizontal => parent.scrollOffsetX,
+      Axis.vertical => parent.scrollOffsetY,
+    };
+  }
+}
+
+class _ContentOverflow implements PositionUnit {
+  const _ContentOverflow();
+  @override
+  double computePosition({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required Axis direction,
+  }) {
+    return max(
+      0.0,
+      switch (direction) {
+        Axis.horizontal => parent.contentSize.width - parent.viewportSize.width,
+        Axis.vertical => parent.contentSize.height - parent.viewportSize.height,
+      },
     );
-    final flexLayout = layout as FlexLayoutHandle;
-    final childCache = child.layoutCache;
-    assert(
-      childCache is FlexChildLayoutCache,
-      'LineSize can only be used in FlexLayout',
+  }
+}
+
+class _ContentUnderflow implements PositionUnit {
+  const _ContentUnderflow();
+  @override
+  double computePosition({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required Axis direction,
+  }) {
+    return max(
+      0.0,
+      switch (direction) {
+        Axis.horizontal => parent.viewportSize.width - parent.contentSize.width,
+        Axis.vertical => parent.viewportSize.height - parent.contentSize.height,
+      },
     );
-    final flexChildCache = childCache as FlexChildLayoutCache;
-    double line = flexChildCache.line - 1;
-    return flexLayout.cache.getCrossSizesUntilLine(line);
   }
 }
 
-class BoxOffset implements PositionUnit {
-  const BoxOffset();
-
+class _ViewportEndBound implements PositionUnit {
+  const _ViewportEndBound();
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
-    return direction.getLayoutOffset(parent.layoutHandle);
+    return switch (direction) {
+      Axis.horizontal => parent.contentSize.width + parent.scrollOffsetX,
+      Axis.vertical => parent.contentSize.height + parent.scrollOffsetY,
+    };
   }
 }
 
-class ScrollOffset implements PositionUnit {
-  const ScrollOffset();
-
-  @override
-  double computePosition({
-    required ParentLayout parent,
-    required ChildLayout child,
-    required LayoutDirection direction,
-  }) {
-    return direction.getScrollOffset(parent);
-  }
-}
-
-class ContentOverflow implements PositionUnit {
-  const ContentOverflow();
-  @override
-  double computePosition({
-    required ParentLayout parent,
-    required ChildLayout child,
-    required LayoutDirection direction,
-  }) {
-    // Size contentSize = parent.contentSize;
-    // Size viewportSize = parent.viewportSize;
-    // return direction == LayoutDirection.horizontal
-    //     ? (contentSize.width - viewportSize.width).clamp(0.0, double.infinity)
-    //     : (contentSize.height - viewportSize.height).clamp(
-    //         0.0,
-    //         double.infinity,
-    //       );
-    return direction.getContentOverflow(parent);
-  }
-}
-
-class ContentUnderflow implements PositionUnit {
-  const ContentUnderflow();
-  @override
-  double computePosition({
-    required ParentLayout parent,
-    required ChildLayout child,
-    required LayoutDirection direction,
-  }) {
-    // Size contentSize = parent.contentSize;
-    // Size viewportSize = parent.viewportSize;
-    // return direction == LayoutDirection.horizontal
-    //     ? (contentSize.width - viewportSize.width).clamp(0.0, double.infinity)
-    //     : (contentSize.height - viewportSize.height).clamp(
-    //         0.0,
-    //         double.infinity,
-    //       );
-    return direction.getContentUnderflow(parent);
-  }
-}
-
-class CrossPosition implements PositionUnit {
+class _CrossPosition implements PositionUnit {
   final PositionUnit position;
 
-  const CrossPosition(this.position);
+  const _CrossPosition(this.position);
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
     return position.computePosition(
       parent: parent,
       child: child,
-      direction: ~direction,
+      direction: switch (direction) {
+        Axis.horizontal => Axis.vertical,
+        Axis.vertical => Axis.horizontal,
+      },
     );
   }
 }
 
-class ConstrainedPosition implements PositionUnit {
+class _ConstrainedPosition implements PositionUnit {
   final PositionUnit position;
   final PositionUnit min;
   final PositionUnit max;
 
-  const ConstrainedPosition({
+  const _ConstrainedPosition({
     required this.position,
-    this.min = const FixedPosition(double.negativeInfinity),
-    this.max = const FixedPosition(double.infinity),
+    this.min = const _FixedPosition(double.negativeInfinity),
+    this.max = const _FixedPosition(double.infinity),
   });
 
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
-    required LayoutDirection direction,
+    required Axis direction,
   }) {
     double pos = position.computePosition(
       parent: parent,
@@ -947,36 +805,137 @@ class ConstrainedPosition implements PositionUnit {
   }
 }
 
-class ConstrainedSize implements SizeUnit {
+abstract class EdgePositionGeometry {
+  final PositionUnit top;
+  final PositionUnit bottom;
+
+  const EdgePositionGeometry({
+    this.top = PositionUnit.zero,
+    this.bottom = PositionUnit.zero,
+  });
+
+  EdgePosition resolve(TextDirection direction);
+}
+
+class EdgePosition extends EdgePositionGeometry {
+  final PositionUnit left;
+  final PositionUnit right;
+
+  const EdgePosition.only({
+    this.left = PositionUnit.zero,
+    this.right = PositionUnit.zero,
+    super.top,
+    super.bottom,
+  }) : super();
+
+  const EdgePosition.all(PositionUnit value)
+    : left = value,
+      right = value,
+      super(
+        top: value,
+        bottom: value,
+      );
+
+  const EdgePosition.symmetric({
+    PositionUnit horizontal = PositionUnit.zero,
+    PositionUnit vertical = PositionUnit.zero,
+  }) : left = horizontal,
+       right = horizontal,
+       super(
+         top: vertical,
+         bottom: vertical,
+       );
+
+  static EdgePosition lerp(EdgePosition a, EdgePosition b, double t) {
+    if (t <= 0.0) return a;
+    if (t >= 1.0) return b;
+    return EdgePosition.only(
+      left: PositionUnit.lerp(a.left, b.left, t),
+      top: PositionUnit.lerp(a.top, b.top, t),
+      right: PositionUnit.lerp(a.right, b.right, t),
+      bottom: PositionUnit.lerp(a.bottom, b.bottom, t),
+    );
+  }
+
+  @override
+  EdgePosition resolve(TextDirection direction) {
+    return this;
+  }
+}
+
+class DirectionalEdgePosition extends EdgePositionGeometry {
+  final PositionUnit start;
+  final PositionUnit end;
+
+  const DirectionalEdgePosition.only({
+    this.start = PositionUnit.zero,
+    super.top,
+    this.end = PositionUnit.zero,
+    super.bottom,
+  }) : super();
+
+  const DirectionalEdgePosition.all(PositionUnit value)
+    : this.only(
+        start: value,
+        end: value,
+        top: value,
+        bottom: value,
+      );
+
+  const DirectionalEdgePosition.symmetric({
+    PositionUnit horizontal = PositionUnit.zero,
+    PositionUnit vertical = PositionUnit.zero,
+  }) : this.only(
+         start: horizontal,
+         end: horizontal,
+         top: vertical,
+         bottom: vertical,
+       );
+
+  @override
+  EdgePosition resolve(TextDirection direction) {
+    if (direction == TextDirection.ltr) {
+      return EdgePosition.only(
+        left: start,
+        top: top,
+        right: end,
+        bottom: bottom,
+      );
+    } else {
+      return EdgePosition.only(
+        left: end,
+        top: top,
+        right: start,
+        bottom: bottom,
+      );
+    }
+  }
+}
+
+class _ConstrainedSize extends SizeUnit {
   final SizeUnit size;
   final SizeUnit min;
   final SizeUnit max;
 
-  const ConstrainedSize({
+  const _ConstrainedSize({
     required this.size,
-    this.min = const FixedSize(0),
-    this.max = const FixedSize(double.infinity),
+    this.min = const _FixedSize(0),
+    this.max = const _FixedSize(double.infinity),
   });
-
-  @override
-  bool get needsPostAdjustment =>
-      size.needsPostAdjustment ||
-      min.needsPostAdjustment ||
-      max.needsPostAdjustment;
 
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
     double sz = size.computeSize(
       parent: parent,
       child: child,
-      constraints: constraints,
+      layoutHandle: layoutHandle,
       axis: axis,
       contentSize: contentSize,
       viewportSize: viewportSize,
@@ -984,7 +943,7 @@ class ConstrainedSize implements SizeUnit {
     double minSz = min.computeSize(
       parent: parent,
       child: child,
-      constraints: constraints,
+      layoutHandle: layoutHandle,
       axis: axis,
       contentSize: contentSize,
       viewportSize: viewportSize,
@@ -992,7 +951,7 @@ class ConstrainedSize implements SizeUnit {
     double maxSz = max.computeSize(
       parent: parent,
       child: child,
-      constraints: constraints,
+      layoutHandle: layoutHandle,
       axis: axis,
       contentSize: contentSize,
       viewportSize: viewportSize,
@@ -1001,328 +960,309 @@ class ConstrainedSize implements SizeUnit {
   }
 }
 
-class FixedSize implements SizeUnit {
+class _FixedSize extends SizeUnit {
   final double value;
-  const FixedSize(this.value);
+  const _FixedSize(this.value);
 
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
     return value;
   }
-
-  @override
-  bool get needsPostAdjustment => false;
 }
 
-// class RelativeSize implements SizeUnit {
-//   final double factor;
-//   const RelativeSize(this.factor);
-
-//   @override
-//   double computeSize({
-//     required ParentLayout parent,
-//     required ChildLayout child,
-//     required BoxConstraints constraints,
-//     required LayoutDirection axis,
-//   }) {
-//     return axis.getMaxConstraint(constraints) * factor;
-//   }
-// }
-
-class SizeViewportSizeReference implements SizeUnit {
-  const SizeViewportSizeReference();
+class _SizeViewportSizeReference extends SizeUnit {
+  const _SizeViewportSizeReference();
 
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
-    return axis.getViewportSize(parent);
+    double result = switch (axis) {
+      Axis.horizontal => viewportSize.width,
+      Axis.vertical => viewportSize.height,
+    };
+    // if result is infinite, it might be coming from intrinsic sizing
+    return result.isFinite ? result : 0.0;
   }
-
-  @override
-  bool get needsPostAdjustment => true;
 }
 
-class SizeMaxViewportSizeReference implements SizeUnit {
-  const SizeMaxViewportSizeReference();
-
+class _MinContent extends SizeUnit {
+  const _MinContent();
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
-    return axis.getMaxConstraint(constraints);
+    return switch (axis) {
+      Axis.horizontal => child.getMinIntrinsicWidth(viewportSize.height),
+      Axis.vertical => child.getMinIntrinsicHeight(viewportSize.width),
+    };
   }
-
-  @override
-  bool get needsPostAdjustment => false;
 }
 
-class MinContent implements SizeUnit {
-  const MinContent();
+class _MaxContent extends SizeUnit {
+  const _MaxContent();
+
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
-    return axis.getMinIntrinsic(child, constraints);
+    return switch (axis) {
+      Axis.horizontal => child.getMaxIntrinsicWidth(viewportSize.height),
+      Axis.vertical => child.getMaxIntrinsicHeight(viewportSize.width),
+    };
   }
-
-  @override
-  bool get needsPostAdjustment => false;
 }
 
-class MaxContent implements SizeUnit {
-  const MaxContent();
+class _FitContent extends SizeUnit {
+  const _FitContent();
 
   @override
   double computeSize({
     required ParentLayout parent,
     required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
-    required Size contentSize,
-    required Size viewportSize,
-  }) {
-    return axis.getMaxIntrinsic(child, constraints);
-  }
-
-  @override
-  bool get needsPostAdjustment => false;
-}
-
-class FitContent implements SizeUnit {
-  const FitContent();
-
-  @override
-  double computeSize({
-    required ParentLayout parent,
-    required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
+    required LayoutHandle layoutHandle,
+    required Axis axis,
     required Size contentSize,
     required Size viewportSize,
   }) {
     Size? cachedSize = child.layoutCache.cachedFitContentSize;
     if (cachedSize == null) {
-      cachedSize = child.dryLayout(constraints);
+      cachedSize = child.dryLayout(BoxConstraints());
       child.layoutCache.cachedFitContentSize = cachedSize;
     }
-    // return axis == LayoutDirection.horizontal ? cachedSize.width : cachedSize.height;
-    return axis.getAxisSize(cachedSize);
+    return switch (axis) {
+      Axis.horizontal => cachedSize.width,
+      Axis.vertical => cachedSize.height,
+    };
   }
-
-  @override
-  bool get needsPostAdjustment => false;
 }
 
-class AutoSize implements SizeUnit {
-  const AutoSize();
-  @override
-  double computeSize({
-    required ParentLayout parent,
-    required ChildLayout child,
-    required BoxConstraints constraints,
-    required LayoutDirection axis,
-    required Size contentSize,
-    required Size viewportSize,
-  }) {
-    Size? cachedSize = child.layoutCache.cachedAutoSize;
-    if (cachedSize == null) {
-      cachedSize = child.dryLayout(constraints);
-      child.layoutCache.cachedAutoSize = cachedSize;
-    }
-    return axis.getAxisSize(cachedSize);
+abstract class EdgeSpacingGeometry {
+  final SpacingUnit top;
+  final SpacingUnit bottom;
+
+  const EdgeSpacingGeometry({
+    this.top = SpacingUnit.zero,
+    this.bottom = SpacingUnit.zero,
+  });
+
+  EdgeSpacing resolve(TextDirection direction);
+}
+
+class EdgeSpacing extends EdgeSpacingGeometry {
+  static const EdgeSpacing zero = EdgeSpacing.all(SpacingUnit.zero);
+  final SpacingUnit left;
+  final SpacingUnit right;
+
+  const EdgeSpacing.only({
+    this.left = SpacingUnit.zero,
+    this.right = SpacingUnit.zero,
+    super.top,
+    super.bottom,
+  }) : super();
+
+  const EdgeSpacing.all(SpacingUnit value)
+    : left = value,
+      right = value,
+      super(
+        top: value,
+        bottom: value,
+      );
+
+  const EdgeSpacing.symmetric({
+    SpacingUnit horizontal = SpacingUnit.zero,
+    SpacingUnit vertical = SpacingUnit.zero,
+  }) : left = horizontal,
+       right = horizontal,
+       super(
+         top: vertical,
+         bottom: vertical,
+       );
+
+  static EdgeSpacing lerp(EdgeSpacing a, EdgeSpacing b, double t) {
+    if (t <= 0.0) return a;
+    if (t >= 1.0) return b;
+    return EdgeSpacing.only(
+      left: SpacingUnit.lerp(a.left, b.left, t),
+      top: SpacingUnit.lerp(a.top, b.top, t),
+      right: SpacingUnit.lerp(a.right, b.right, t),
+      bottom: SpacingUnit.lerp(a.bottom, b.bottom, t),
+    );
   }
 
   @override
-  bool get needsPostAdjustment => false;
+  EdgeSpacing resolve(TextDirection direction) {
+    return this;
+  }
+}
+
+class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
+  final SpacingUnit start;
+  final SpacingUnit end;
+
+  const DirectionalEdgeSpacing.only({
+    this.start = SpacingUnit.zero,
+    super.top,
+    this.end = SpacingUnit.zero,
+    super.bottom,
+  }) : super();
+
+  const DirectionalEdgeSpacing.all(SpacingUnit value)
+    : this.only(
+        start: value,
+        end: value,
+        top: value,
+        bottom: value,
+      );
+
+  const DirectionalEdgeSpacing.symmetric({
+    SpacingUnit horizontal = SpacingUnit.zero,
+    SpacingUnit vertical = SpacingUnit.zero,
+  }) : this.only(
+         start: horizontal,
+         end: horizontal,
+         top: vertical,
+         bottom: vertical,
+       );
+
+  @override
+  EdgeSpacing resolve(TextDirection direction) {
+    if (direction == TextDirection.ltr) {
+      return EdgeSpacing.only(
+        left: start,
+        top: top,
+        right: end,
+        bottom: bottom,
+      );
+    } else {
+      return EdgeSpacing.only(
+        left: end,
+        top: top,
+        right: start,
+        bottom: bottom,
+      );
+    }
+  }
 }
 
 abstract class SpacingUnit {
   static SpacingUnit lerp(SpacingUnit a, SpacingUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * FixedSpacing(1.0 - t) + b * FixedSpacing(t);
+    return a * _FixedSpacing(1.0 - t) + b * _FixedSpacing(t);
   }
 
-  static const SpacingUnit zero = FixedSpacing(0);
-  static const SpacingUnit viewportSize = SpacingViewportSizeReference();
-
-  /// Uses distributed spacing given the available space and the number of affected items.
-  static const SpacingUnit even = EvenSpacing();
-
-  /// Uses all the available space.
-  static const SpacingUnit fill = FillSpacing();
-
-  /// Uses the maximum available space across all flex lines in a flex wrap layout.
-  static const SpacingUnit maxFill = MaxFillSpacing();
-
-  /// Uses the minimum available space across all flex lines in a flex wrap layout.
-  static const SpacingUnit minFill = MinFillSpacing();
-  const factory SpacingUnit.fixed(double value) = FixedSpacing;
+  static const SpacingUnit zero = _FixedSpacing(0);
+  static const SpacingUnit viewportSize = _SpacingViewportSizeReference();
+  static const SpacingUnit even = _EvenSpacing();
+  const factory SpacingUnit.fixed(double value) = _FixedSpacing;
   const factory SpacingUnit.constrained({
     required SpacingUnit spacing,
     SpacingUnit min,
     SpacingUnit max,
-  }) = ConstrainedSpacing;
+  }) = _ConstrainedSpacing;
   const factory SpacingUnit.computed({
     required SpacingUnit first,
     required SpacingUnit second,
     required CalculationOperation operation,
-  }) = CalculatedSpacing;
+  }) = _CalculatedSpacing;
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   });
+  bool get needsPostAdjustment => false;
 }
 
-class FixedSpacing implements SpacingUnit {
+class _FixedSpacing implements SpacingUnit {
   final double value;
-  const FixedSpacing(this.value);
+  const _FixedSpacing(this.value);
 
   @override
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   }) {
     return value;
   }
+
+  @override
+  bool get needsPostAdjustment => false;
 }
 
-class EvenSpacing implements SpacingUnit {
-  const EvenSpacing();
+class _EvenSpacing implements SpacingUnit {
+  const _EvenSpacing();
 
   @override
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   }) {
     if (affectedCount <= 0) return 0;
-    return availableSpace / affectedCount;
+    int totalGap = affectedCount - 1;
+    return availableSpace / totalGap;
   }
+
+  @override
+  bool get needsPostAdjustment => true;
 }
 
-class FillSpacing implements SpacingUnit {
-  const FillSpacing();
+class _SpacingViewportSizeReference implements SpacingUnit {
+  const _SpacingViewportSizeReference();
 
   @override
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   }) {
-    return availableSpace;
+    return switch (axis) {
+      Axis.horizontal => parent.viewportSize.width,
+      Axis.vertical => parent.viewportSize.height,
+    };
   }
-}
-
-class MaxFillSpacing implements SpacingUnit {
-  const MaxFillSpacing();
 
   @override
-  double computeSpacing({
-    required ParentLayout parent,
-    required LayoutDirection axis,
-    required double maxSpace,
-    required double availableSpace,
-    required double affectedCount,
-  }) {
-    double? maxSpacing;
-    final layout = parent.layoutHandle;
-    assert(
-      layout is FlexLayoutHandle,
-      'MaxFillSpacing can only be used in FlexLayout',
-    );
-    final caches = (layout as FlexLayoutHandle).cache;
-
-    for (final cache in caches.caches.values) {
-      double usedSize = cache.mainContentSize;
-      double freeSpace = (maxSpace - usedSize).clamp(0.0, double.infinity);
-      maxSpacing = maxSpacing == null ? freeSpace : min(maxSpacing, freeSpace);
-    }
-    return maxSpacing ?? 0.0;
-  }
+  bool get needsPostAdjustment => true;
 }
 
-class MinFillSpacing implements SpacingUnit {
-  const MinFillSpacing();
-
-  @override
-  double computeSpacing({
-    required ParentLayout parent,
-    required LayoutDirection axis,
-    required double maxSpace,
-    required double availableSpace,
-    required double affectedCount,
-  }) {
-    double? minSpacing;
-    final layout = parent.layoutHandle;
-    assert(
-      layout is FlexLayoutHandle,
-      'MinFillSpacing can only be used in FlexLayout',
-    );
-    final caches = (layout as FlexLayoutHandle).cache;
-
-    for (final cache in caches.caches.values) {
-      double usedSize = cache.mainContentSize;
-      double freeSpace = (maxSpace - usedSize).clamp(0.0, double.infinity);
-      minSpacing = minSpacing == null ? freeSpace : max(minSpacing, freeSpace);
-    }
-    return minSpacing ?? 0.0;
-  }
-}
-
-class SpacingViewportSizeReference implements SpacingUnit {
-  const SpacingViewportSizeReference();
-
-  @override
-  double computeSpacing({
-    required ParentLayout parent,
-    required LayoutDirection axis,
-    required double maxSpace,
-    required double availableSpace,
-    required double affectedCount,
-  }) {
-    return axis.getViewportSize(parent);
-  }
-}
-
-class CalculatedSpacing implements SpacingUnit {
+class _CalculatedSpacing implements SpacingUnit {
   final SpacingUnit first;
   final SpacingUnit second;
   final CalculationOperation operation;
-  const CalculatedSpacing({
+  const _CalculatedSpacing({
     required this.first,
     required this.second,
     required this.operation,
@@ -1331,10 +1271,10 @@ class CalculatedSpacing implements SpacingUnit {
   @override
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   }) {
     double first = this.first.computeSpacing(
       parent: parent,
@@ -1352,26 +1292,30 @@ class CalculatedSpacing implements SpacingUnit {
     );
     return operation(first, second);
   }
+
+  @override
+  bool get needsPostAdjustment =>
+      first.needsPostAdjustment || second.needsPostAdjustment;
 }
 
-class ConstrainedSpacing implements SpacingUnit {
+class _ConstrainedSpacing implements SpacingUnit {
   final SpacingUnit spacing;
   final SpacingUnit min;
   final SpacingUnit max;
 
-  const ConstrainedSpacing({
+  const _ConstrainedSpacing({
     required this.spacing,
-    this.min = const FixedSpacing(0),
-    this.max = const FixedSpacing(double.infinity),
+    this.min = const _FixedSpacing(0),
+    this.max = const _FixedSpacing(double.infinity),
   });
 
   @override
   double computeSpacing({
     required ParentLayout parent,
-    required LayoutDirection axis,
+    required Axis axis,
     required double maxSpace,
     required double availableSpace,
-    required double affectedCount,
+    required int affectedCount,
   }) {
     double sz = spacing.computeSpacing(
       parent: parent,
@@ -1396,54 +1340,60 @@ class ConstrainedSpacing implements SpacingUnit {
     );
     return sz.clamp(minSz, maxSz);
   }
+
+  @override
+  bool get needsPostAdjustment =>
+      spacing.needsPostAdjustment ||
+      min.needsPostAdjustment ||
+      max.needsPostAdjustment;
 }
 
 extension PositionUnitExtension on PositionUnit {
-  CalculatedPosition operator +(PositionUnit other) {
-    return CalculatedPosition(
+  PositionUnit operator +(PositionUnit other) {
+    return _CalculatedPosition(
       first: this,
       second: other,
       operation: calculationAdd,
     );
   }
 
-  CalculatedPosition operator -(PositionUnit other) {
-    return CalculatedPosition(
+  PositionUnit operator -(PositionUnit other) {
+    return _CalculatedPosition(
       first: this,
       second: other,
       operation: calculationSubtract,
     );
   }
 
-  CalculatedPosition operator *(PositionUnit other) {
-    return CalculatedPosition(
+  PositionUnit operator *(PositionUnit other) {
+    return _CalculatedPosition(
       first: this,
       second: other,
       operation: calculationMultiply,
     );
   }
 
-  CalculatedPosition operator /(PositionUnit other) {
-    return CalculatedPosition(
+  PositionUnit operator /(PositionUnit other) {
+    return _CalculatedPosition(
       first: this,
       second: other,
       operation: calculationDivide,
     );
   }
 
-  CalculatedPosition operator -() {
-    return CalculatedPosition(
-      first: const FixedPosition(0),
+  PositionUnit operator -() {
+    return _CalculatedPosition(
+      first: const _FixedPosition(0),
       second: this,
       operation: calculationSubtract,
     );
   }
 
-  ConstrainedPosition clamp({
-    PositionUnit min = const FixedPosition(double.negativeInfinity),
-    PositionUnit max = const FixedPosition(double.infinity),
+  PositionUnit clamp({
+    PositionUnit min = const _FixedPosition(double.negativeInfinity),
+    PositionUnit max = const _FixedPosition(double.infinity),
   }) {
-    return ConstrainedPosition(
+    return _ConstrainedPosition(
       position: this,
       min: min,
       max: max,
@@ -1452,51 +1402,51 @@ extension PositionUnitExtension on PositionUnit {
 }
 
 extension SizeUnitExtension on SizeUnit {
-  CalculatedSize operator +(SizeUnit other) {
-    return CalculatedSize(
+  SizeUnit operator +(SizeUnit other) {
+    return _CalculatedSize(
       first: this,
       second: other,
       operation: calculationAdd,
     );
   }
 
-  CalculatedSize operator -(SizeUnit other) {
-    return CalculatedSize(
+  SizeUnit operator -(SizeUnit other) {
+    return _CalculatedSize(
       first: this,
       second: other,
       operation: calculationSubtract,
     );
   }
 
-  CalculatedSize operator *(SizeUnit other) {
-    return CalculatedSize(
+  SizeUnit operator *(SizeUnit other) {
+    return _CalculatedSize(
       first: this,
       second: other,
       operation: calculationMultiply,
     );
   }
 
-  CalculatedSize operator /(SizeUnit other) {
-    return CalculatedSize(
+  SizeUnit operator /(SizeUnit other) {
+    return _CalculatedSize(
       first: this,
       second: other,
       operation: calculationDivide,
     );
   }
 
-  CalculatedSize operator -() {
-    return CalculatedSize(
-      first: const FixedSize(0),
+  SizeUnit operator -() {
+    return _CalculatedSize(
+      first: const _FixedSize(0),
       second: this,
       operation: calculationSubtract,
     );
   }
 
-  ConstrainedSize clamp({
-    SizeUnit min = const FixedSize(0),
-    SizeUnit max = const FixedSize(double.infinity),
+  SizeUnit clamp({
+    SizeUnit min = const _FixedSize(0),
+    SizeUnit max = const _FixedSize(double.infinity),
   }) {
-    return ConstrainedSize(
+    return _ConstrainedSize(
       size: this,
       min: min,
       max: max,
@@ -1505,51 +1455,51 @@ extension SizeUnitExtension on SizeUnit {
 }
 
 extension InsetsUnitExtension on InsetUnit {
-  ComputedInsets operator +(InsetUnit other) {
-    return ComputedInsets(
+  InsetUnit operator +(InsetUnit other) {
+    return _ComputedInsets(
       first: this,
       second: other,
       operation: calculationAdd,
     );
   }
 
-  ComputedInsets operator -(InsetUnit other) {
-    return ComputedInsets(
+  InsetUnit operator -(InsetUnit other) {
+    return _ComputedInsets(
       first: this,
       second: other,
       operation: calculationSubtract,
     );
   }
 
-  ComputedInsets operator *(InsetUnit other) {
-    return ComputedInsets(
+  InsetUnit operator *(InsetUnit other) {
+    return _ComputedInsets(
       first: this,
       second: other,
       operation: calculationMultiply,
     );
   }
 
-  ComputedInsets operator /(InsetUnit other) {
-    return ComputedInsets(
+  InsetUnit operator /(InsetUnit other) {
+    return _ComputedInsets(
       first: this,
       second: other,
       operation: calculationDivide,
     );
   }
 
-  ComputedInsets operator -() {
-    return ComputedInsets(
-      first: const FixedInset(0),
+  InsetUnit operator -() {
+    return _ComputedInsets(
+      first: const _FixedInset(0),
       second: this,
       operation: calculationSubtract,
     );
   }
 
-  ConstrainedInsets clamp({
-    InsetUnit min = const FixedInset(0),
-    InsetUnit max = const FixedInset(double.infinity),
+  InsetUnit clamp({
+    InsetUnit min = const _FixedInset(0),
+    InsetUnit max = const _FixedInset(double.infinity),
   }) {
-    return ConstrainedInsets(
+    return _ConstrainedInsets(
       insets: this,
       min: min,
       max: max,
@@ -1558,51 +1508,51 @@ extension InsetsUnitExtension on InsetUnit {
 }
 
 extension SpacingUnitExtension on SpacingUnit {
-  CalculatedSpacing operator +(SpacingUnit other) {
-    return CalculatedSpacing(
+  SpacingUnit operator +(SpacingUnit other) {
+    return _CalculatedSpacing(
       first: this,
       second: other,
       operation: calculationAdd,
     );
   }
 
-  CalculatedSpacing operator -(SpacingUnit other) {
-    return CalculatedSpacing(
+  SpacingUnit operator -(SpacingUnit other) {
+    return _CalculatedSpacing(
       first: this,
       second: other,
       operation: calculationSubtract,
     );
   }
 
-  CalculatedSpacing operator *(SpacingUnit other) {
-    return CalculatedSpacing(
+  SpacingUnit operator *(SpacingUnit other) {
+    return _CalculatedSpacing(
       first: this,
       second: other,
       operation: calculationMultiply,
     );
   }
 
-  CalculatedSpacing operator /(SpacingUnit other) {
-    return CalculatedSpacing(
+  SpacingUnit operator /(SpacingUnit other) {
+    return _CalculatedSpacing(
       first: this,
       second: other,
       operation: calculationDivide,
     );
   }
 
-  CalculatedSpacing operator -() {
-    return CalculatedSpacing(
-      first: const FixedSpacing(0),
+  SpacingUnit operator -() {
+    return _CalculatedSpacing(
+      first: const _FixedSpacing(0),
       second: this,
       operation: calculationSubtract,
     );
   }
 
-  ConstrainedSpacing clamp({
-    SpacingUnit min = const FixedSpacing(0),
-    SpacingUnit max = const FixedSpacing(double.infinity),
+  SpacingUnit clamp({
+    SpacingUnit min = const _FixedSpacing(0),
+    SpacingUnit max = const _FixedSpacing(double.infinity),
   }) {
-    return ConstrainedSpacing(
+    return _ConstrainedSpacing(
       spacing: this,
       min: min,
       max: max,

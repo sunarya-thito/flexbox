@@ -12,19 +12,23 @@ abstract class ChildLayoutCache {
 mixin ChildLayout {
   void layout(BoxConstraints constraints);
   Size dryLayout(BoxConstraints constraints);
-  double computeMaxIntrinsicWidth(double height);
-  double computeMaxIntrinsicHeight(double width);
-  double computeMinIntrinsicWidth(double height);
-  double computeMinIntrinsicHeight(double width);
+  double getMaxIntrinsicWidth(double height);
+  double getMaxIntrinsicHeight(double width);
+  double getMinIntrinsicWidth(double height);
+  double getMinIntrinsicHeight(double width);
   Size get size;
+  Offset get offset;
+  set offset(Offset value);
   ChildLayoutCache get layoutCache;
   LayoutData get layoutData;
   ChildLayout? get nextSibling;
   ChildLayout? get previousSibling;
+
+  double getDistanceToBaseline(TextBaseline baseline);
 }
 
 mixin ParentLayout {
-  LayoutHandle get layoutHandle;
+  TextBaseline? get textBaseline;
   ChildLayout? get firstLayoutChild;
   ChildLayout? get lastLayoutChild;
   TextDirection get textDirection;
@@ -32,11 +36,12 @@ mixin ParentLayout {
   Size get viewportSize;
   double get scrollOffsetX;
   double get scrollOffsetY;
-  ChildLayout? get firstDryLayout;
-  ChildLayout? get lastDryLayout;
+  ChildLayout? getFirstDryLayout(LayoutHandle layoutHandle);
+  ChildLayout? getLastDryLayout(LayoutHandle layoutHandle);
 }
 
 abstract class Layout {
+  const Layout();
   LayoutHandle<Layout> createLayoutHandle(ParentLayout parent);
 }
 
@@ -44,16 +49,13 @@ abstract class LayoutHandle<T extends Layout> {
   final T layout;
   final ParentLayout parent;
 
-  double verticalOffset = 0.0;
-  double horizontalOffset = 0.0;
-
   LayoutHandle(this.layout, this.parent);
 
   ChildLayoutCache setupCache();
 
   Size performLayout(BoxConstraints constraints, [bool dry = false]);
 
-  void performPositioning(Size size);
+  Rect performPositioning(BoxConstraints constraints, Size size);
 
   double computeMinIntrinsicWidth(double height) {
     Size dryLayout = performLayout(
