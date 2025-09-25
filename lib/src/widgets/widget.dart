@@ -18,10 +18,10 @@ import 'package:flutter/widgets.dart';
 /// LayoutBox(
 ///   children: [
 ///     AbsoluteItem(
-///       top: PositionUnit.dp(20),
-///       left: PositionUnit.dp(30),
-///       width: SizeUnit.dp(100),
-///       height: SizeUnit.dp(50),
+///       top: PositionUnit.fixed(20),
+///       left: PositionUnit.fixed(30),
+///       width: SizeUnit.fixed(100),
+///       height: SizeUnit.fixed(50),
 ///       child: Container(color: Colors.red),
 ///     ),
 ///   ],
@@ -123,10 +123,10 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
   ///
   /// ```dart
   /// AbsoluteItem(
-  ///   top: PositionUnit.dp(10),
-  ///   left: PositionUnit.dp(20),
-  ///   width: SizeUnit.dp(200),
-  ///   height: SizeUnit.dp(100),
+  ///   top: PositionUnit.fixed(10),
+  ///   left: PositionUnit.fixed(20),
+  ///   width: SizeUnit.fixed(200),
+  ///   height: SizeUnit.fixed(100),
   ///   paintOrder: 1,
   ///   child: Text('Absolutely positioned'),
   /// )

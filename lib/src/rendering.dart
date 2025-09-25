@@ -753,7 +753,7 @@ class RenderLayoutBox extends RenderBox
 
   @override
   ChildLayout? getLastDryLayout(LayoutHandle<Layout> layoutHandle) {
-    return ChildLayoutDryDelegate.forwardCopy(lastLayoutChild, layoutHandle);
+    return ChildLayoutDryDelegate.backwardCopy(lastLayoutChild, layoutHandle);
   }
 
   @override

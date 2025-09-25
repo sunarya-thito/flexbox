@@ -42,21 +42,21 @@
             "flutterMode": "release"
         },
         {
-            "name": "playground",
-            "cwd": "playground",
+            "name": "demo",
+            "cwd": "demo",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "playground (profile mode)",
-            "cwd": "playground",
+            "name": "demo (profile mode)",
+            "cwd": "demo",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "playground (release mode)",
-            "cwd": "playground",
+            "name": "demo (release mode)",
+            "cwd": "demo",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

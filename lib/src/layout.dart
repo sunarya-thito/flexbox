@@ -121,8 +121,8 @@ final class LayoutData {
   ///   behavior: LayoutBehavior.none,
   ///   flexGrow: 1.0,
   ///   flexShrink: 0.0,
-  ///   width: SizeUnit.dp(100),
-  ///   height: SizeUnit.dp(50),
+  ///   width: SizeUnit.fixed(100),
+  ///   height: SizeUnit.fixed(50),
   ///   alignSelf: BoxAlignmentGeometry.center,
   /// )
   /// ```
@@ -299,6 +299,16 @@ class LayoutRect {
   String toString() {
     return 'LayoutRect($left, $top, $right, $bottom)';
   }
+
+  bool overlaps(LayoutRect other) {
+    if (right <= other.left || other.right <= left) {
+      return false;
+    }
+    if (bottom <= other.top || other.bottom <= top) {
+      return false;
+    }
+    return true;
+  }
 }
 
 /// Defines text baseline types for alignment calculations.
@@ -401,6 +411,8 @@ class LayoutConstraints {
     final height = size.height.clamp(minHeight, maxHeight);
     return LayoutSize(width, height);
   }
+
+  bool get isTight => minWidth == maxWidth && minHeight == maxHeight;
 }
 
 /// Cache for storing computed layout sizes to avoid redundant calculations.

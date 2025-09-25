@@ -1550,10 +1550,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       }
 
       if (!reverseCross) {
-        if (line == cache.firstLine) {
-          crossContentOffset += cache.crossSpacing;
-        }
-        crossContentOffset += line.crossSize;
+        crossContentOffset += line.crossSize + cache.crossSpacing;
       }
 
       line = line.nextLine;
