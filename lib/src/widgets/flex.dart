@@ -212,8 +212,8 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
 /// ## Spacing and Padding
 ///
 /// - [padding]: Internal padding around the container
-/// - [horizontalSpacing]: Space between items horizontally
-/// - [verticalSpacing]: Space between items vertically
+/// - [rowGap]: Space between items horizontally
+/// - [columnGap]: Space between items vertically
 ///
 /// ## Responsive Design
 ///
@@ -288,7 +288,7 @@ class FlexBox extends StatelessWidget {
   /// for responsive spacing that adapts to container size.
   ///
   /// Defaults to [SpacingUnit.zero].
-  final SpacingUnit horizontalSpacing;
+  final SpacingUnit rowGap;
 
   /// The vertical spacing between adjacent flex items.
   ///
@@ -296,7 +296,7 @@ class FlexBox extends StatelessWidget {
   /// for responsive spacing that adapts to container size.
   ///
   /// Defaults to [SpacingUnit.zero].
-  final SpacingUnit verticalSpacing;
+  final SpacingUnit columnGap;
 
   /// The default cross-axis alignment for all child items.
   ///
@@ -446,8 +446,8 @@ class FlexBox extends StatelessWidget {
     this.maxItemsPerLine,
     this.maxLines,
     this.padding = EdgeSpacing.zero,
-    this.horizontalSpacing = SpacingUnit.zero,
-    this.verticalSpacing = SpacingUnit.zero,
+    this.rowGap = SpacingUnit.zero,
+    this.columnGap = SpacingUnit.zero,
     this.alignItems = BoxAlignmentGeometry.start,
     this.alignContent = BoxAlignmentContent.start,
     this.justifyContent = BoxAlignmentBase.start,
@@ -504,8 +504,8 @@ class FlexBox extends StatelessWidget {
         padding: padding.resolve(
           layoutTextDirectionFromTextDirection(resolvedTextDirection),
         ),
-        horizontalSpacing: horizontalSpacing,
-        verticalSpacing: verticalSpacing,
+        rowGap: rowGap,
+        columnGap: columnGap,
         alignItems: alignItems,
         alignContent: alignContent,
         justifyContent: justifyContent,
@@ -599,8 +599,8 @@ class RowBox extends FlexBox {
     super.maxItemsPerLine,
     super.maxLines,
     super.padding,
-    super.horizontalSpacing,
-    super.verticalSpacing,
+    super.rowGap,
+    super.columnGap,
     super.alignItems,
     super.alignContent,
     super.justifyContent,
@@ -650,8 +650,8 @@ class RowBox extends FlexBox {
     super.maxItemsPerLine,
     super.maxLines,
     super.padding,
-    super.horizontalSpacing,
-    super.verticalSpacing,
+    super.rowGap,
+    super.columnGap,
     super.alignItems,
     super.alignContent,
     super.justifyContent,
@@ -753,8 +753,8 @@ class ColumnBox extends FlexBox {
     super.maxItemsPerLine,
     super.maxLines,
     super.padding,
-    super.horizontalSpacing,
-    super.verticalSpacing,
+    super.rowGap,
+    super.columnGap,
     super.alignItems,
     super.alignContent,
     super.justifyContent,
@@ -808,8 +808,8 @@ class ColumnBox extends FlexBox {
     super.maxItemsPerLine,
     super.maxLines,
     super.padding,
-    super.horizontalSpacing,
-    super.verticalSpacing,
+    super.rowGap,
+    super.columnGap,
     super.alignItems,
     super.alignContent,
     super.justifyContent,

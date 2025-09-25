@@ -130,13 +130,13 @@ class FlexLayout extends Layout {
   ///
   /// Applied between items in the main axis direction when flowing horizontally,
   /// or between lines when flowing vertically and wrapping.
-  final SpacingUnit horizontalSpacing;
+  final SpacingUnit rowGap;
 
   /// The vertical spacing between adjacent flex items.
   ///
   /// Applied between items in the main axis direction when flowing vertically,
   /// or between lines when flowing horizontally and wrapping.
-  final SpacingUnit verticalSpacing;
+  final SpacingUnit columnGap;
 
   /// The default cross-axis alignment for all items.
   ///
@@ -165,8 +165,8 @@ class FlexLayout extends Layout {
     this.direction = FlexDirection.row,
     this.wrap = FlexWrap.none,
     this.padding = EdgeSpacing.zero,
-    this.horizontalSpacing = SpacingUnit.zero,
-    this.verticalSpacing = SpacingUnit.zero,
+    this.rowGap = SpacingUnit.zero,
+    this.columnGap = SpacingUnit.zero,
     this.maxItemsPerLine,
     this.maxLines,
     this.alignItems = BoxAlignment.start,
@@ -390,12 +390,12 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       LayoutAxis.vertical => layout.padding.right,
     };
     final mainSpacingUnit = switch (layout.direction.axis) {
-      LayoutAxis.horizontal => layout.horizontalSpacing,
-      LayoutAxis.vertical => layout.verticalSpacing,
+      LayoutAxis.horizontal => layout.rowGap,
+      LayoutAxis.vertical => layout.columnGap,
     };
     final crossSpacingUnit = switch (layout.direction.axis) {
-      LayoutAxis.horizontal => layout.verticalSpacing,
-      LayoutAxis.vertical => layout.horizontalSpacing,
+      LayoutAxis.horizontal => layout.columnGap,
+      LayoutAxis.vertical => layout.rowGap,
     };
     double mainSpacingStart = mainSpacingStartUnit.computeSpacing(
       parent: parent,

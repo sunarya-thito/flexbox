@@ -1,397 +1,384 @@
-# 📦 FlexibleBox for Flutter
+# FlexibleBox
 
-[![pub package](https://img.shields.io/pub/v/flexbox.svg)](https://pub.dev/packages/flexbox)
-[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+[![pub package](https://img.shields.io/pub/v/flexiblebox.svg)](https://pub.dev/packages/flexiblebox)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Build stunning, flexible layouts with ease!**
+A Flutter package that brings CSS Flexbox layout capabilities to your Flutter
+applications. Create responsive, flexible layouts with ease using familiar
+flexbox concepts.
 
-FlexibleBox brings advanced 2D layout capabilities to Flutter with intuitive
-APIs for per-child sizing, positioning, sticky elements, and bidirectional
-scrolling.
+## Features
 
----
+- Complete Flexbox Implementation: Full CSS flexbox specification support
+- Responsive Design: Automatic layout adaptation to different screen sizes
+- Flexible Sizing: Support for flex grow, shrink, and basis properties
+- Advanced Alignment: Cross-axis and main-axis alignment options
+- Wrapping Support: Multi-line flex layouts with wrap and wrap-reverse
+- RTL Support: Right-to-left language support
+- Absolute Positioning: Position items absolutely within flex containers
+- Scrolling: Built-in scrollable flex containers
+- Convenience Widgets: RowBox and ColumnBox for common use cases
+- Custom Spacing: Flexible spacing and padding systems
 
-## ✨ Features
+## Installation
 
-🎯 **Flexible 2D Layouts** - Create horizontal or vertical flows with precise
-spacing and alignment\
-📏 **Per-Child Control** - Absolute, relative, and flex-based sizing for each
-child widget\
-📌 **Sticky Positioning** - Keep elements visible with scroll-aware anchoring\
-🔄 **Bidirectional Scrolling** - Smooth scrolling in both directions\
-🎨 **Z-Order Control** - Layer widgets with custom stacking order\
+Add the package using Flutter CLI:
 
-## 📋 Table of Contents
-
-- [🚀 Quick Start](#-quick-start)
-- [📦 Installation](#-installation)
-- [🔧 Requirements](#-requirements)
-- [📚 Examples](#-examples)
-- [📖 API Reference](#-api-reference)
-- [🎯 Advanced Usage](#-advanced-usage)
-- [📜 License](#-license)
-
-## 📦 Installation
-
-Add FlexBox to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  flexbox: latest version
+```bash
+flutter pub add flexiblebox
 ```
 
-Then import it in your Dart files:
+## Demo
+
+View the interactive demo:
+[https://sunarya-thito.github.io/flexbox](https://sunarya-thito.github.io/flexbox)
+
+## Quick Start
+
+Import the package:
 
 ```dart
-import 'package:flexiblebox/flexbox.dart';
+import 'package:flexiblebox/flexiblebox_flutter.dart';
 ```
 
-## 🔧 Requirements
-
-- **Dart** `>= 3.9.0`
-- **Flutter** `>= 1.17.0`
-
-## 🚀 Quick Start
-
-### Basic Row/Column Layout
-
-Create simple horizontal or vertical layouts with built-in spacing and
-alignment:
+Create a simple flex layout:
 
 ```dart
 FlexBox(
-  direction: Axis.horizontal, // or Axis.vertical
-  spacing: 8,
-  alignment: Alignment.center,
+  direction: FlexDirection.row,
   children: [
-    FlexBoxChild(
-      width: const BoxSize.fixed(80),
-      height: const BoxSize.fixed(40),
-      child: Container(color: Colors.blue),
+    FlexItem(
+      flexGrow: 1.0,
+      child: Container(
+        color: Colors.red,
+        child: Center(child: Text('Flexible Item')),
+      ),
     ),
-    FlexBoxChild(
-      width: const BoxSize.fixed(120),
-      height: const BoxSize.fixed(40),
-      child: Container(color: Colors.green),
+    FlexItem(
+      width: SizeUnit.fixed(100.0),
+      child: Container(
+        color: Colors.blue,
+        child: Center(child: Text('Fixed Width')),
+      ),
     ),
   ],
 )
 ```
 
-### Advanced Per-Child Control
+## Core Components
 
-Wrap children with `FlexBoxChild` to unlock powerful sizing and positioning
-options:
+### FlexBox
+
+The main flex container widget that implements the flexbox layout algorithm.
 
 ```dart
 FlexBox(
-  direction: Axis.horizontal,
-  spacing: 12, // or double.infinity for flexible/even gap
-  padding: const EdgeInsets.all(8),
+  direction: FlexDirection.row,        // Layout direction
+  wrap: FlexWrap.wrap,                 // Wrapping behavior
+  alignItems: BoxAlignmentGeometry.start,    // Cross-axis alignment
+  alignContent: BoxAlignmentContent.start,   // Content alignment (for wrapping)
+  justifyContent: BoxAlignmentBase.start, // Main-axis distribution
+  rowGap: SpacingUnit.fixed(8.0),      // Horizontal spacing between items
+  columnGap: SpacingUnit.fixed(8.0),   // Vertical spacing between items
+  children: [...],                     // Flex items
+)
+```
+
+### FlexItem
+
+Configures individual children within a FlexBox.
+
+```dart
+FlexItem(
+  flexGrow: 1.0,                       // Growth factor
+  flexShrink: 0.0,                     // Shrink factor
+  width: SizeUnit.fixed(200.0),         // Preferred width
+  height: SizeUnit.fixed(100.0),        // Preferred height
+  alignSelf: BoxAlignmentGeometry.start,     // Individual alignment
+  child: YourWidget(),
+)
+```
+
+### Convenience Widgets
+
+#### RowBox
+
+Horizontal flex layout (equivalent to `FlexBox(direction: FlexDirection.row)`):
+
+```dart
+RowBox(
+  alignItems: BoxAlignmentGeometry.center,
+  justifyContent: BoxAlignmentBase.spaceBetween,
   children: [
-    // Fixed width, intrinsic height
-    FlexBoxChild(
-      width: const BoxSize.fixed(120),
-      height: const BoxSize.intrinsic(),
-      child: const Card(
+    FlexItem(child: Text('Left')),
+    FlexItem(child: Text('Center')),
+    FlexItem(child: Text('Right')),
+  ],
+)
+```
+
+#### ColumnBox
+
+Vertical flex layout (equivalent to `FlexBox(direction: FlexDirection.column)`):
+
+```dart
+ColumnBox(
+  alignItems: BoxAlignmentGeometry.stretch,
+  justifyContent: BoxAlignmentBase.start,
+  columnGap: SpacingUnit.fixed(12.0),
+  children: [
+    FlexItem(child: Text('Top')),
+    FlexItem(child: Text('Middle')),
+    FlexItem(child: Text('Bottom')),
+  ],
+)
+```
+
+## Advanced Examples
+
+### Responsive Card Layout
+
+```dart
+FlexBox(
+  direction: FlexDirection.row,
+  wrap: FlexWrap.wrap,
+  alignItems: BoxAlignmentGeometry.start,
+  rowGap: SpacingUnit.fixed(16.0),
+  columnGap: SpacingUnit.fixed(16.0),
+  children: [
+    FlexItem(
+      flexGrow: 1.0,
+      minWidth: SizeUnit.fixed(280.0),
+      child: Card(
         child: Padding(
-          padding: EdgeInsets.all(8), 
-          child: Text('Fixed 120'),
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Card Title', style: Theme.of(context).textTheme.headline6),
+              SizedBox(height: 8.0),
+              Text('Card content goes here...'),
+            ],
+          ),
         ),
       ),
     ),
-    
-    // Relative sizing (50% of parent)
-    FlexBoxChild(
-      width: const BoxSize.relative(0.5),
-      height: const BoxSize.relative(0.5),
-      child: Container(color: Colors.orange),
-    ),
-    
-    // Sticky positioned element
-    FlexBoxChild(
-      left: const BoxPosition.fixed(0),
-      top: const BoxPosition.fixed(0),
-      horizontalPosition: BoxPositionType.stickyStart,
-      verticalPosition: BoxPositionType.stickyStart,
-      zOrder: 10, // Paint on top
-      child: const Chip(label: Text('Sticky')),
-    ),
+    // More cards...
   ],
 )
 ```
 
-## 📚 Examples
-
-### 📌 Sticky Header
-
-Create headers that stick to the top while content scrolls beneath:
+### Holy Grail Layout
 
 ```dart
-FlexBox(
-  direction: Axis.vertical,
+ColumnBox(
   children: [
-    // Sticky header
-    const FlexBoxChild(
-      height: BoxSize.fixed(48),
-      width: BoxSize.unconstrained(),
-      verticalPosition: BoxPositionType.stickyStart,
-      horizontalPosition: BoxPositionType.stickyStart,
-      zOrder: 10,
-      child: Material(
-        elevation: 2,
-        child: ListTile(title: Text('Sticky Header')),
+    FlexItem(
+      height: SizeUnit.fixed(64.0),
+      child: AppBar(title: Text('Header')),
+    ),
+    FlexItem(
+      flexGrow: 1.0,
+      child: FlexBox(
+        direction: FlexDirection.row,
+        children: [
+          FlexItem(
+            width: SizeUnit.fixed(200.0),
+            child: Sidebar(),
+          ),
+          FlexItem(
+            flexGrow: 1.0,
+            child: MainContent(),
+          ),
+          FlexItem(
+            width: SizeUnit.fixed(200.0),
+            child: RightPanel(),
+          ),
+        ],
       ),
     ),
-    
-    // Scrollable content
-    for (var i = 0; i < 30; i++)
-      FlexBoxChild(
-        child: ListTile(title: Text('Row #$i')),
-      ),
-  ],
-)
-```
-
-### 📏 Flexible Card Layout
-
-Mix fixed and flexible sizing for responsive designs:
-
-```dart
-FlexBox(
-  spacing: 12,
-  children: const [
-    FlexBoxChild(
-      width: BoxSize.fixed(120), 
-      child: Placeholder(),
-    ),
-    FlexBoxChild(
-      width: BoxSize.flex(1), // Takes remaining space
-      child: Placeholder(),
+    FlexItem(
+      height: SizeUnit.fixed(64.0),
+      child: Footer(),
     ),
   ],
 )
 ```
 
-## 📖 API Reference
-
-### 🏗️ FlexBox
-
-The main container widget that provides 2D layout capabilities with optional
-scrolling.
-
-#### Properties
-
-| Property                   | Type                 | Description                                               |
-| -------------------------- | -------------------- | --------------------------------------------------------- |
-| `direction`                | `Axis`               | Layout direction: `horizontal` (default) or `vertical`    |
-| `spacing`                  | `double`             | Gap between children widgets                              |
-| `alignment`                | `AlignmentGeometry`  | How to align children within the container                |
-| `children`                 | `List<Widget>`       | Child widgets to layout                                   |
-| `padding`                  | `EdgeInsetsGeometry` | Internal padding around children                          |
-| `reverse`                  | `bool`               | Reverse the main-axis logical order                       |
-| `scrollHorizontalOverflow` | `bool`               | Enable horizontal scrolling on overflow (default: `true`) |
-| `scrollVerticalOverflow`   | `bool`               | Enable vertical scrolling on overflow (default: `true`)   |
-| `clipBehavior`             | `Clip`               | Clipping behavior (default: `hardEdge`)                   |
-| `horizontalController`     | `ScrollController?`  | Optional horizontal scroll controller                     |
-| `verticalController`       | `ScrollController?`  | Optional vertical scroll controller                       |
-
-> **Note:** Both axes can scroll independently when overflow occurs.
-
-### 🎯 FlexBoxChild
-
-Wrapper widget that enables advanced per-child layout control within a
-`FlexBox`.
-
-#### Properties
-
-| Property                                 | Type              | Description                                 |
-| ---------------------------------------- | ----------------- | ------------------------------------------- |
-| `width`, `height`                        | `BoxSize`         | Size constraints for the child              |
-| `top`, `bottom`, `left`, `right`         | `BoxPosition`     | Edge positioning offsets                    |
-| `horizontalPosition`, `verticalPosition` | `BoxPositionType` | Positioning behavior per axis               |
-| `zOrder`                                 | `int`             | Stacking order (higher values paint on top) |
-
-> **Tip:** Combine any properties! When edge positions are provided, the child
-> becomes absolutely/relatively positioned based on `BoxPositionType`.
-
-### 📏 BoxSize
-
-Defines how a child should be sized along an axis.
+### Scrollable Content
 
 ```dart
-// Fixed size with optional constraints
-BoxSize.fixed(double size, {double? min, double? max})
-
-// Size based on child's intrinsic dimensions  
-BoxSize.intrinsic({double? min, double? max})
-
-// No size constraints (use child's natural size)
-BoxSize.unconstrained({double? min, double? max})
-
-// Size proportional to the other axis
-BoxSize.ratio(double ratio, {double? min, double? max})
-
-// Size as fraction of parent (0.0 to 1.0)
-BoxSize.relative(double relative, {double? min, double? max})
-
-// Share remaining space with other flex children
-BoxSize.flex(double flex, {double? min, double? max})
-```
-
-### 📍 BoxPosition
-
-Defines offset positioning from container edges.
-
-```dart
-// Fixed pixel offset
-BoxPosition.fixed(double px)
-
-// Offset as fraction of parent size (0.0 to 1.0) 
-BoxPosition.relative(double fraction)
-
-// Participate in distributing remaining space
-BoxPosition.flex(double flex)
-```
-
-### 🎮 BoxPositionType
-
-Controls how positioned children respond to scrolling.
-
-| Type          | Description                                                                               |
-| ------------- | ----------------------------------------------------------------------------------------- |
-| `fixed`       | Not affected by scrolling                                                                 |
-| `relative`    | Scrolls with content                                                                      |
-| `relative`    | Scrolls with content, but positions are anchored to viewport size instead of flexbox size |
-| `sticky`      | Scrolls until viewport edge, then clamps                                                  |
-| `stickyStart` | Sticks to start edge of parent's main axis                                                |
-| `stickyEnd`   | Sticks to end edge of parent's main axis                                                  |
-
-## 🎯 Advanced Usage
-
-### 🌊 Morphing Widgets
-
-Create smooth transitions between different widget states using the morph
-system.
-
-#### Components
-
-| Widget                | Description                                                   |
-| --------------------- | ------------------------------------------------------------- |
-| `Morph`               | Container that interpolates between child states (0.0 to 1.0) |
-| `Morphed`             | Marks a widget subtree as morphable with a unique tag         |
-| `MorphedDecoratedBox` | Special DecoratedBox that morphs decorations and geometry     |
-
-```dart
-Morph(
-  interpolation: 0.5, // 0.0 to 1.0
-  children: [...], // Multiple states to interpolate between
+ScrollableFlexBox(
+  direction: FlexDirection.column,
+  verticalController: ScrollController(),
+  children: List.generate(
+    50,
+    (index) => FlexItem(
+      height: SizeUnit.fixed(60.0),
+      child: ListTile(title: Text('Item $index')),
+    ),
+  ),
 )
 ```
 
-> **Pro Tip:** Use matching `tag` values in `Morphed` widgets to pair elements
-> across different states.
-
-#### Example: Shape Morphing
-
-```dart
-class MorphDemo extends StatefulWidget {
-  const MorphDemo({super.key});
-  
-  @override
-  State<MorphDemo> createState() => _MorphDemoState();
-}
-
-class _MorphDemoState extends State<MorphDemo> {
-  double t = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Slider(
-          value: t, 
-          onChanged: (v) => setState(() => t = v),
-        ),
-        Morph(
-          interpolation: t,
-          children: const [
-            // State 1: Blue rounded rectangle
-            Center(
-              child: Morphed(
-                tag: 'shape',
-                child: MorphedDecoratedBox(
-                  tag: 'shape',
-                  decoration: BoxDecoration(
-                    color: Colors.blue, 
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  child: SizedBox(width: 80, height: 80),
-                ),
-              ),
-            ),
-            
-            // State 2: Red circle
-            Center(
-              child: Morphed(
-                tag: 'shape',
-                child: MorphedDecoratedBox(
-                  tag: 'shape',
-                  decoration: BoxDecoration(
-                    color: Colors.red, 
-                    shape: BoxShape.circle,
-                  ),
-                  child: SizedBox(width: 140, height: 140),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-```
-
-### 📱 Scrolling Behavior
-
-FlexBox provides intelligent scrolling with sensible defaults:
-
-- **Overflow Scrolling**: Automatically enabled when content exceeds container
-  bounds
-- **Independent Control**: Use `horizontalController` and `verticalController`
-  for precise scroll management
-- **Smart Defaults**: Keyboard dismissal and diagonal drag behaviors work out of
-  the box
+### Absolute Positioning
 
 ```dart
 FlexBox(
-  // Disable scrolling on specific axes if needed
-  scrollHorizontalOverflow: false,
-  scrollVerticalOverflow: true,
-  
-  // Custom scroll controllers
-  horizontalController: myHorizontalController,
-  verticalController: myVerticalController,
-  
-  children: [...],
+  direction: FlexDirection.row,
+  children: [
+    FlexItem(
+      flexGrow: 1.0,
+      child: Container(color: Colors.grey),
+    ),
+    AbsoluteItem(
+      top: PositionUnit.fixed(20.0),
+      right: PositionUnit.fixed(20.0),
+      width: SizeUnit.fixed(100.0),
+      height: SizeUnit.fixed(100.0),
+      paintOrder: 1,
+      child: FloatingActionButton(
+        onPressed: () {},
+        child: Icon(Icons.add),
+      ),
+    ),
+  ],
 )
 ```
 
+## Layout Properties
+
+### Direction
+
+- `FlexDirection.row`: Left to right (default)
+- `FlexDirection.rowReverse`: Right to left
+- `FlexDirection.column`: Top to bottom
+- `FlexDirection.columnReverse`: Bottom to top
+
+### Wrapping
+
+- `FlexWrap.none`: No wrapping (default)
+- `FlexWrap.wrap`: Wrap to next line
+- `FlexWrap.wrapReverse`: Wrap to previous line
+
+### Alignment
+
+#### Main Axis (justifyContent)
+
+- `BoxAlignmentBase.start`: Items at the start
+- `BoxAlignmentBase.center`: Items centered
+- `BoxAlignmentBase.end`: Items at the end
+- `BoxAlignmentBase.spaceBetween`: Space between items
+- `BoxAlignmentBase.spaceAround`: Space around items
+- `BoxAlignmentBase.spaceEvenly`: Equal space distribution
+
+#### Cross Axis (alignItems)
+
+- `BoxAlignmentGeometry.start`: Items at cross start
+- `BoxAlignmentGeometry.center`: Items centered
+- `BoxAlignmentGeometry.end`: Items at cross end
+- `BoxAlignmentGeometry.stretch`: Items stretch to fill
+- `BoxAlignmentGeometry.baseline`: Items aligned by baseline
+
+#### Content Alignment (alignContent)
+
+- `BoxAlignmentContent.start`: Lines at container start
+- `BoxAlignmentContent.center`: Lines centered in container
+- `BoxAlignmentContent.end`: Lines at container end
+- `BoxAlignmentContent.stretch`: Lines stretch to fill container
+- `BoxAlignmentContent.spaceBetween`: Space between lines
+- `BoxAlignmentContent.spaceAround`: Space around lines
+- `BoxAlignmentContent.spaceEvenly`: Equal space distribution
+
+### Sizing Units
+
+#### SizeUnit
+
+- `SizeUnit.fixed(double)`: Fixed size
+- `SizeUnit.minContent`: Minimum content size
+- `SizeUnit.maxContent`: Maximum content size
+- `SizeUnit.fitContent`: Fit content size
+- `SizeUnit.viewportSize`: Viewport size
+
+#### SpacingUnit
+
+- `SpacingUnit.fixed(double)`: Fixed spacing
+- `SpacingUnit.viewportSize`: Viewport-based spacing
+
+### Math Operations
+
+All unit types (`SizeUnit`, `SpacingUnit`, `PositionUnit`) support mathematical
+operations:
+
+```dart
+// Basic arithmetic
+SizeUnit combinedWidth = SizeUnit.fixed(100.0) + SizeUnit.fixed(50.0);
+PositionUnit offset = PositionUnit.fixed(200.0) - PositionUnit.fixed(50.0);
+SpacingUnit scaled = SpacingUnit.fixed(10.0) * SpacingUnit.fixed(2.0);
+
+// Complex expressions (equivalent to CSS calc())
+SizeUnit halfViewport = SizeUnit.viewportSize * 0.5; // 50% of viewport size
+SizeUnit responsiveSize = SizeUnit.fixed(100.0) + SizeUnit.viewportSize * 0.2; // 100px + 20% viewport
+PositionUnit centered = PositionUnit.viewportSize * 0.5 - PositionUnit.childSize * 0.5; // Center child
+
+// Negation
+SizeUnit negative = -SizeUnit.fixed(100.0);
+
+// Constraints
+PositionUnit clamped = PositionUnit.fixed(150.0).clamp(
+  min: PositionUnit.fixed(0.0),
+  max: PositionUnit.fixed(300.0),
+);
+```
+
+## API Reference
+
+For detailed API documentation, visit the
+[API Reference](https://pub.dev/documentation/flexiblebox/latest/).
+
+Key classes:
+
+- [FlexBox](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/FlexBox-class.html)
+- [FlexItem](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/FlexItem-class.html)
+- [RowBox](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/RowBox-class.html)
+- [ColumnBox](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/ColumnBox-class.html)
+
+## Testing
+
+The package includes comprehensive test coverage. Run tests with:
+
+```bash
+flutter test
+```
+
+View the interactive demo:
+
+```bash
+cd demo
+flutter run
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md)
+for details.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
+
 ---
 
-## 📜 License
-
-This project is licensed under the **BSD 3-Clause License**. See
-[`LICENSE`](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Made with ❤️ for the Flutter community**
-
-[📖 Documentation](https://pub.dev/packages/flexbox) •
-[🐛 Issues](https://github.com/sunarya-thito/flexbox/issues) •
-
-</div>
+Made with ❤️ for the Flutter community</content>

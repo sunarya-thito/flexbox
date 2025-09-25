@@ -20,7 +20,7 @@ class CaseSpacing extends TestCase {
           end: SpacingUnit.fixed(40),
           bottom: SpacingUnit.fixed(60),
         ),
-        horizontalSpacing: SpacingUnit.fixed(50),
+        rowGap: SpacingUnit.fixed(50),
         children: [
           FlexItem(
             key: key1,

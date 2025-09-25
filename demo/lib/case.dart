@@ -23,32 +23,35 @@ abstract class TestCase {
     child: Center(child: build()),
   );
 
+  String generateActualResult(WidgetTester tester) {
+    StringBuffer buffer = StringBuffer();
+    final finder = find.byKey(key0);
+    expect(finder, findsOneWidget, reason: 'Cannot find widget for $key0');
+    final renderBox = tester.renderObject<RenderBox>(finder);
+    final size = renderBox.size;
+    buffer.writeln(
+      'tester.expectSize(key0, Size(${size.width}, ${size.height}));',
+    );
+    for (var i = 1; i <= 20; i++) {
+      final key = Key('key$i');
+      final finder = find.byKey(key);
+      if (finder.evaluate().isEmpty) {
+        break;
+      }
+      final renderBox = tester.renderObject<RenderBox>(finder);
+      final offset = (renderBox.parentData as BoxParentData).offset;
+      final size = renderBox.size;
+      buffer.writeln(
+        'tester.expectRect(key$i, Offset(${offset.dx}, ${offset.dy}) & Size(${size.width}, ${size.height}));',
+      );
+    }
+    return buffer.toString();
+  }
+
   void generateTest([bool overwrite = false]) {
     testWidgets(name, (WidgetTester tester) async {
       print('--- GENERATED TEST FOR $fullPath ---');
-      StringBuffer buffer = StringBuffer();
-      await tester.pumpWidget(buildTest());
-      await tester.pumpAndSettle();
-      final finder = find.byKey(key0);
-      expect(finder, findsOneWidget, reason: 'Cannot find widget for $key0');
-      final renderBox = tester.renderObject<RenderBox>(finder);
-      final size = renderBox.size;
-      buffer.writeln(
-        'tester.expectSize(key0, Size(${size.width}, ${size.height}));',
-      );
-      for (var i = 1; i <= 20; i++) {
-        final key = Key('key$i');
-        final finder = find.byKey(key);
-        if (finder.evaluate().isEmpty) {
-          break;
-        }
-        final renderBox = tester.renderObject<RenderBox>(finder);
-        final offset = (renderBox.parentData as BoxParentData).offset;
-        final size = renderBox.size;
-        buffer.writeln(
-          'tester.expectRect(key$i, Offset(${offset.dx}, ${offset.dy}) & Size(${size.width}, ${size.height}));',
-        );
-      }
+      String buffer = generateActualResult(tester);
       // get the name without .dart
       String name = path.substring(0, path.length - 5);
       File file = File('test/${name}_test.dart');
@@ -93,7 +96,7 @@ abstract class TestCase {
         fileContent.writeln('    // perform the test');
         // buffer.toString() does not have indentation
         fileContent.writeln(
-          buffer.toString().split('\n').map((line) => '    $line').join('\n'),
+          buffer.split('\n').map((line) => '    $line').join('\n'),
         );
         fileContent.writeln('  });');
         fileContent.writeln('}');
