@@ -41,6 +41,7 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
     assert(renderObject.parentData is LayoutBoxParentData);
     final parentData = renderObject.parentData as LayoutBoxParentData;
     final parent = renderObject.parent as RenderLayoutBox;
+    parentData.debugKey = key;
     final newLayoutData = LayoutData(
       behavior: LayoutBehavior.absolute,
       paintOrder: paintOrder,
@@ -55,8 +56,6 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
       bottom: bottom,
       right: right,
       aspectRatio: aspectRatio,
-      crossFlexGrow: 0.0,
-      crossFlexShrink: 0.0,
       flexGrow: 0.0,
       flexShrink: 0.0,
     );
@@ -106,7 +105,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
   @override
   RenderObject createRenderObject(BuildContext context) {
     return RenderLayoutBox(
-      textDirection: textDirection,
+      layoutTextDirection: textDirection,
       reversePaint: reversePaint,
       mainScrollDirection: mainScrollDirection,
       horizontal: horizontal,
@@ -116,7 +115,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
       boxLayout: layout,
       horizontalOverflow: horizontalOverflow,
       verticalOverflow: verticalOverflow,
-      textBaseline: textBaseline,
+      layoutTextBaseline: textBaseline,
       borderRadius: borderRadius,
       clipBehavior: clipBehavior,
     );
@@ -129,8 +128,8 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
   ) {
     bool needsPaint = false;
     bool needsLayout = false;
-    if (renderObject.textDirection != textDirection) {
-      renderObject.textDirection = textDirection;
+    if (renderObject.layoutTextDirection != textDirection) {
+      renderObject.layoutTextDirection = textDirection;
       needsLayout = true;
     }
     if (renderObject.reversePaint != reversePaint) {
@@ -142,11 +141,11 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
       needsLayout = true;
     }
     if (renderObject.horizontal != horizontal) {
-      renderObject.horizontal = horizontal;
+      renderObject.updateHorizontalOffset(horizontal);
       needsLayout = true;
     }
     if (renderObject.vertical != vertical) {
-      renderObject.vertical = vertical;
+      renderObject.updateVerticalOffset(vertical);
       needsLayout = true;
     }
     if (renderObject.horizontalAxisDirection != horizontalAxisDirection) {
@@ -169,8 +168,8 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
       renderObject.verticalOverflow = verticalOverflow;
       needsPaint = true;
     }
-    if (renderObject.textBaseline != textBaseline) {
-      renderObject.textBaseline = textBaseline;
+    if (renderObject.layoutTextBaseline != textBaseline) {
+      renderObject.layoutTextBaseline = textBaseline;
       needsLayout = true;
     }
     if (renderObject.borderRadius != borderRadius) {
@@ -228,9 +227,15 @@ class LayoutBox extends StatelessWidget {
         TextDirection.ltr;
     final horizontalDetails = ScrollableDetails.horizontal(
       controller: horizontalController,
+      physics: !horizontalOverflow.scrollable
+          ? const NeverScrollableScrollPhysics()
+          : null,
     );
     final verticalDetails = ScrollableDetails.vertical(
       controller: verticalController,
+      physics: !verticalOverflow.scrollable
+          ? const NeverScrollableScrollPhysics()
+          : null,
     );
     final resolvedBorderRadius =
         borderRadius?.resolve(textDirection) ?? BorderRadius.zero;

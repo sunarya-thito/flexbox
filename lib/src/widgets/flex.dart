@@ -1,4 +1,5 @@
 import 'package:flexiblebox/src/basic.dart';
+import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/layout/flex.dart';
 import 'package:flexiblebox/src/rendering.dart';
 import 'package:flexiblebox/src/widgets/widget.dart';
@@ -12,8 +13,6 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
   final SizeUnit? maxWidth;
   final SizeUnit? minHeight;
   final SizeUnit? maxHeight;
-  final double crossFlexGrow;
-  final double crossFlexShrink;
   final double flexGrow;
   final double flexShrink;
   final double? aspectRatio;
@@ -32,10 +31,8 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
     this.maxWidth,
     this.minHeight,
     this.maxHeight,
-    this.crossFlexGrow = 0.0,
-    this.crossFlexShrink = 1.0,
     this.flexGrow = 0.0,
-    this.flexShrink = 1.0,
+    this.flexShrink = 0.0,
     this.aspectRatio,
     this.top,
     this.left,
@@ -50,6 +47,7 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
     assert(renderObject.parentData is LayoutBoxParentData);
     final parentData = renderObject.parentData as LayoutBoxParentData;
     final parent = renderObject.parent as RenderLayoutBox;
+    parentData.debugKey = key;
     final newLayoutData = LayoutData(
       behavior: LayoutBehavior.none,
       paintOrder: paintOrder,
@@ -65,8 +63,6 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
       right: right,
       alignSelf: alignSelf,
       aspectRatio: aspectRatio,
-      crossFlexGrow: crossFlexGrow,
-      crossFlexShrink: crossFlexShrink,
       flexGrow: flexGrow,
       flexShrink: flexShrink,
     );
@@ -82,7 +78,7 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
 
 class FlexBox extends StatelessWidget {
   // flexbox specific properties
-  final Axis direction;
+  final FlexDirection direction;
   final FlexWrap wrap;
   final int? maxItemsPerLine;
   final int? maxLines;
@@ -108,7 +104,7 @@ class FlexBox extends StatelessWidget {
 
   const FlexBox({
     super.key,
-    this.direction = Axis.horizontal,
+    this.direction = FlexDirection.row,
     this.wrap = FlexWrap.none,
     this.maxItemsPerLine,
     this.maxLines,
@@ -128,7 +124,7 @@ class FlexBox extends StatelessWidget {
     this.textBaseline,
     this.clipBehavior = Clip.hardEdge,
     this.borderRadius,
-    required this.children,
+    this.children = const [],
   });
 
   @override
@@ -143,7 +139,7 @@ class FlexBox extends StatelessWidget {
       horizontalOverflow: horizontalOverflow,
       verticalOverflow: verticalOverflow,
       diagonalDragBehavior: diagonalDragBehavior,
-      mainScrollDirection: direction == Axis.horizontal
+      mainScrollDirection: direction.axis == LayoutAxis.horizontal
           ? Axis.vertical
           : Axis.horizontal,
       textBaseline: textBaseline,
@@ -154,7 +150,9 @@ class FlexBox extends StatelessWidget {
         wrap: wrap,
         maxItemsPerLine: maxItemsPerLine,
         maxLines: maxLines,
-        padding: padding.resolve(resolvedTextDirection),
+        padding: padding.resolve(
+          layoutTextDirectionFromTextDirection(resolvedTextDirection),
+        ),
         horizontalSpacing: horizontalSpacing,
         verticalSpacing: verticalSpacing,
         alignItems: alignItems,

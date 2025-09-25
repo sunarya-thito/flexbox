@@ -5,87 +5,8 @@ import 'package:flexiblebox/src/layout.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-enum LayoutBehavior {
-  none,
-  absolute,
-}
-
-// note: these values must NOT be null in order to lerp
-// see how we handle absolute children with non-null top, left, right, and bottom
-final class LayoutData {
-  final LayoutBehavior behavior;
-  final double flexGrow;
-  final double flexShrink;
-  final double crossFlexGrow;
-  final double crossFlexShrink;
-  final int? paintOrder;
-  final SizeUnit? width;
-  final SizeUnit? height;
-  final SizeUnit? minWidth;
-  final SizeUnit? maxWidth;
-  final SizeUnit? minHeight;
-  final SizeUnit? maxHeight;
-  final PositionUnit? top;
-  final PositionUnit? left;
-  final PositionUnit? right;
-  final PositionUnit? bottom;
-  final double? aspectRatio;
-  final BoxAlignmentGeometry? alignSelf;
-
-  LayoutData({
-    required this.behavior,
-    required this.flexGrow,
-    required this.flexShrink,
-    required this.crossFlexGrow,
-    required this.crossFlexShrink,
-    required this.paintOrder,
-    required this.width,
-    required this.height,
-    this.minWidth,
-    this.maxWidth,
-    this.minHeight,
-    this.maxHeight,
-    required this.top,
-    required this.left,
-    required this.right,
-    required this.bottom,
-    required this.aspectRatio,
-    this.alignSelf,
-  });
-
-  @override
-  int get hashCode => Object.hash(
-    flexGrow,
-    flexShrink,
-    paintOrder,
-    width,
-    height,
-    top,
-    left,
-    right,
-    bottom,
-    aspectRatio,
-  );
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other.runtimeType != runtimeType) return false;
-    return other is LayoutData &&
-        other.flexGrow == flexGrow &&
-        other.flexShrink == flexShrink &&
-        other.paintOrder == paintOrder &&
-        other.width == width &&
-        other.height == height &&
-        other.top == top &&
-        other.left == left &&
-        other.right == right &&
-        other.bottom == bottom &&
-        other.aspectRatio == aspectRatio;
-  }
-}
-
 class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
+  Key? debugKey;
   ChildLayoutCache? cache;
 
   LayoutData? layoutData;
@@ -103,7 +24,8 @@ class RenderLayoutBox extends RenderBox
         ParentLayout
     implements RenderAbstractViewport {
   @override
-  TextDirection textDirection;
+  LayoutTextDirection get textDirection =>
+      layoutTextDirectionFromTextDirection(layoutTextDirection);
   bool reversePaint;
   Axis mainScrollDirection;
   ViewportOffset horizontal;
@@ -114,12 +36,16 @@ class RenderLayoutBox extends RenderBox
   LayoutOverflow verticalOverflow;
   Layout boxLayout;
   @override
-  TextBaseline? textBaseline;
+  LayoutTextBaseline? get textBaseline => layoutTextBaseline == null
+      ? null
+      : layoutTextBaselineFromTextBaseline(layoutTextBaseline!);
   BorderRadius borderRadius;
   Clip clipBehavior;
+  TextDirection layoutTextDirection;
+  TextBaseline? layoutTextBaseline;
   RenderLayoutBox({
     required this.boxLayout,
-    required this.textDirection,
+    required this.layoutTextDirection,
     required this.reversePaint,
     required this.horizontal,
     required this.vertical,
@@ -128,18 +54,18 @@ class RenderLayoutBox extends RenderBox
     required this.mainScrollDirection,
     required this.horizontalOverflow,
     required this.verticalOverflow,
-    required this.textBaseline,
+    required this.layoutTextBaseline,
     required this.borderRadius,
     required this.clipBehavior,
   });
 
-  Size? _contentSize;
+  LayoutSize? _contentSize;
 
   // bounds including absolute positioned children
-  Rect? _contentBounds;
+  LayoutRect? _contentBounds;
 
   @override
-  Size get contentSize {
+  LayoutSize get contentSize {
     assert(
       _contentSize != null,
       'contentSize is not available before layout. Call layout first.',
@@ -148,11 +74,15 @@ class RenderLayoutBox extends RenderBox
   }
 
   Rect get contentBounds {
-    return Offset(-horizontal.pixels, -vertical.pixels) & contentSize;
+    assert(
+      _contentBounds != null,
+      'contentBounds is not available before layout. Call layout first.',
+    );
+    return rectFromLayoutRect(_contentBounds!);
   }
 
   @override
-  Size get viewportSize => size;
+  LayoutSize get viewportSize => layoutSizeFromSize(size);
 
   @override
   double get scrollOffsetX => horizontal.pixels;
@@ -206,42 +136,37 @@ class RenderLayoutBox extends RenderBox
   }
 
   void _onScrollOffsetChanged() {
-    markNeedsPaint();
+    markNeedsLayout();
   }
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    Rect? paintBounds = actualPaintBounds;
-    if (paintBounds == null) {
-      RenderBox? child = sortedFirstPaintChild;
-      while (child != null) {
-        final childParentData = child.parentData as LayoutBoxParentData;
-        context.paintChild(child, childParentData.offset + offset);
-        child = sortedNextPaintSibling(child);
-      }
-    } else {
-      paintBounds = paintBounds.shift(offset);
-      layer = context.pushClipRRect(
-        needsCompositing,
-        offset,
-        paintBounds,
-        borderRadius.toRRect(paintBounds),
-        (PaintingContext context, Offset offset) {
-          RenderBox? child = sortedFirstPaintChild;
-          while (child != null) {
-            final childParentData = child.parentData as LayoutBoxParentData;
-            final childOffset = childParentData.offset + offset;
-            final childBounds = childOffset & child.size;
-            // no need to bother painting children that are out of the paint bounds
-            if (paintBounds!.overlaps(childBounds)) {
-              context.paintChild(child, childOffset);
-            }
-            child = sortedNextPaintSibling(child);
+    Rect paintBounds = actualPaintBounds ?? contentBounds;
+    layer = context.pushClipRRect(
+      needsCompositing,
+      offset,
+      paintBounds,
+      borderRadius.toRRect(paintBounds),
+      (PaintingContext context, Offset offset) {
+        RenderBox? child = sortedFirstPaintChild;
+        while (child != null) {
+          assert(
+            child.parentData is LayoutBoxParentData,
+            'Expected child.parentData ($child) to be a LayoutBoxParentData but got ${child.parentData.runtimeType}',
+          );
+          final childParentData = child.parentData as LayoutBoxParentData;
+          final childOffset = childParentData.offset;
+          final childBounds = childOffset & child.size;
+          // no need to bother painting children that are out of the paint bounds
+          if (paintBounds.overlaps(childBounds)) {
+            context.paintChild(child, childOffset + offset);
           }
-        },
-        clipBehavior: clipBehavior,
-      );
-    }
+          child = sortedNextPaintSibling(child);
+        }
+      },
+      clipBehavior: clipBehavior,
+      oldLayer: layer as ClipRRectLayer?,
+    );
   }
 
   Rect? get actualPaintBounds {
@@ -250,12 +175,10 @@ class RenderLayoutBox extends RenderBox
     if (!clipHorizontal && !clipVertical) {
       return null;
     }
-    double scrollX = horizontal.pixels;
-    double scrollY = vertical.pixels;
     Rect contentBounds = this.contentBounds;
     return Rect.fromLTWH(
-      clipHorizontal ? 0.0 : contentBounds.left - scrollX,
-      clipVertical ? 0.0 : contentBounds.top - scrollY,
+      clipHorizontal ? 0.0 : contentBounds.left,
+      clipVertical ? 0.0 : contentBounds.top,
       clipHorizontal ? size.width : contentBounds.width,
       clipVertical ? size.height : contentBounds.height,
     );
@@ -442,11 +365,13 @@ class RenderLayoutBox extends RenderBox
   }
 
   RenderBox? get sortedFirstPaintChild {
-    return _firstSortedChild ??= relativeFirstPaintChild;
+    return (reversePaint ? _firstSortedChild : _lastSortedChild) ??
+        relativeFirstPaintChild;
   }
 
   RenderBox? get sortedLastPaintChild {
-    return _lastSortedChild ??= relativeLastPaintChild;
+    return (reversePaint ? _lastSortedChild : _firstSortedChild) ??
+        relativeLastPaintChild;
   }
 
   RenderBox? relativeNextPaintSibling(RenderBox child) {
@@ -465,14 +390,17 @@ class RenderLayoutBox extends RenderBox
 
   RenderBox? sortedNextPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
-    return childParentData._nextSortedSibling ??= relativeNextPaintSibling(
-      child,
-    );
+    return (reversePaint
+            ? childParentData._previousSortedSibling
+            : childParentData._nextSortedSibling) ??
+        relativeNextPaintSibling(child);
   }
 
   RenderBox? sortedPreviousPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
-    return childParentData._previousSortedSibling ??=
+    return (reversePaint
+            ? childParentData._nextSortedSibling
+            : childParentData._previousSortedSibling) ??
         relativePreviousPaintSibling(child);
   }
 
@@ -496,22 +424,18 @@ class RenderLayoutBox extends RenderBox
       childParentData.cache = layoutHandle.setupCache();
       child = childParentData.nextSibling;
     }
-    Size contentSize = layoutHandle.performLayout(constraints);
+    final layoutConstraints = layoutConstraintsFromBoxConstraints(
+      constraints,
+    );
+    LayoutSize contentSize = layoutHandle.performLayout(layoutConstraints);
+    final viewportSize = layoutConstraints.constrain(contentSize);
     _contentSize = contentSize;
-    layoutHandle.performPositioning(constraints, contentSize);
-    child = firstChild;
-    while (child != null) {
-      final childParentData = child.parentData as LayoutBoxParentData;
-      final cache = childParentData.cache!;
-      childParentData.offset = Offset(
-        cache.offsetX,
-        cache.offsetY,
-      );
-      childParentData.cache = null;
-      child = childParentData.nextSibling;
-    }
+    _contentBounds = layoutHandle.performPositioning(
+      viewportSize,
+      contentSize,
+    );
     assert(contentSize.width.isFinite && contentSize.height.isFinite);
-    size = constraints.constrain(contentSize);
+    size = sizeFromLayoutSize(viewportSize);
     horizontal.applyViewportDimension(size.width);
     vertical.applyViewportDimension(size.height);
     horizontal.applyContentDimensions(
@@ -530,10 +454,12 @@ class RenderLayoutBox extends RenderBox
   bool _childOutOfViewport(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
     final childRect = childParentData.offset & child.size;
-    return !childRect.overlaps(actualPaintBounds ?? paintBounds);
+    return !childRect.overlaps(visibleContentBounds.outerRect);
   }
 
   void _sortChildren() {
+    _firstSortedChild = null;
+    _lastSortedChild = null;
     if (childCount <= 1) {
       _firstSortedChild = firstChild;
       _lastSortedChild = lastChild;
@@ -615,8 +541,17 @@ class RenderLayoutBox extends RenderBox
   }
 
   RRect get visibleContentBounds {
-    Rect bounds = actualPaintBounds ?? paintBounds;
-    return borderRadius.toRRect(bounds);
+    return borderRadius.toRRect(actualPaintBounds ?? paintBounds);
+  }
+
+  void printDebugSortedChildren() {
+    // print out like this: [debugKey, debugKey, ...]
+    List<String> keys = [];
+    RenderBox? child = sortedFirstPaintChild;
+    while (child != null) {
+      keys.add(child.toString());
+      child = sortedNextPaintSibling(child);
+    }
   }
 
   @override
@@ -638,10 +573,9 @@ class RenderLayoutBox extends RenderBox
     RenderBox? child = sortedLastPaintChild;
     while (child != null) {
       final childParentData = child.parentData! as LayoutBoxParentData;
-      if (clipHorizontal ||
-          clipVertical &&
-              _childOutOfViewport(child) &&
-              _firstSortedChild == null) {
+      if ((clipHorizontal || clipVertical) &&
+          _childOutOfViewport(child) &&
+          _firstSortedChild == null) {
         child = sortedPreviousPaintSibling(child);
         continue;
       }
@@ -814,48 +748,12 @@ class RenderLayoutBox extends RenderBox
 
   @override
   ChildLayout? getFirstDryLayout(LayoutHandle<Layout> layoutHandle) {
-    RenderBox? child = firstChild;
-    RenderBoxChildDryLayout? first;
-    RenderBoxChildDryLayout? last;
-    while (child != null) {
-      final childLayout = RenderBoxChildDryLayout(
-        child,
-        layoutHandle.setupCache(),
-      );
-      if (first == null) {
-        first = childLayout;
-        last = childLayout;
-      } else {
-        last!.nextSibling = childLayout;
-        childLayout.previousSibling = last;
-        last = childLayout;
-      }
-      child = (child.parentData as LayoutBoxParentData).nextSibling;
-    }
-    return first;
+    return ChildLayoutDryDelegate.forwardCopy(firstLayoutChild, layoutHandle);
   }
 
   @override
   ChildLayout? getLastDryLayout(LayoutHandle<Layout> layoutHandle) {
-    RenderBox? child = lastChild;
-    RenderBoxChildDryLayout? first;
-    RenderBoxChildDryLayout? last;
-    while (child != null) {
-      final childLayout = RenderBoxChildDryLayout(
-        child,
-        layoutHandle.setupCache(),
-      );
-      if (first == null) {
-        first = childLayout;
-        last = childLayout;
-      } else {
-        first.previousSibling = childLayout;
-        childLayout.nextSibling = first;
-        first = childLayout;
-      }
-      child = (child.parentData as LayoutBoxParentData).previousSibling;
-    }
-    return last;
+    return ChildLayoutDryDelegate.forwardCopy(lastLayoutChild, layoutHandle);
   }
 
   @override
@@ -879,7 +777,12 @@ class RenderLayoutBox extends RenderBox
   @override
   Size computeDryLayout(covariant BoxConstraints constraints) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
-    return layoutHandle.performLayout(constraints, true);
+    return sizeFromLayoutSize(
+      layoutHandle.performLayout(
+        layoutConstraintsFromBoxConstraints(constraints),
+        true,
+      ),
+    );
   }
 
   @override
@@ -912,19 +815,39 @@ class RenderBoxChildLayout with ChildLayout {
   RenderBoxChildLayout(this.renderBox);
 
   @override
-  Size get size => renderBox.size;
-
-  @override
-  Offset get offset => (renderBox.parentData as LayoutBoxParentData).offset;
-
-  @override
-  set offset(Offset value) {
-    (renderBox.parentData as LayoutBoxParentData).offset = value;
+  Object? get debugKey {
+    final debugKey = (renderBox.parentData as LayoutBoxParentData).debugKey;
+    if (debugKey is ValueKey) {
+      return debugKey.value;
+    }
+    return debugKey;
   }
 
   @override
-  double getDistanceToBaseline(TextBaseline baseline) {
-    return renderBox.getDistanceToBaseline(baseline) ?? size.height;
+  void clearCache() {
+    (renderBox.parentData as LayoutBoxParentData).cache = null;
+  }
+
+  @override
+  LayoutSize get size => layoutSizeFromSize(renderBox.size);
+
+  @override
+  LayoutOffset get offset => layoutOffsetFromOffset(
+    (renderBox.parentData as LayoutBoxParentData).offset,
+  );
+
+  @override
+  set offset(LayoutOffset value) {
+    (renderBox.parentData as LayoutBoxParentData).offset =
+        offsetFromLayoutOffset(value);
+  }
+
+  @override
+  double getDistanceToBaseline(LayoutTextBaseline baseline) {
+    return renderBox.getDistanceToBaseline(
+          textBaselineFromLayoutTextBaseline(baseline),
+        ) ??
+        size.height;
   }
 
   @override
@@ -968,13 +891,31 @@ class RenderBoxChildLayout with ChildLayout {
   }
 
   @override
-  Size dryLayout(BoxConstraints constraints) {
-    return renderBox.getDryLayout(constraints);
+  LayoutSize dryLayout(LayoutConstraints constraints) {
+    return layoutSizeFromSize(
+      renderBox.getDryLayout(
+        boxConstraintsFromLayoutConstraints(constraints),
+      ),
+    );
   }
 
   @override
-  void layout(BoxConstraints constraints) {
-    renderBox.layout(constraints, parentUsesSize: true);
+  void layout(LayoutConstraints constraints) {
+    renderBox.layout(
+      boxConstraintsFromLayoutConstraints(constraints),
+      parentUsesSize: true,
+    );
+  }
+
+  @override
+  int get hashCode => renderBox.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is RenderBoxChildLayout) {
+      return other.renderBox == renderBox;
+    }
+    return false;
   }
 
   @override
@@ -986,68 +927,106 @@ class RenderBoxChildLayout with ChildLayout {
       (renderBox.parentData as LayoutBoxParentData).layoutData!;
 }
 
-class RenderBoxChildDryLayout with ChildLayout {
-  final RenderBox renderBox;
-  @override
-  final ChildLayoutCache layoutCache;
-  @override
-  late ChildLayout? nextSibling;
-  @override
-  late ChildLayout? previousSibling;
-  RenderBoxChildDryLayout(this.renderBox, this.layoutCache);
-  @override
-  Size get size => throw FlutterError(
-    'size is not available in dry layout.',
+LayoutSize layoutSizeFromSize(Size size) {
+  return LayoutSize(size.width, size.height);
+}
+
+Size sizeFromLayoutSize(LayoutSize size) {
+  return Size(size.width, size.height);
+}
+
+LayoutOffset layoutOffsetFromOffset(Offset offset) {
+  return LayoutOffset(offset.dx, offset.dy);
+}
+
+Offset offsetFromLayoutOffset(LayoutOffset offset) {
+  return Offset(offset.dx, offset.dy);
+}
+
+LayoutRect layoutRectFromRect(Rect rect) {
+  return LayoutRect.fromLTRB(
+    rect.left,
+    rect.top,
+    rect.right,
+    rect.bottom,
   );
+}
 
-  @override
-  Offset get offset => throw FlutterError(
-    'offset is not available in dry layout.',
+Rect rectFromLayoutRect(LayoutRect rect) {
+  return Rect.fromLTRB(
+    rect.left,
+    rect.top,
+    rect.right,
+    rect.bottom,
   );
+}
 
-  @override
-  set offset(Offset value) {
-    throw FlutterError(
-      'offset is not available in dry layout.',
-    );
-  }
+LayoutTextBaseline layoutTextBaselineFromTextBaseline(TextBaseline baseline) {
+  return switch (baseline) {
+    TextBaseline.alphabetic => LayoutTextBaseline.alphabetic,
+    TextBaseline.ideographic => LayoutTextBaseline.ideographic,
+  };
+}
 
-  @override
-  double getDistanceToBaseline(TextBaseline baseline) {
-    throw FlutterError(
-      'getDistanceToBaseline is not available in dry layout.',
-    );
-  }
+TextBaseline textBaselineFromLayoutTextBaseline(
+  LayoutTextBaseline baseline,
+) {
+  return switch (baseline) {
+    LayoutTextBaseline.alphabetic => TextBaseline.alphabetic,
+    LayoutTextBaseline.ideographic => TextBaseline.ideographic,
+  };
+}
 
-  @override
-  double getMaxIntrinsicHeight(double width) {
-    return renderBox.getMaxIntrinsicHeight(width);
-  }
+LayoutTextDirection layoutTextDirectionFromTextDirection(
+  TextDirection direction,
+) {
+  return switch (direction) {
+    TextDirection.ltr => LayoutTextDirection.ltr,
+    TextDirection.rtl => LayoutTextDirection.rtl,
+  };
+}
 
-  @override
-  double getMaxIntrinsicWidth(double height) {
-    return renderBox.getMaxIntrinsicWidth(height);
-  }
+TextDirection textDirectionFromLayoutTextDirection(
+  LayoutTextDirection direction,
+) {
+  return switch (direction) {
+    LayoutTextDirection.ltr => TextDirection.ltr,
+    LayoutTextDirection.rtl => TextDirection.rtl,
+  };
+}
 
-  @override
-  double getMinIntrinsicHeight(double width) {
-    return renderBox.getMinIntrinsicHeight(width);
-  }
+LayoutConstraints layoutConstraintsFromBoxConstraints(
+  BoxConstraints constraints,
+) {
+  return LayoutConstraints(
+    minWidth: constraints.minWidth,
+    maxWidth: constraints.maxWidth,
+    minHeight: constraints.minHeight,
+    maxHeight: constraints.maxHeight,
+  );
+}
 
-  @override
-  double getMinIntrinsicWidth(double height) {
-    return renderBox.getMinIntrinsicWidth(height);
-  }
+BoxConstraints boxConstraintsFromLayoutConstraints(
+  LayoutConstraints constraints,
+) {
+  return BoxConstraints(
+    minWidth: constraints.minWidth,
+    maxWidth: constraints.maxWidth,
+    minHeight: constraints.minHeight,
+    maxHeight: constraints.maxHeight,
+  );
+}
 
-  @override
-  Size dryLayout(BoxConstraints constraints) {
-    return renderBox.getDryLayout(constraints);
-  }
+LayoutAxis layoutAxisFromAxis(Axis axis) {
+  return switch (axis) {
+    Axis.horizontal => LayoutAxis.horizontal,
+    Axis.vertical => LayoutAxis.vertical,
+  };
+}
 
-  @override
-  void layout(BoxConstraints constraints) {}
-
-  @override
-  LayoutData get layoutData =>
-      (renderBox.parentData as LayoutBoxParentData).layoutData!;
+Axis axisFromLayoutAxis(LayoutAxis axis) {
+  return switch (axis) {
+    LayoutAxis.horizontal => Axis.horizontal,
+    LayoutAxis.vertical => Axis.vertical,
+  };
 }

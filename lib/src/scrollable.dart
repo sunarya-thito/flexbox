@@ -100,6 +100,6 @@ class ScrollableClient extends StatelessWidget {
         },
       );
     }
-    return ClipRect(clipBehavior: clipBehavior, child: scrollableResult);
+    return scrollableResult;
   }
 }
