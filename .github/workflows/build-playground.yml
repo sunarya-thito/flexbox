@@ -1,4 +1,4 @@
-name: Deploy Playground to Github Pages
+name: Deploy Demo to Github Pages
 
 on:
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: './docs/public'
+        publish_dir: './demo/public'
         force_orphan: true
         user_name: 'github-ci[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
