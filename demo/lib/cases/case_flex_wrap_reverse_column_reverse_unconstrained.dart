@@ -4,51 +4,44 @@ import 'package:demo/helper.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flutter/widgets.dart';
 
-class CaseWrapContentEnd extends TestCase {
+class CaseFlexWrapReverseColumnReverseUnconstrained extends TestCase {
   @override
-  String get name => 'Flex Wrap with Align Content End';
+  String get name => 'Flex Wrap Reverse Column Reverse (Unconstrained)';
   @override
-  String get path => 'case_wrap_content_end.dart';
+  String get path => 'case_flex_wrap_reverse_column_reverse_unconstrained.dart';
   @override
   Widget build() {
     return SizedBox(
-      width: 300,
-      height: 500,
+      height: 300,
       child: Box.parent(
         child: FlexBox(
           key: key0,
-          wrap: FlexWrap.wrap,
-          alignContent: BoxAlignmentContent.end,
+          wrap: FlexWrap.wrapReverse,
+          direction: FlexDirection.columnReverse,
           children: [
             FlexItem(
               key: key1,
-              width: SizeUnit.fixed(100),
+              width: SizeUnit.fixed(150),
               height: SizeUnit.fixed(100),
               child: Box(1),
             ),
             FlexItem(
               key: key2,
-              width: SizeUnit.fixed(100),
-              height: SizeUnit.fixed(200),
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
               child: Box(2),
             ),
             FlexItem(
               key: key3,
-              width: SizeUnit.fixed(100),
-              height: SizeUnit.fixed(150),
+              width: SizeUnit.fixed(250),
+              height: SizeUnit.fixed(100),
               child: Box(3),
             ),
             FlexItem(
               key: key4,
-              width: SizeUnit.fixed(150),
+              width: SizeUnit.fixed(100),
               height: SizeUnit.fixed(100),
               child: Box(4),
-            ),
-            FlexItem(
-              key: key5,
-              width: SizeUnit.fixed(150),
-              height: SizeUnit.fixed(200),
-              child: Box(5),
             ),
           ],
         ),

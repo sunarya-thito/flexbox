@@ -4,22 +4,20 @@ import 'package:demo/helper.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flutter/widgets.dart';
 
-class CaseAlignContentCenterRowWrap extends TestCase {
+class CaseFlexWrapColumnReverseUnconstrained extends TestCase {
   @override
-  String get name => 'Align Content Center in Row Wrap';
+  String get name => 'Flex Wrap Column Reverse (Unconstrained)';
   @override
-  String get path => 'case_align_content_center_row_wrap.dart';
+  String get path => 'case_flex_wrap_column_reverse_unconstrained.dart';
   @override
   Widget build() {
     return SizedBox(
-      width: 350,
-      height: 400,
+      height: 300,
       child: Box.parent(
         child: FlexBox(
           key: key0,
-          direction: FlexDirection.row,
           wrap: FlexWrap.wrap,
-          alignContent: BoxAlignmentContent.center,
+          direction: FlexDirection.columnReverse,
           children: [
             FlexItem(
               key: key1,
@@ -35,21 +33,15 @@ class CaseAlignContentCenterRowWrap extends TestCase {
             ),
             FlexItem(
               key: key3,
-              width: SizeUnit.fixed(150),
+              width: SizeUnit.fixed(250),
               height: SizeUnit.fixed(100),
               child: Box(3),
             ),
             FlexItem(
               key: key4,
-              width: SizeUnit.fixed(150),
+              width: SizeUnit.fixed(100),
               height: SizeUnit.fixed(100),
               child: Box(4),
-            ),
-            FlexItem(
-              key: key5,
-              width: SizeUnit.fixed(150),
-              height: SizeUnit.fixed(100),
-              child: Box(5),
             ),
           ],
         ),

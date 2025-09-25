@@ -1,9 +1,5 @@
 import 'package:demo/cases/case_absolute.dart';
-import 'package:demo/cases/case_align_content_center_row_wrap.dart';
-import 'package:demo/cases/case_align_items_center_row.dart';
 import 'package:demo/cases/case_align_items_center_row_flex_grow.dart';
-import 'package:demo/cases/case_align_items_center_row_wrap.dart';
-import 'package:demo/cases/case_align_items_center_rtl_row.dart';
 import 'package:demo/cases/case_align_items_stretch_column.dart';
 import 'package:demo/cases/case_align_self_row.dart';
 import 'package:demo/cases/case_column.dart';
@@ -14,15 +10,6 @@ import 'package:demo/cases/case_flex_wrap_reverse_column.dart';
 import 'package:demo/cases/case_flex_wrap_reverse_column_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_reverse_row_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_row_reverse.dart';
-import 'package:demo/cases/case_flex_wrap_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_reverse_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_row_reverse_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_reverse_row_reverse_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_column_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_reverse_column_unconstrained.dart';
-import 'package:demo/cases/case_flex_wrap_reverse_column_reverse_unconstrained.dart';
-import 'package:demo/cases/case_flex_grow_unconstrained.dart';
-import 'package:demo/cases/case_flex_shrink_unconstrained.dart';
 import 'package:demo/cases/case_items_start.dart';
 import 'package:demo/cases/case_row_reverse.dart';
 import 'package:demo/cases/case_rtl_column.dart';
@@ -35,13 +22,6 @@ import 'package:demo/cases/case_rtl_wrap_column_reverse.dart';
 import 'package:demo/cases/case_rtl_wrap_reverse.dart';
 import 'package:demo/cases/case_rtl_wrap_reverse_column.dart';
 import 'package:demo/cases/case_rtl_wrap_reverse_column_reverse.dart';
-import 'package:demo/cases/case_rtl_wrap_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_reverse_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_row_reverse_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_reverse_row_reverse_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_column_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_reverse_column_unconstrained.dart';
-import 'package:demo/cases/case_rtl_wrap_reverse_column_reverse_unconstrained.dart';
 import 'package:demo/cases/case_scrollable.dart';
 import 'package:demo/cases/case_scrollable_absolute.dart';
 import 'package:demo/cases/case_scrollable_sticky.dart';
@@ -55,10 +35,8 @@ import 'package:demo/cases/case_flex_wrap_reverse.dart';
 import 'package:demo/cases/case_spacing_around.dart';
 import 'package:demo/cases/case_spacing_between.dart';
 import 'package:demo/cases/case_spacing_evenly.dart';
-import 'package:demo/cases/case_wrap_content_around.dart';
 import 'package:demo/cases/case_wrap_content_between.dart';
 import 'package:demo/cases/case_wrap_items_center.dart';
-import 'package:demo/cases/case_wrap_content_evenly.dart';
 import 'package:demo/cases/case_wrap_content_center.dart';
 import 'package:demo/cases/case_padded.dart';
 import 'package:demo/cases/case_spacing.dart';
@@ -67,7 +45,6 @@ import 'package:demo/cases/case_items_end.dart';
 import 'package:demo/cases/case_items_stretch.dart';
 import 'package:demo/cases/case_justify_center.dart';
 import 'package:demo/cases/case_justify_end.dart';
-import 'package:demo/cases/case_wrap_content_end.dart';
 import 'package:demo/cases/case_wrap_content_start.dart';
 import 'package:demo/cases/case_wrap_items_end.dart';
 import 'package:demo/cases/case_wrap_items_start.dart';
@@ -95,10 +72,38 @@ import 'package:demo/cases/case_flex_grow_constrained_height.dart';
 import 'package:demo/cases/case_flex_grow_constrained_width.dart';
 import 'package:demo/cases/case_flex_shrink_constrained_height.dart';
 import 'package:demo/cases/case_flex_shrink_constrained_width.dart';
+import 'package:demo/cases/case_flex_grow_unconstrained.dart';
+import 'package:demo/cases/case_flex_shrink_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_column_reverse_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_column_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_reverse_column_reverse_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_reverse_column_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_reverse_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_row_reverse_unconstrained.dart';
+import 'package:demo/cases/case_flex_wrap_unconstrained.dart';
+import 'package:demo/cases/case_gaps_column_flex_grow_unconstrained.dart';
+import 'package:demo/cases/case_gaps_column_flex_shrink_unconstrained.dart';
+import 'package:demo/cases/case_gaps_column_reverse_unconstrained.dart';
+import 'package:demo/cases/case_gaps_column_wrap_reverse_unconstrained.dart';
+import 'package:demo/cases/case_gaps_column_wrap_unconstrained.dart';
+import 'package:demo/cases/case_gaps_row_flex_grow_unconstrained.dart';
+import 'package:demo/cases/case_gaps_row_flex_shrink_unconstrained.dart';
+import 'package:demo/cases/case_gaps_row_reverse_unconstrained.dart';
+import 'package:demo/cases/case_gaps_row_wrap_reverse_unconstrained.dart';
+import 'package:demo/cases/case_gaps_row_wrap_unconstrained.dart';
+import 'package:demo/cases/case_gaps_rtl_column_unconstrained.dart';
+import 'package:demo/cases/case_gaps_rtl_row_unconstrained.dart';
+import 'package:demo/cases/case_gaps_rtl_row_wrap_unconstrained.dart';
 import 'package:demo/cases/case_justify_content_space_between_row.dart';
 import 'package:demo/cases/case_overflow_column.dart';
 import 'package:demo/cases/case_overflow_large_content.dart';
 import 'package:demo/cases/case_overflow_row.dart';
+import 'package:demo/cases/case_rtl_wrap_column_reverse_unconstrained.dart';
+import 'package:demo/cases/case_rtl_wrap_column_unconstrained.dart';
+import 'package:demo/cases/case_rtl_wrap_reverse_column_reverse_unconstrained.dart';
+import 'package:demo/cases/case_rtl_wrap_reverse_column_unconstrained.dart';
+import 'package:demo/cases/case_rtl_wrap_reverse_unconstrained.dart';
+import 'package:demo/cases/case_rtl_wrap_unconstrained.dart';
 
 final testCases = [
   // Row Examples
@@ -123,6 +128,10 @@ final testCases = [
   CaseFlexShrinkConstrainedWidth(),
   CaseFlexShrinkConstrainedHeight(),
 
+  // Unconstrained Flex
+  CaseFlexGrowUnconstrained(),
+  CaseFlexShrinkUnconstrained(),
+
   // Flex Wrap
   CaseFlexWrap(),
   CaseFlexWrapReverse(),
@@ -133,6 +142,15 @@ final testCases = [
   CaseFlexWrapReverseColumnReverse(),
   CaseFlexWrapReverseRowReverse(),
 
+  // Unconstrained Flex Wrap
+  CaseFlexWrapUnconstrained(),
+  CaseFlexWrapReverseUnconstrained(),
+  CaseFlexWrapRowReverseUnconstrained(),
+  CaseFlexWrapColumnUnconstrained(),
+  CaseFlexWrapColumnReverseUnconstrained(),
+  CaseFlexWrapReverseColumnUnconstrained(),
+  CaseFlexWrapReverseColumnReverseUnconstrained(),
+
   // RTL Wrap
   CaseRTLWrap(),
   CaseRTLWrapReverse(),
@@ -140,6 +158,14 @@ final testCases = [
   CaseRTLWrapColumnReverse(),
   CaseRTLWrapReverseColumn(),
   CaseRTLWrapReverseColumnReverse(),
+
+  // Unconstrained RTL Wrap
+  CaseRTLWrapUnconstrained(),
+  CaseRTLWrapReverseUnconstrained(),
+  CaseRTLWrapColumnUnconstrained(),
+  CaseRTLWrapColumnReverseUnconstrained(),
+  CaseRTLWrapReverseColumnUnconstrained(),
+  CaseRTLWrapReverseColumnReverseUnconstrained(),
 
   // Alignment - Items
   // CaseItemsBaseline(),
@@ -149,14 +175,10 @@ final testCases = [
   CaseItemsStretch(),
 
   // Additional Alignment Cases
-  CaseAlignItemsCenterRow(),
   CaseAlignItemsStretchColumn(),
-  CaseAlignContentCenterRowWrap(),
   CaseJustifyContentSpaceBetweenRow(),
   CaseAlignSelfRow(),
-  CaseAlignItemsCenterRowWrap(),
   CaseAlignItemsCenterRowFlexGrow(),
-  CaseAlignItemsCenterRTLRow(),
 
   // Alignment - Justify
   CaseJustifyCenter(),
@@ -188,6 +210,21 @@ final testCases = [
   CaseGapsRTLColumn(),
   CaseGapsRTLRowWrap(),
 
+  // Unconstrained Gaps
+  CaseGapsRowReverseUnconstrained(),
+  CaseGapsColumnReverseUnconstrained(),
+  CaseGapsRowWrapUnconstrained(),
+  CaseGapsColumnWrapUnconstrained(),
+  CaseGapsRowWrapReverseUnconstrained(),
+  CaseGapsColumnWrapReverseUnconstrained(),
+  CaseGapsColumnFlexGrowUnconstrained(),
+  CaseGapsRowFlexGrowUnconstrained(),
+  CaseGapsRowFlexShrinkUnconstrained(),
+  CaseGapsColumnFlexShrinkUnconstrained(),
+  CaseGapsRTLRowUnconstrained(),
+  CaseGapsRTLColumnUnconstrained(),
+  CaseGapsRTLRowWrapUnconstrained(),
+
   // Padding
   CasePadded(),
 
@@ -206,11 +243,8 @@ final testCases = [
   CaseScrollableAbsolute(),
 
   // Wrap Content
-  CaseWrapContentAround(),
   CaseWrapContentBetween(),
   CaseWrapContentCenter(),
-  CaseWrapContentEnd(),
-  CaseWrapContentEvenly(),
   CaseWrapContentStart(),
 
   // Wrap Items

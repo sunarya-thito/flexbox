@@ -4,51 +4,41 @@ import 'package:demo/helper.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flutter/widgets.dart';
 
-class CaseWrapContentAround extends TestCase {
+class CaseGapsColumnFlexShrinkUnconstrained extends TestCase {
   @override
-  String get name => 'Flex Wrap with Align Content Spacing Around';
+  String get name => 'Gaps in Column with Flex Shrink Children (Unconstrained)';
   @override
-  String get path => 'case_wrap_content_around.dart';
+  String get path => 'case_gaps_column_flex_shrink_unconstrained.dart';
   @override
   Widget build() {
     return SizedBox(
-      width: 300,
-      height: 500,
+      height: 400,
       child: Box.parent(
         child: FlexBox(
           key: key0,
-          wrap: FlexWrap.wrap,
-          alignContent: BoxAlignmentContent.spaceAround,
+          direction: FlexDirection.column,
+          rowGap: SpacingUnit.fixed(20),
+          columnGap: SpacingUnit.fixed(15),
           children: [
             FlexItem(
               key: key1,
               width: SizeUnit.fixed(100),
-              height: SizeUnit.fixed(100),
+              height: SizeUnit.fixed(200),
               child: Box(1),
             ),
             FlexItem(
               key: key2,
+              flexShrink: 2.0,
               width: SizeUnit.fixed(100),
               height: SizeUnit.fixed(200),
               child: Box(2),
             ),
             FlexItem(
               key: key3,
+              flexShrink: 1.0,
               width: SizeUnit.fixed(100),
-              height: SizeUnit.fixed(150),
-              child: Box(3),
-            ),
-            FlexItem(
-              key: key4,
-              width: SizeUnit.fixed(150),
-              height: SizeUnit.fixed(100),
-              child: Box(4),
-            ),
-            FlexItem(
-              key: key5,
-              width: SizeUnit.fixed(150),
               height: SizeUnit.fixed(200),
-              child: Box(5),
+              child: Box(3),
             ),
           ],
         ),
