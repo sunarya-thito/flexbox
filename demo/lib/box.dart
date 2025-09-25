@@ -1,8 +1,5 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
 Color _randomPastelColor(int hash) {
   return Colors.primaries[(hash + 4) % Colors.primaries.length];

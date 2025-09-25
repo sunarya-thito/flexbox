@@ -12,10 +12,11 @@ abstract class TestCase {
   String get name;
   String get path;
   String get fullPath => 'package:demo/cases/$path';
+  //https://github.com/sunarya-thito/flexbox/blob/master/demo/lib/cases/case_absolute.dart
   String get gitPath =>
-      'https://github.com/sunarya-thito/flexbox/blob/main/demo/lib/cases/$path';
+      'https://github.com/sunarya-thito/flexbox/blob/master/demo/lib/cases/$path';
   String get rawGitPath =>
-      'https://raw.githubusercontent.com/sunarya-thito/flexbox/main/demo/lib/cases/$path';
+      'https://raw.githubusercontent.com/sunarya-thito/flexbox/refs/heads/master/demo/lib/cases/$path';
   Widget build();
   Widget buildTest() => Directionality(
     textDirection: TextDirection.ltr,
@@ -23,11 +24,6 @@ abstract class TestCase {
   );
 
   void generateTest() {
-    // assuming that the layout visuallly looks correct
-    // this function will generate the test code for performTest()
-    // based on the actual layout
-    // although the process is automated,
-    // the result still needs to be verified manually
     testWidgets(name, (WidgetTester tester) async {
       print('--- GENERATED TEST FOR $fullPath ---');
       StringBuffer buffer = StringBuffer();

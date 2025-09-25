@@ -23,10 +23,10 @@ jobs:
 
     - name: Build Release Version
       run: "flutter build web --wasm --base-href \"/flexbox/\""
-      working-directory: './docs'
+      working-directory: './demo'
 
     - name: Copy to web build directory
-      run: cp -r ./docs/build/web ./docs/public
+      run: cp -r ./demo/build/web ./demo/public
       working-directory: './'
 
     - name: Deploy

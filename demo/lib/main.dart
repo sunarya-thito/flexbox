@@ -41,7 +41,6 @@ import 'package:demo/cases/case_spacing.dart';
 import 'package:demo/cases/case_items_center.dart';
 import 'package:demo/cases/case_items_end.dart';
 import 'package:demo/cases/case_items_stretch.dart';
-import 'package:demo/cases/case_items_baseline.dart';
 import 'package:demo/cases/case_justify_center.dart';
 import 'package:demo/cases/case_justify_end.dart';
 import 'package:demo/cases/case_wrap_content_end.dart';
@@ -50,61 +49,90 @@ import 'package:demo/cases/case_wrap_items_end.dart';
 import 'package:demo/cases/case_wrap_items_start.dart';
 import 'package:demo/demo.dart';
 import 'package:flutter/material.dart';
+import 'package:syntax_highlight/syntax_highlight.dart';
 
 final testCases = [
-  CaseAbsolute(),
+  // Row Examples
+  CaseSimple(), // Row example
+  CaseRowReverse(),
+  CaseRTLRow(),
+  CaseRTLRowReverse(),
+
+  // Column Examples
   CaseColumn(),
   CaseColumnReverse(),
+  CaseRTLColumn(),
+  CaseRTLColumnReverse(),
+
+  // Flex Properties
   CaseFlexGrow(),
   CaseFlexShrink(),
+
+  // Flex Wrap
   CaseFlexWrap(),
+  CaseFlexWrapReverse(),
+  CaseFlexWrapRowReverse(),
   CaseFlexWrapColumn(),
   CaseFlexWrapColumnReverse(),
-  CaseFlexWrapReverse(),
   CaseFlexWrapReverseColumn(),
   CaseFlexWrapReverseColumnReverse(),
   CaseFlexWrapReverseRowReverse(),
-  CaseFlexWrapRowReverse(),
+
+  // RTL Wrap
+  CaseRTLWrap(),
+  CaseRTLWrapReverse(),
+  CaseRTLWrapColumn(),
+  CaseRTLWrapColumnReverse(),
+  CaseRTLWrapReverseColumn(),
+  CaseRTLWrapReverseColumnReverse(),
+
+  // Alignment - Items
   // CaseItemsBaseline(),
   CaseItemsCenter(),
   CaseItemsEnd(),
   CaseItemsStart(),
   CaseItemsStretch(),
+
+  // Alignment - Justify
   CaseJustifyCenter(),
   CaseJustifyEnd(),
   CaseJustifyStart(),
-  CasePadded(),
-  CaseRowReverse(),
-  CaseRTLColumn(),
-  CaseRTLColumnReverse(),
-  CaseRTLRow(),
-  CaseRTLRowReverse(),
-  CaseRTLWrap(),
-  CaseRTLWrapColumn(),
-  CaseRTLWrapColumnReverse(),
-  CaseRTLWrapReverse(),
-  CaseRTLWrapReverseColumn(),
-  CaseRTLWrapReverseColumnReverse(),
-  CaseScrollable(),
-  CaseScrollableSticky(),
-  CaseSimple(),
+
+  // Spacing
   CaseSpacing(),
   CaseSpacingAround(),
   CaseSpacingBetween(),
   CaseSpacingEvenly(),
+
+  // Padding
+  CasePadded(),
+
+  // Absolute Position
+  CaseAbsolute(),
+
+  // Scrollable
+  CaseScrollable(),
+  CaseScrollableSticky(),
   CaseUnclippedScrollable(),
+
+  // Wrap Content
   CaseWrapContentAround(),
   CaseWrapContentBetween(),
   CaseWrapContentCenter(),
   CaseWrapContentEnd(),
   CaseWrapContentEvenly(),
   CaseWrapContentStart(),
+
+  // Wrap Items
   CaseWrapItemsCenter(),
   CaseWrapItemsEnd(),
   CaseWrapItemsStart(),
 ];
-
-void main(List<String> args) {
+late HighlighterTheme darkHighlighterTheme;
+void main(List<String> args) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Highlighter.initialize(['dart']);
+  darkHighlighterTheme = await HighlighterTheme.loadDarkTheme();
   runApp(
     MaterialApp(
       theme: ThemeData(useMaterial3: true),

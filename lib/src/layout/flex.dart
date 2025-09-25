@@ -3,51 +3,164 @@ import 'dart:math';
 import 'package:flexiblebox/src/basic.dart';
 import 'package:flexiblebox/src/layout.dart';
 
-enum FlexWrap {
-  none,
-  wrap,
-  wrapReverse,
-}
-
+/// Cache for storing computed layout values for individual flex children.
+///
+/// FlexChildLayoutCache extends the base [ChildLayoutCache] with flex-specific
+/// caching for basis sizes, flex calculations, cross-axis sizing, and baseline
+/// alignment. This cache is used to avoid redundant calculations during
+/// the complex flex layout algorithm.
 class FlexChildLayoutCache extends ChildLayoutCache {
+  /// Cache for the flex line this child belongs to.
+  ///
+  /// Used to coordinate layout between children in the same flex line.
   FlexLineLayoutCache? lineCache;
 
+  /// The main-axis basis size for this child.
+  ///
+  /// Represents the initial size before flex grow/shrink calculations.
   double? mainBasisSize;
-  double? mainFlexSize; // this also contains the basis size
+
+  /// The final main-axis size after flex calculations.
+  ///
+  /// Includes both the basis size and any flex grow/shrink adjustments.
+  double? mainFlexSize;
+
+  /// The cross-axis size for this child.
+  ///
+  /// Determined during cross-axis alignment and sizing calculations.
   double? crossSize;
+
+  /// Maximum main-axis size constraint for this child.
   double? maxMainSize;
+
+  /// Minimum main-axis size constraint for this child.
   double? minMainSize;
+
+  /// Maximum cross-axis size constraint for this child.
   double? maxCrossSize;
+
+  /// Minimum cross-axis size constraint for this child.
   double? minCrossSize;
+
+  /// Whether this child's main-axis size is frozen (cannot be changed).
+  ///
+  /// Used during the flex algorithm to prevent infinite loops.
   bool frozen = false;
+
+  /// Whether this child's cross-axis size is frozen.
   bool frozenCross = false;
+
+  /// The baseline position for this child (if applicable).
+  ///
+  /// Used for baseline alignment in flex lines.
   double? baseline;
+
+  /// Whether this child's alignSelf setting requires baseline calculation.
   bool? alignSelfNeedsBaseline;
 
+  /// Creates a new cache for a flex child.
   FlexChildLayoutCache();
 }
 
+/// A layout algorithm implementing the CSS Flexbox specification.
+///
+/// FlexLayout provides a complete implementation of the flexbox layout model,
+/// supporting all major flexbox features including direction, wrapping,
+/// alignment, spacing, and flexible sizing. It follows the CSS Flexbox
+/// specification closely while being optimized for Flutter's layout system.
+///
+/// ## Key Features
+///
+/// - **Direction**: Row, column, and reverse variants
+/// - **Wrapping**: Single line or multi-line with wrap/nowrap options
+/// - **Alignment**: Main-axis (justify-content), cross-axis (align-items), and line alignment (align-content)
+/// - **Flexible Sizing**: Flex grow and shrink with basis sizing
+/// - **Spacing**: Configurable gaps between items and padding
+/// - **RTL Support**: Automatic handling of right-to-left text directions
+///
+/// ## Usage
+///
+/// FlexLayout is typically used through [FlexBox] widget, but can be used
+/// directly with [LayoutBox] for custom implementations:
+///
+/// ```dart
+/// LayoutBox(
+///   layout: FlexLayout(
+///     direction: FlexDirection.row,
+///     wrap: FlexWrap.wrap,
+///     alignItems: BoxAlignment.center,
+///     justifyContent: BoxAlignment.spaceBetween,
+///   ),
+///   children: [/* flex items */],
+/// )
+/// ```
 class FlexLayout extends Layout {
+  /// The direction of the main axis for this flex layout.
+  ///
+  /// Determines whether children flow horizontally (row) or vertically (column).
+  /// Also controls the direction of flow with reverse options.
   final FlexDirection direction;
+
+  /// Controls how flex items wrap when they exceed the container's size.
+  ///
+  /// - [FlexWrap.none]: Single line layout
+  /// - [FlexWrap.wrap]: Multi-line layout with normal line order
+  /// - [FlexWrap.wrapReverse]: Multi-line layout with reversed line order
   final FlexWrap wrap;
+
+  /// The maximum number of items allowed per line when wrapping is enabled.
+  ///
+  /// When set, forces line breaks after this many items, regardless of space.
+  /// Useful for creating grid-like layouts with consistent item counts per row.
   final int? maxItemsPerLine;
+
+  /// The maximum number of lines allowed when wrapping is enabled.
+  ///
+  /// Limits the total number of lines in the layout. Items exceeding this
+  /// limit may be hidden or handled according to overflow settings.
   final int? maxLines;
+
+  /// The padding applied inside the flex container.
+  ///
+  /// Adds space between the container's edges and the flex content.
+  /// Uses [EdgeSpacing] for responsive padding values.
   final EdgeSpacing padding;
+
+  /// The horizontal spacing between adjacent flex items.
+  ///
+  /// Applied between items in the main axis direction when flowing horizontally,
+  /// or between lines when flowing vertically and wrapping.
   final SpacingUnit horizontalSpacing;
+
+  /// The vertical spacing between adjacent flex items.
+  ///
+  /// Applied between items in the main axis direction when flowing vertically,
+  /// or between lines when flowing horizontally and wrapping.
   final SpacingUnit verticalSpacing;
 
-  /// Cross-axis alignment for all items in the line
-  // note: has baseline alignment and stretch alignment
+  /// The default cross-axis alignment for all items.
+  ///
+  /// Controls how items are positioned along the cross axis when they don't
+  /// fill the available space. Individual items can override this with their
+  /// alignSelf property. Supports baseline alignment for text elements.
   final BoxAlignmentGeometry alignItems;
 
-  /// Cross-axis alignment for all lines
-  // has stretch alignment, but no baseline alignment
+  /// The cross-axis alignment for flex lines when wrapping is enabled.
+  ///
+  /// Controls how multiple lines are distributed along the cross axis when
+  /// there is extra space. Only applies when [wrap] is not [FlexWrap.none].
+  /// Does not support baseline alignment (unlike [alignItems]).
   final BoxAlignmentContent alignContent;
 
-  /// Main-axis alignment for all items in the line
-  // note: does not have baseline alignment and stretch alignment
+  /// The main-axis alignment for items within each flex line.
+  ///
+  /// Controls how items are distributed along the main axis within their line.
+  /// Does not support baseline or stretch alignment (unlike [alignItems]).
   final BoxAlignmentBase justifyContent;
 
+  /// Creates a flex layout with the specified configuration.
+  ///
+  /// All parameters are optional with sensible defaults for a basic horizontal layout.
   const FlexLayout({
     this.direction = FlexDirection.row,
     this.wrap = FlexWrap.none,
@@ -61,20 +174,44 @@ class FlexLayout extends Layout {
     this.justifyContent = BoxAlignment.start,
   });
 
+  /// Creates a layout handle for performing flex layout operations.
+  ///
+  /// Returns a [FlexLayoutHandle] that encapsulates the flex algorithm
+  /// and provides methods for laying out children according to flex rules.
   @override
   LayoutHandle createLayoutHandle(ParentLayout parent) {
     return FlexLayoutHandle(this, parent);
   }
 }
 
+/// Cache for storing computed layout values for an entire flex layout.
+///
+/// FlexLayoutCache manages caching for the complete flex layout operation,
+/// including line management, spacing calculations, and line distribution.
+/// This cache is reused across layout passes to improve performance.
 class FlexLayoutCache {
+  /// The first flex line in the layout.
   FlexLineLayoutCache? firstLine;
+
+  /// The last flex line in the layout.
   FlexLineLayoutCache? lastLine;
+
+  /// Spacing before the first line in the cross axis.
   double crossStartSpacing = 0.0;
+
+  /// Spacing after the last line in the cross axis.
   double crossEndSpacing = 0.0;
+
+  /// Spacing between lines in the cross axis.
   double crossSpacing = 0.0;
+
+  /// The total number of lines in the layout.
   int lineCount = 0;
 
+  /// Allocates and returns a new flex line cache.
+  ///
+  /// Creates a new line, assigns it an index, and links it into the line chain.
+  /// Ensures that the previous line (if any) has at least one child.
   FlexLineLayoutCache allocateNewLine() {
     assert(
       lastLine == null || lastLine!.debugChildCount > 0,
@@ -95,27 +232,60 @@ class FlexLayoutCache {
   }
 }
 
+/// Cache for storing computed layout values for a single flex line.
+///
+/// FlexLineLayoutCache manages caching for individual lines within a flex layout.
+/// Each line contains multiple children and has its own sizing and alignment calculations.
+/// This cache tracks the line's dimensions, flex factors, and child count.
 class FlexLineLayoutCache {
-  // for layout purposes
+  /// The index of this line within the layout (0-based).
   int lineIndex = 0;
+
+  /// The total main-axis size of this line.
   double mainSize = 0.0;
+
+  /// The total cross-axis size of this line.
   double crossSize = 0.0;
+
+  /// The sum of all flexGrow factors for children in this line.
   double totalFlexGrow = 0.0;
+
+  /// The number of children in this line.
   int itemCount = 0;
+
+  /// The sum of all flexShrink factors for children in this line.
   double totalShrinkFactor = 0.0;
+
+  /// The amount of main-axis spacing used between items in this line.
   double usedMainSpacing = 0.0;
+
+  /// Spacing before the first item in the main axis.
   double mainSpacingStart = 0.0;
+
+  /// Spacing after the last item in the main axis.
   double mainSpacingEnd = 0.0;
+
+  /// Spacing between items in the main axis.
   double mainSpacing = 0.0;
 
+  /// The largest baseline value among children that need baseline alignment.
   double biggestBaseline = 0.0;
 
+  /// The first child in this line.
   ChildLayout? firstChild;
+
+  /// The last child in this line.
   ChildLayout? lastChild;
 
+  /// The previous line in the layout.
   FlexLineLayoutCache? previousLine;
+
+  /// The next line in the layout.
   FlexLineLayoutCache? nextLine;
 
+  /// Returns the number of children in this line for debugging purposes.
+  ///
+  /// Traverses the child linked list to count items. Only used in assertions.
   int get debugChildCount {
     int count = 0;
     ChildLayout? child = firstChild;
@@ -127,9 +297,27 @@ class FlexLineLayoutCache {
   }
 }
 
+/// Handle for performing flex layout operations.
+///
+/// FlexLayoutHandle implements the complete CSS Flexbox layout algorithm.
+/// It manages the complex multi-pass layout process including:
+///
+/// 1. **Line Breaking**: Distributing children into flex lines
+/// 2. **Main Axis Sizing**: Calculating sizes along the main axis with flex grow/shrink
+/// 3. **Cross Axis Sizing**: Calculating sizes along the cross axis
+/// 4. **Alignment**: Positioning items within lines and lines within the container
+/// 5. **Spacing**: Applying gaps between items and padding
+///
+/// The algorithm follows the CSS Flexbox specification closely, with optimizations
+/// for Flutter's layout system and support for RTL text directions.
 class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
+  /// Creates a flex layout handle for the given layout and parent.
   FlexLayoutHandle(super.layout, super.parent);
 
+  /// The layout cache for this flex operation.
+  ///
+  /// Only available after a full layout pass (not dry layout).
+  /// Contains cached values for lines, spacing, and sizing calculations.
   FlexLayoutCache? _cache;
 
   FlexLayoutCache get cache {
@@ -140,12 +328,22 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     return _cache!;
   }
 
+  /// Performs the complete flex layout algorithm.
+  ///
+  /// This method implements the multi-pass CSS Flexbox layout algorithm:
+  ///
+  /// 1. **Initialization**: Sets up viewport constraints and spacing calculations
+  /// 2. **Line Breaking**: Distributes children into flex lines based on wrapping rules
+  /// 3. **Main Axis Sizing**: Calculates flex grow/shrink for each line
+  /// 4. **Cross Axis Sizing**: Determines cross-axis sizes and alignment
+  /// 5. **Positioning**: Places children and lines within the container
+  ///
+  /// When [dry] is true, performs measurement without modifying child positions.
+  /// Absolute-positioned children are handled separately and don't affect sizing.
+  ///
+  /// Returns the total size needed for the layout content.
   @override
   LayoutSize performLayout(LayoutConstraints constraints, [bool dry = false]) {
-    // this method is called during dryLayout,
-    // only do things that change the size of the parent here
-    // only layout non-absolute children here
-    // because absolute children do not affect the size of the parent
     double viewportWidth = constraints.maxWidth;
     double viewportHeight = constraints.maxHeight;
     bool avoidWrapping = false;
@@ -796,18 +994,19 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     print('lines: ${lineHashes.join()}');
   }
 
+  /// Calculates the positioning rectangle for content within the viewport.
+  ///
+  /// This method determines how the flex content should be positioned within
+  /// the available viewport space, taking into account scrolling offsets and
+  /// content size. It handles the final positioning phase of flex layout.
+  ///
+  /// The returned rectangle defines the bounds of the visible content area
+  /// and is used for scrolling calculations and viewport management.
   @override
   LayoutRect performPositioning(
     LayoutSize viewportSize,
     LayoutSize contentSize,
   ) {
-    // this method is not called during dryLayout!
-    // so this method can only do something that does not change the
-    // size of the parent!
-    // here we positions children, align then, and re-adjust their size (stretch alignment)
-    // here we also define the size of absolute children
-    // and to finalize things out, we call child.layout here
-
     LayoutRect bounds = LayoutRect.zero;
 
     double viewportMainSize = switch (layout.direction.axis) {
@@ -1342,6 +1541,10 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     return bounds;
   }
 
+  /// Creates a new cache instance for flex child layout operations.
+  ///
+  /// Returns a [FlexChildLayoutCache] configured for storing flex-specific
+  /// layout calculations including basis sizes, flex factors, and alignment data.
   @override
   ChildLayoutCache setupCache() {
     return FlexChildLayoutCache();
