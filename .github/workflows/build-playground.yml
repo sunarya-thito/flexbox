@@ -19,7 +19,7 @@ jobs:
 
     - name: Enable Flutter Web
       run: flutter config --enable-web
-      working-directory: './docs'
+      working-directory: './demo'
 
     - name: Build Release Version
       run: "flutter build web --wasm --base-href \"/flexbox/\""
