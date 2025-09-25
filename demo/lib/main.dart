@@ -20,6 +20,7 @@ import 'package:demo/cases/case_rtl_wrap_reverse.dart';
 import 'package:demo/cases/case_rtl_wrap_reverse_column.dart';
 import 'package:demo/cases/case_rtl_wrap_reverse_column_reverse.dart';
 import 'package:demo/cases/case_scrollable.dart';
+import 'package:demo/cases/case_scrollable_absolute.dart';
 import 'package:demo/cases/case_scrollable_sticky.dart';
 import 'package:demo/cases/case_scrollable_unclipped.dart';
 import 'package:demo/cases/case_simple.dart';
@@ -114,6 +115,7 @@ final testCases = [
   CaseScrollable(),
   CaseScrollableSticky(),
   CaseUnclippedScrollable(),
+  CaseScrollableAbsolute(),
 
   // Wrap Content
   CaseWrapContentAround(),

@@ -1206,6 +1206,17 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         }
       }
 
+      preferredWidth = _clampNullableDouble(
+        preferredWidth,
+        0.0,
+        double.infinity,
+      );
+      preferredHeight = _clampNullableDouble(
+        preferredHeight,
+        0.0,
+        double.infinity,
+      );
+
       // use preferred size to layout the children
       child.layout(
         LayoutConstraints.tightFor(
@@ -1252,17 +1263,21 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     if (layout.direction.reverse) {
       reverseMain = !reverseMain;
     }
-    if (layout.direction.axis == LayoutAxis.horizontal &&
-        parent.textDirection == LayoutTextDirection.rtl) {
-      reverseMain = !reverseMain;
-    }
+    // ALREADY HANDLED BY THE ALIGNMENT
+    // if (layout.direction.axis == LayoutAxis.horizontal &&
+    //     parent.textDirection == LayoutTextDirection.rtl) {
+    //   reverseMain = !reverseMain;
+    // }
     if (reverseWrap) {
       reverseCross = !reverseCross;
     }
-    if (layout.direction.axis == LayoutAxis.vertical &&
-        parent.textDirection == LayoutTextDirection.rtl) {
-      reverseCross = !reverseCross;
-    }
+    // ALREADY HANDLED BY THE ALIGNMENT
+    // if (layout.direction.axis == LayoutAxis.vertical &&
+    //     parent.textDirection == LayoutTextDirection.rtl) {
+    //   reverseCross = !reverseCross;
+    // }
+
+    print('reverse main: $reverseMain, reverse cross: $reverseCross');
 
     double crossContentOffset = reverseCross
         ? contentCrossSize - cache.crossEndSpacing
@@ -1296,6 +1311,10 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           ? contentMainSize - line.mainSpacingEnd
           : line.mainSpacingStart;
 
+      if (line.lineIndex == 2) {
+        print('mainLineOffset: $mainLineOffset');
+      }
+
       final justifyContent = layout.justifyContent.align(
         parent: parent,
         axis: layout.direction.axis,
@@ -1305,6 +1324,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         maxBaseline: 0.0,
         childBaseline: 0.0,
       );
+
+      print('justifyContent: $justifyContent');
 
       mainLineOffset += justifyContent;
 
@@ -1328,7 +1349,6 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         final childCache = child.layoutCache as FlexChildLayoutCache;
 
         if (reverseMain) {
-          // subtract right away
           mainLineOffset -= childCache.mainFlexSize ?? 0.0;
         } else {
           if (childIndex > 0) {

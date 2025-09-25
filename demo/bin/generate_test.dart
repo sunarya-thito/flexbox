@@ -7,6 +7,6 @@ void main() {
   // although the process is automated,
   // the result still needs to be verified manually
   for (var testCase in testCases) {
-    testCase.generateTest();
+    testCase.generateTest(true);
   }
 }

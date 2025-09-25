@@ -23,7 +23,7 @@ abstract class TestCase {
     child: Center(child: build()),
   );
 
-  void generateTest() {
+  void generateTest([bool overwrite = false]) {
     testWidgets(name, (WidgetTester tester) async {
       print('--- GENERATED TEST FOR $fullPath ---');
       StringBuffer buffer = StringBuffer();
@@ -52,7 +52,7 @@ abstract class TestCase {
       // get the name without .dart
       String name = path.substring(0, path.length - 5);
       File file = File('test/${name}_test.dart');
-      if (file.existsSync()) {
+      if (file.existsSync() && !overwrite) {
         print('File test/${name}_test.dart already exists, skipping write.');
       } else {
         /* Should generate the following content:

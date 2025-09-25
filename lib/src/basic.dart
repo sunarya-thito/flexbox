@@ -462,10 +462,14 @@ class DirectionalBoxAlignment extends BoxAlignmentBase {
     required double childBaseline,
   }) {
     double center = (viewportSize - contentSize) / 2.0;
-    return switch (parent.textDirection) {
-      LayoutTextDirection.ltr => center + center * value,
-      LayoutTextDirection.rtl => center - center * value,
+    double value = switch ((axis, parent.textDirection)) {
+      // LayoutTextDirection.ltr => this.value,
+      // LayoutTextDirection.rtl => -this.value,
+      (LayoutAxis.horizontal, LayoutTextDirection.ltr) => this.value,
+      (LayoutAxis.horizontal, LayoutTextDirection.rtl) => -this.value,
+      (LayoutAxis.vertical, _) => this.value,
     };
+    return center + center * value;
   }
 }
 

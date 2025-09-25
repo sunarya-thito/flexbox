@@ -426,9 +426,9 @@ class FlexBox extends StatelessWidget {
   ///   wrap: FlexWrap.wrap,
   ///   alignItems: BoxAlignmentGeometry.center,
   ///   justifyContent: BoxAlignmentBase.spaceBetween,
-  ///   padding: EdgeSpacing.all(SizeUnit.dp(16)),
-  ///   horizontalSpacing: SpacingUnit.dp(8),
-  ///   verticalSpacing: SpacingUnit.dp(8),
+  ///   padding: EdgeSpacing.all(SizeUnit.fixed(16)),
+  ///   horizontalSpacing: SpacingUnit.fixed(8),
+  ///   verticalSpacing: SpacingUnit.fixed(8),
   ///   children: [
   ///     FlexItem(child: Text('Item 1')),
   ///     FlexItem(child: Text('Item 2')),
@@ -513,4 +513,316 @@ class FlexBox extends StatelessWidget {
       children: children,
     );
   }
+}
+
+/// A convenience widget for creating horizontal flex layouts.
+///
+/// [RowBox] is a specialized version of [FlexBox] that automatically sets
+/// the [direction] to [FlexDirection.row], creating a horizontal layout
+/// where children flow from left to right (or right to left in RTL languages).
+///
+/// This widget provides all the same flexbox features as [FlexBox] but with
+/// a simpler API for the common case of horizontal layouts.
+///
+/// ## Example
+///
+/// ```dart
+/// RowBox(
+///   alignItems: BoxAlignmentGeometry.center,
+///   justifyContent: BoxAlignmentBase.spaceBetween,
+///   horizontalSpacing: SpacingUnit.fixed(16),
+///   children: [
+///     FlexItem(child: Text('Left')),
+///     FlexItem(child: Text('Center')),
+///     FlexItem(child: Text('Right')),
+///   ],
+/// )
+/// ```
+///
+/// ## Reverse Direction
+///
+/// Use the [reverse] parameter or [RowBox.reverse] constructor for reverse flow:
+///
+/// ```dart
+/// RowBox(
+///   reverse: true, // or use RowBox.reverse()
+///   children: [/* items flow right to left */],
+/// )
+/// ```
+///
+/// ## Equivalent to
+///
+/// ```dart
+/// FlexBox(
+///   direction: FlexDirection.row,
+///   // ... other properties
+///   children: children,
+/// )
+/// ```
+class RowBox extends FlexBox {
+  /// Creates a horizontal flex layout container.
+  ///
+  /// All parameters are the same as [FlexBox] except [direction] which is
+  /// automatically set to [FlexDirection.row]. Use this widget when you
+  /// want children to flow horizontally.
+  ///
+  /// The [reverse] parameter controls the flow direction:
+  /// - `false` (default): Items flow left to right (right to left in RTL)
+  /// - `true`: Items flow right to left (left to right in RTL)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// RowBox(
+  ///   wrap: FlexWrap.wrap,
+  ///   alignItems: BoxAlignmentGeometry.center,
+  ///   padding: EdgeSpacing.all(SpacingUnit.fixed(16)),
+  ///   children: [
+  ///     FlexItem(flexGrow: 1, child: Text('Flexible')),
+  ///     FlexItem(width: SizeUnit.fixed(100), child: Text('Fixed')),
+  ///   ],
+  /// )
+  /// ```
+  ///
+  /// ## Reverse Example
+  ///
+  /// ```dart
+  /// RowBox(
+  ///   reverse: true,
+  ///   justifyContent: BoxAlignmentBase.end,
+  ///   children: [/* items in reverse order */],
+  /// )
+  /// ```
+  const RowBox({
+    super.key,
+    super.wrap,
+    super.maxItemsPerLine,
+    super.maxLines,
+    super.padding,
+    super.horizontalSpacing,
+    super.verticalSpacing,
+    super.alignItems,
+    super.alignContent,
+    super.justifyContent,
+    super.textDirection,
+    super.reversePaint,
+    super.verticalController,
+    super.horizontalController,
+    super.diagonalDragBehavior,
+    super.horizontalOverflow,
+    super.verticalOverflow,
+    super.textBaseline,
+    super.clipBehavior,
+    super.borderRadius,
+    super.children = const [],
+    bool reverse = false,
+  }) : super(direction: reverse ? FlexDirection.rowReverse : FlexDirection.row);
+
+  /// Creates a horizontal flex layout container with reverse flow direction.
+  ///
+  /// This is equivalent to `RowBox(reverse: true, ...)` but provides a more
+  /// explicit API for reverse horizontal layouts.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// RowBox.reverse(
+  ///   alignItems: BoxAlignmentGeometry.center,
+  ///   children: [
+  ///     FlexItem(child: Text('First (appears last)')),
+  ///     FlexItem(child: Text('Second (appears first)')),
+  ///   ],
+  /// )
+  /// ```
+  ///
+  /// ## Equivalent to
+  ///
+  /// ```dart
+  /// FlexBox(
+  ///   direction: FlexDirection.rowReverse,
+  ///   // ... other properties
+  ///   children: children,
+  /// )
+  /// ```
+  const RowBox.reverse({
+    super.key,
+    super.wrap,
+    super.maxItemsPerLine,
+    super.maxLines,
+    super.padding,
+    super.horizontalSpacing,
+    super.verticalSpacing,
+    super.alignItems,
+    super.alignContent,
+    super.justifyContent,
+    super.textDirection,
+    super.reversePaint,
+    super.verticalController,
+    super.horizontalController,
+    super.diagonalDragBehavior,
+    super.horizontalOverflow,
+    super.verticalOverflow,
+    super.textBaseline,
+    super.clipBehavior,
+    super.borderRadius,
+    super.children = const [],
+  }) : super(direction: FlexDirection.rowReverse);
+}
+
+/// A convenience widget for creating vertical flex layouts.
+///
+/// [ColumnBox] is a specialized version of [FlexBox] that automatically sets
+/// the [direction] to [FlexDirection.column], creating a vertical layout
+/// where children flow from top to bottom.
+///
+/// This widget provides all the same flexbox features as [FlexBox] but with
+/// a simpler API for the common case of vertical layouts.
+///
+/// ## Example
+///
+/// ```dart
+/// ColumnBox(
+///   alignItems: BoxAlignmentGeometry.center,
+///   justifyContent: BoxAlignmentBase.spaceEvenly,
+///   verticalSpacing: SpacingUnit.fixed(12),
+///   children: [
+///     FlexItem(child: Text('Top')),
+///     FlexItem(child: Text('Middle')),
+///     FlexItem(child: Text('Bottom')),
+///   ],
+/// )
+/// ```
+///
+/// ## Reverse Direction
+///
+/// Use the [reverse] parameter or [ColumnBox.reverse] constructor for reverse flow:
+///
+/// ```dart
+/// ColumnBox(
+///   reverse: true, // or use ColumnBox.reverse()
+///   children: [/* items flow bottom to top */],
+/// )
+/// ```
+///
+/// ## Equivalent to
+///
+/// ```dart
+/// FlexBox(
+///   direction: FlexDirection.column,
+///   // ... other properties
+///   children: children,
+/// )
+/// ```
+class ColumnBox extends FlexBox {
+  /// Creates a vertical flex layout container.
+  ///
+  /// All parameters are the same as [FlexBox] except [direction] which is
+  /// automatically set to [FlexDirection.column]. Use this widget when you
+  /// want children to flow vertically.
+  ///
+  /// The [reverse] parameter controls the flow direction:
+  /// - `false` (default): Items flow top to bottom
+  /// - `true`: Items flow bottom to top
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// ColumnBox(
+  ///   wrap: FlexWrap.wrap,
+  ///   alignItems: BoxAlignmentGeometry.stretch,
+  ///   padding: EdgeSpacing.all(SpacingUnit.fixed(16)),
+  ///   children: [
+  ///     FlexItem(height: SizeUnit.fixed(50), child: Text('Fixed Height')),
+  ///     FlexItem(flexGrow: 1, child: Text('Flexible')),
+  ///   ],
+  /// )
+  /// ```
+  ///
+  /// ## Reverse Example
+  ///
+  /// ```dart
+  /// ColumnBox(
+  ///   reverse: true,
+  ///   justifyContent: BoxAlignmentBase.end,
+  ///   children: [/* items in reverse order */],
+  /// )
+  /// ```
+  const ColumnBox({
+    super.key,
+    super.wrap,
+    super.maxItemsPerLine,
+    super.maxLines,
+    super.padding,
+    super.horizontalSpacing,
+    super.verticalSpacing,
+    super.alignItems,
+    super.alignContent,
+    super.justifyContent,
+    super.textDirection,
+    super.reversePaint,
+    super.verticalController,
+    super.horizontalController,
+    super.diagonalDragBehavior,
+    super.horizontalOverflow,
+    super.verticalOverflow,
+    super.textBaseline,
+    super.clipBehavior,
+    super.borderRadius,
+    super.children = const [],
+    bool reverse = false,
+  }) : super(
+         direction: reverse
+             ? FlexDirection.columnReverse
+             : FlexDirection.column,
+       );
+
+  /// Creates a vertical flex layout container with reverse flow direction.
+  ///
+  /// This is equivalent to `ColumnBox(reverse: true, ...)` but provides a more
+  /// explicit API for reverse vertical layouts.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// ColumnBox.reverse(
+  ///   alignItems: BoxAlignmentGeometry.center,
+  ///   children: [
+  ///     FlexItem(child: Text('First (appears last)')),
+  ///     FlexItem(child: Text('Second (appears first)')),
+  ///   ],
+  /// )
+  /// ```
+  ///
+  /// ## Equivalent to
+  ///
+  /// ```dart
+  /// FlexBox(
+  ///   direction: FlexDirection.columnReverse,
+  ///   // ... other properties
+  ///   children: children,
+  /// )
+  /// ```
+  const ColumnBox.reverse({
+    super.key,
+    super.wrap,
+    super.maxItemsPerLine,
+    super.maxLines,
+    super.padding,
+    super.horizontalSpacing,
+    super.verticalSpacing,
+    super.alignItems,
+    super.alignContent,
+    super.justifyContent,
+    super.textDirection,
+    super.reversePaint,
+    super.verticalController,
+    super.horizontalController,
+    super.diagonalDragBehavior,
+    super.horizontalOverflow,
+    super.verticalOverflow,
+    super.textBaseline,
+    super.clipBehavior,
+    super.borderRadius,
+    super.children = const [],
+  }) : super(direction: FlexDirection.columnReverse);
 }
