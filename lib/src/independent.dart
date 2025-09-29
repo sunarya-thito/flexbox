@@ -91,7 +91,7 @@ class Box with ParentLayout {
       assert(!visited.contains(child), 'Cycle detected in child list.');
       int current = child.debugKey as int;
       assert(
-        previous == null || previous! < current,
+        previous == null || previous < current,
         'Children are not in the expected order. Previous: $previous, Current: $current',
       );
       visited.add(child);

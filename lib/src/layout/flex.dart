@@ -330,22 +330,6 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     return _cache!;
   }
 
-  void debugPrintSizes() {
-    // print: {debugKey: size, ...}
-    List<String> sizes = [];
-    ChildLayout? child = parent.firstLayoutChild;
-    while (child != null) {
-      final key = child.debugKey ?? child.hashCode;
-      final cache = child.layoutCache as FlexChildLayoutCache;
-      final size = cache.mainFlexSize != null && cache.crossSize != null
-          ? '(${cache.mainFlexSize!.toStringAsFixed(1)}, ${cache.crossSize!.toStringAsFixed(1)})'
-          : '(?, ?)';
-      sizes.add('$key: $size');
-      child = child.nextSibling;
-    }
-    print('{${sizes.join(', ')}}');
-  }
-
   /// Performs the complete flex layout algorithm.
   ///
   /// This method implements the multi-pass CSS Flexbox layout algorithm:
@@ -700,9 +684,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         double biggestLineCrossSize = 0.0;
         ChildLayout? child = line.firstChild;
         ChildLayout? lastChild = line.lastChild;
-        int childIndex = -1;
         while (child != null && child != lastChild) {
-          childIndex++;
           if (child.layoutData.behavior == LayoutBehavior.absolute) {
             child = child.nextSibling;
             continue;
