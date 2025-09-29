@@ -1,6 +1,6 @@
 name: flexiblebox
 description: "An attempt to bring css flexbox layout to flutter"
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/sunarya-thito/flexbox
 
 environment:

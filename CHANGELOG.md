@@ -1,3 +1,7 @@
+## 0.0.3
+
+- Fixed incorrect LICENSE file reference in README.md
+
 ## 0.0.2
 
 - Fully reworked the package structure and API.
