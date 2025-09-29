@@ -110,9 +110,9 @@ RowBox(
   alignItems: BoxAlignmentGeometry.center,
   justifyContent: BoxAlignmentBase.spaceBetween,
   children: [
-    FlexItem(child: Text('Left')),
-    FlexItem(child: Text('Center')),
-    FlexItem(child: Text('Right')),
+    Text('Left'),
+    Text('Center'),
+    Text('Right'),
   ],
 )
 ```
@@ -127,121 +127,9 @@ ColumnBox(
   justifyContent: BoxAlignmentBase.start,
   columnGap: SpacingUnit.fixed(12.0),
   children: [
-    FlexItem(child: Text('Top')),
-    FlexItem(child: Text('Middle')),
-    FlexItem(child: Text('Bottom')),
-  ],
-)
-```
-
-## Advanced Examples
-
-### Responsive Card Layout
-
-```dart
-FlexBox(
-  direction: FlexDirection.row,
-  wrap: FlexWrap.wrap,
-  alignItems: BoxAlignmentGeometry.start,
-  rowGap: SpacingUnit.fixed(16.0),
-  columnGap: SpacingUnit.fixed(16.0),
-  children: [
-    FlexItem(
-      flexGrow: 1.0,
-      minWidth: SizeUnit.fixed(280.0),
-      child: Card(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Card Title', style: Theme.of(context).textTheme.headline6),
-              SizedBox(height: 8.0),
-              Text('Card content goes here...'),
-            ],
-          ),
-        ),
-      ),
-    ),
-    // More cards...
-  ],
-)
-```
-
-### Holy Grail Layout
-
-```dart
-ColumnBox(
-  children: [
-    FlexItem(
-      height: SizeUnit.fixed(64.0),
-      child: AppBar(title: Text('Header')),
-    ),
-    FlexItem(
-      flexGrow: 1.0,
-      child: FlexBox(
-        direction: FlexDirection.row,
-        children: [
-          FlexItem(
-            width: SizeUnit.fixed(200.0),
-            child: Sidebar(),
-          ),
-          FlexItem(
-            flexGrow: 1.0,
-            child: MainContent(),
-          ),
-          FlexItem(
-            width: SizeUnit.fixed(200.0),
-            child: RightPanel(),
-          ),
-        ],
-      ),
-    ),
-    FlexItem(
-      height: SizeUnit.fixed(64.0),
-      child: Footer(),
-    ),
-  ],
-)
-```
-
-### Scrollable Content
-
-```dart
-ScrollableFlexBox(
-  direction: FlexDirection.column,
-  verticalController: ScrollController(),
-  children: List.generate(
-    50,
-    (index) => FlexItem(
-      height: SizeUnit.fixed(60.0),
-      child: ListTile(title: Text('Item $index')),
-    ),
-  ),
-)
-```
-
-### Absolute Positioning
-
-```dart
-FlexBox(
-  direction: FlexDirection.row,
-  children: [
-    FlexItem(
-      flexGrow: 1.0,
-      child: Container(color: Colors.grey),
-    ),
-    AbsoluteItem(
-      top: PositionUnit.fixed(20.0),
-      right: PositionUnit.fixed(20.0),
-      width: SizeUnit.fixed(100.0),
-      height: SizeUnit.fixed(100.0),
-      paintOrder: 1,
-      child: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.add),
-      ),
-    ),
+    Text('Top'),
+    Text('Middle'),
+    Text('Bottom'),
   ],
 )
 ```
@@ -342,6 +230,7 @@ Key classes:
 - [FlexItem](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/FlexItem-class.html)
 - [RowBox](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/RowBox-class.html)
 - [ColumnBox](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/ColumnBox-class.html)
+- [AbsoluteItem](https://pub.dev/documentation/flexiblebox/latest/flexiblebox_flutter/AbsoluteItem-class.html)
 
 ## Testing
 
@@ -381,4 +270,4 @@ for details.
 
 ---
 
-Made with ❤️ for the Flutter community</content>
+Made with ❤️ for the Flutter community

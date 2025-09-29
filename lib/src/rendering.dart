@@ -85,10 +85,14 @@ class RenderLayoutBox extends RenderBox
   LayoutSize get viewportSize => layoutSizeFromSize(size);
 
   @override
-  double get scrollOffsetX => horizontal.pixels;
+  double get scrollOffsetX => horizontalOverflow.reverse
+      ? contentSize.width - viewportSize.width - horizontal.pixels
+      : horizontal.pixels;
 
   @override
-  double get scrollOffsetY => vertical.pixels;
+  double get scrollOffsetY => verticalOverflow.reverse
+      ? contentSize.height - viewportSize.height - vertical.pixels
+      : vertical.pixels;
 
   @override
   void adoptChild(RenderObject child) {
@@ -430,12 +434,12 @@ class RenderLayoutBox extends RenderBox
     LayoutSize contentSize = layoutHandle.performLayout(layoutConstraints);
     final viewportSize = layoutConstraints.constrain(contentSize);
     _contentSize = contentSize;
+    size = sizeFromLayoutSize(viewportSize);
     _contentBounds = layoutHandle.performPositioning(
       viewportSize,
       contentSize,
     );
     assert(contentSize.width.isFinite && contentSize.height.isFinite);
-    size = sizeFromLayoutSize(viewportSize);
     horizontal.applyViewportDimension(size.width);
     vertical.applyViewportDimension(size.height);
     horizontal.applyContentDimensions(

@@ -127,21 +127,21 @@ final class LayoutData {
   /// )
   /// ```
   LayoutData({
-    required this.behavior,
-    required this.flexGrow,
-    required this.flexShrink,
-    required this.paintOrder,
-    required this.width,
-    required this.height,
+    this.behavior = LayoutBehavior.none,
+    this.flexGrow = 0.0,
+    this.flexShrink = 0.0,
+    this.paintOrder,
+    this.width = SizeUnit.fitContent,
+    this.height = SizeUnit.fitContent,
     this.minWidth,
     this.maxWidth,
     this.minHeight,
     this.maxHeight,
-    required this.top,
-    required this.left,
-    required this.right,
-    required this.bottom,
-    required this.aspectRatio,
+    this.top,
+    this.left,
+    this.right,
+    this.bottom,
+    this.aspectRatio,
     this.alignSelf,
   });
 
@@ -767,6 +767,8 @@ mixin ParentLayout {
 abstract class Layout {
   /// Creates a layout algorithm instance.
   const Layout();
+
+  LayoutAxis get mainAxis;
 
   /// Creates a layout handle for performing layout operations.
   ///

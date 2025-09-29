@@ -21,7 +21,7 @@ class CaseFlexGrowConstrainedWidth extends TestCase {
           children: [
             FlexItem(
               key: key1,
-              width: SizeUnit.fixed(50),
+              flexGrow: 1.0,
               height: SizeUnit.fixed(100),
               child: Box(1),
             ),

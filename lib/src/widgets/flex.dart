@@ -490,6 +490,8 @@ class FlexBox extends StatelessWidget {
       horizontalOverflow: horizontalOverflow,
       verticalOverflow: verticalOverflow,
       diagonalDragBehavior: diagonalDragBehavior,
+      reverseHorizontalScroll: horizontalOverflow.reverse,
+      reverseVerticalScroll: verticalOverflow.reverse,
       mainScrollDirection: direction.axis == LayoutAxis.horizontal
           ? Axis.vertical
           : Axis.horizontal,

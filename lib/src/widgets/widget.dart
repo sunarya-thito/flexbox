@@ -509,6 +509,9 @@ class LayoutBox extends StatelessWidget {
   /// the best performance but may show sharp edges.
   final Clip clipBehavior;
 
+  final bool reverseHorizontalScroll;
+  final bool reverseVerticalScroll;
+
   /// Creates a layout container with the specified properties.
   ///
   /// The [layout] and [children] parameters are required. The layout defines
@@ -540,6 +543,8 @@ class LayoutBox extends StatelessWidget {
     this.textBaseline,
     this.borderRadius,
     this.clipBehavior = Clip.hardEdge,
+    this.reverseHorizontalScroll = false,
+    this.reverseVerticalScroll = false,
     required this.layout,
     required this.children,
   });
@@ -562,12 +567,14 @@ class LayoutBox extends StatelessWidget {
         TextDirection.ltr;
     final horizontalDetails = ScrollableDetails.horizontal(
       controller: horizontalController,
+      reverse: reverseHorizontalScroll,
       physics: !horizontalOverflow.scrollable
           ? const NeverScrollableScrollPhysics()
           : null,
     );
     final verticalDetails = ScrollableDetails.vertical(
       controller: verticalController,
+      reverse: reverseVerticalScroll,
       physics: !verticalOverflow.scrollable
           ? const NeverScrollableScrollPhysics()
           : null,

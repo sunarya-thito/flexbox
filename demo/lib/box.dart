@@ -49,12 +49,15 @@ class _BoxState extends State<Box> {
               ),
               child:
                   widget.child ??
-                  Text(
-                    '${widget.number}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                  Opacity(
+                    opacity: 0.7,
+                    child: Text(
+                      '${widget.number}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 0, 0, 0),
+                      ),
                     ),
                   ),
             ),

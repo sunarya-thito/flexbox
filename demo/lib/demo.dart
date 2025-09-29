@@ -75,6 +75,7 @@ class _DemoAppState extends State<DemoApp> {
                   fit: StackFit.passthrough,
                   children: [
                     Center(
+                      key: Key('case_$selectedIndex'),
                       child: widget.testCases[selectedIndex].build(),
                     ),
                   ],

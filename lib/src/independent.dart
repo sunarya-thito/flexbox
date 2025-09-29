@@ -33,8 +33,10 @@ class Box with ParentLayout {
   @override
   double scrollOffsetY;
 
-  List<Box> _children;
+  late List<Box> _children;
   Box? _parent;
+
+  Object? debugKey;
 
   LayoutSize? _contentSize;
   LayoutRect? _contentBounds;
@@ -45,27 +47,97 @@ class Box with ParentLayout {
     required this.horizontalOverflow,
     required this.verticalOverflow,
     required this.boxLayout,
+    LayoutData? layoutData,
     this.textBaseline,
     this.scrollOffsetX = 0.0,
     this.scrollOffsetY = 0.0,
-    required List<Box> children,
-  }) : _children = children {
-    _attachChildren(children);
+    List<Box>? children,
+    this.debugKey,
+  }) {
+    parentData.layoutData = layoutData;
+    if (children != null) {
+      _attachChildren(children);
+    } else {
+      _children = [];
+      _childCount = 0;
+      _firstChild = null;
+      _lastChild = null;
+    }
   }
 
-  void _attachChildren(List<Box> children) {}
+  void _attachChildren(List<Box> children) {
+    for (final child in children) {
+      assert(child._parent == null, 'Child is already attached to a parent.');
+      child._parent = this;
+    }
+    _children = children;
+    _childCount = children.length;
+    _firstChild = children.isNotEmpty ? children.first : null;
+    _lastChild = children.isNotEmpty ? children.last : null;
+    for (int i = 0; i < children.length; i++) {
+      final child = children[i];
+      final parentData = child.parentData;
+      parentData.previousSibling = i > 0 ? children[i - 1] : null;
+      parentData.nextSibling = i < children.length - 1 ? children[i + 1] : null;
+    }
 
-  void attach(Box parent) {
-    _parent = parent;
+    Set<Box> visited = {};
+    int? previous;
+    for (
+      var child = firstChild;
+      child != null;
+      child = child.parentData.nextSibling
+    ) {
+      assert(!visited.contains(child), 'Cycle detected in child list.');
+      int current = child.debugKey as int;
+      assert(
+        previous == null || previous! < current,
+        'Children are not in the expected order. Previous: $previous, Current: $current',
+      );
+      visited.add(child);
+      previous = current;
+    }
+
+    markNeedsLayout();
   }
 
-  void detach(Box parent) {
-    _parent = null;
+  void addChild(Box child) {
+    _attachChildren([..._children, child]);
+    markNeedsLayout();
   }
 
-  void adoptChild(Box parent) {}
+  void addChildren(List<Box> children) {
+    _attachChildren([..._children, ...children]);
+    markNeedsLayout();
+  }
 
-  void dropChild(Box parent) {}
+  void attach(LayoutPipelineOwner owner) {
+    detach();
+    assert(_owner == null);
+    _owner = owner;
+    for (final child in _children) {
+      child.attach(owner);
+    }
+  }
+
+  void detach() {
+    assert(_owner != null);
+    _owner = null;
+    for (final child in _children) {
+      child.detach();
+    }
+  }
+
+  void removeChild(Box child) {
+    final index = _children.indexOf(child);
+    if (index == -1) return;
+    final newChildren = List<Box>.from(_children)..removeAt(index);
+    _attachChildren(newChildren);
+    child._parent = null;
+    child.parentData.nextSibling = null;
+    child.parentData.previousSibling = null;
+    markNeedsLayout();
+  }
 
   Box? _firstSortedChild;
   Box? _lastSortedChild;
@@ -85,12 +157,11 @@ class Box with ParentLayout {
 
   LayoutSize get size => _viewportSize!;
   set size(LayoutSize size) {
-    this.size = size;
+    _viewportSize = size;
   }
 
   bool get hasSize => _viewportSize != null;
 
-  @override
   void performLayout() {
     bool needsSorting = false;
     LayoutHandle layoutHandle = boxLayout.createLayoutHandle(this);
@@ -107,6 +178,18 @@ class Box with ParentLayout {
     LayoutSize contentSize = layoutHandle.performLayout(layoutConstraints);
     final viewportSize = layoutConstraints.constrain(contentSize);
     _contentSize = contentSize;
+    assert(() {
+      bool hasCache = true;
+      Box? child = firstChild;
+      while (child != null) {
+        if (child.parentData.cache == null) {
+          hasCache = false;
+          break;
+        }
+        child = child.parentData.nextSibling;
+      }
+      return hasCache;
+    }(), 'Not all children have layout cache after layout.');
     _contentBounds = layoutHandle.performPositioning(
       viewportSize,
       contentSize,
@@ -385,17 +468,66 @@ class Box with ParentLayout {
     return layoutHandle.computeMaxIntrinsicWidth(height);
   }
 
-  double? getDistanceToBaseline(LayoutTextBaseline baseline) {}
+  double? getDistanceToBaseline(LayoutTextBaseline baseline) {
+    return switch (boxLayout.mainAxis) {
+      LayoutAxis.horizontal => defaultComputeDistanceToHighestActualBaseline(
+        baseline,
+      ),
+      LayoutAxis.vertical => defaultComputeDistanceToFirstActualBaseline(
+        baseline,
+      ),
+    };
+  }
+
+  double? defaultComputeDistanceToHighestActualBaseline(
+    LayoutTextBaseline baseline,
+  ) {
+    LayoutBaselineOffset minBaseline = LayoutBaselineOffset.noBaseline;
+    Box? child = firstChild;
+    while (child != null) {
+      final childParentData = child.parentData;
+      final LayoutBaselineOffset candidate =
+          LayoutBaselineOffset(child.getDistanceToBaseline(baseline)) +
+          childParentData.offset.dy;
+      minBaseline = minBaseline.minOf(candidate);
+      child = childParentData.nextSibling;
+    }
+    return minBaseline.offset;
+  }
+
+  double? defaultComputeDistanceToFirstActualBaseline(
+    LayoutTextBaseline baseline,
+  ) {
+    Box? child = firstChild;
+    while (child != null) {
+      final childParentData = child.parentData;
+      final double? result = child.getDistanceToBaseline(baseline);
+      if (result != null) {
+        return result + childParentData.offset.dy;
+      }
+      child = childParentData.nextSibling;
+    }
+    return null;
+  }
 }
 
 class LayoutPipelineOwner {
-  List<Box> _nodesNeedingLayout = [];
-  void requestVisualUpdate() {}
+  final List<Box> _nodesNeedingLayout = [];
+  final void Function()? onNeedVisualUpdate;
+
+  LayoutPipelineOwner({this.onNeedVisualUpdate});
+
+  void requestVisualUpdate() {
+    onNeedVisualUpdate?.call();
+  }
 }
 
 class BoxChildLayout with ChildLayout {
   final Box box;
   BoxChildLayout(this.box);
+
+  @override
+  Object? get debugKey => box.debugKey;
 
   @override
   LayoutOffset get offset => box.parentData.offset;
@@ -407,6 +539,7 @@ class BoxChildLayout with ChildLayout {
 
   @override
   void clearCache() {
+    // assert(false, 'Clearing cache on child layout is not supported.');
     box.parentData.cache = null;
   }
 
@@ -446,7 +579,13 @@ class BoxChildLayout with ChildLayout {
   }
 
   @override
-  ChildLayoutCache get layoutCache => box.parentData.cache!;
+  ChildLayoutCache get layoutCache {
+    assert(
+      box.parentData.cache != null,
+      'Layout cache is not set. Did you forget to call setupCache()?',
+    );
+    return box.parentData.cache!;
+  }
 
   @override
   LayoutData get layoutData => box.parentData.layoutData!;
@@ -465,4 +604,21 @@ class BoxChildLayout with ChildLayout {
 
   @override
   LayoutSize get size => box.size;
+}
+
+extension type const LayoutBaselineOffset(double? offset) {
+  static const LayoutBaselineOffset noBaseline = LayoutBaselineOffset(null);
+
+  LayoutBaselineOffset operator +(double offset) {
+    final double? value = this.offset;
+    return LayoutBaselineOffset(value == null ? null : value + offset);
+  }
+
+  LayoutBaselineOffset minOf(LayoutBaselineOffset other) {
+    return switch ((this, other)) {
+      (final double lhs?, final double rhs?) => lhs >= rhs ? other : this,
+      (final double lhs?, null) => LayoutBaselineOffset(lhs),
+      (null, final LayoutBaselineOffset rhs) => rhs,
+    };
+  }
 }

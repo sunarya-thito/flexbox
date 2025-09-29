@@ -569,34 +569,47 @@ final class LayoutOverflow {
   ///
   /// The container will expand to accommodate all content, and content
   /// may overflow the container boundaries without being hidden.
-  static const LayoutOverflow visible = LayoutOverflow(false, false);
+  static const LayoutOverflow visible = LayoutOverflow(false, false, false);
 
   /// Content scrolls and is clipped.
   ///
   /// Content that exceeds the container size will be clipped (hidden),
   /// and the container becomes scrollable to access overflowed content.
   /// This is the most common behavior for scrollable content.
-  static const LayoutOverflow hidden = LayoutOverflow(true, true);
+  static const LayoutOverflow hidden = LayoutOverflow(true, true, false);
+
+  /// Content scrolls and is clipped, with reversed scroll direction.
+  ///
+  /// Similar to [hidden], but the scroll direction is reversed.
+  static const LayoutOverflow hiddenReverse = LayoutOverflow(true, true, true);
 
   /// Content scrolls but is not clipped.
   ///
   /// The container becomes scrollable, but overflowed content remains
   /// visible outside the container boundaries. This can be useful for
   /// creating custom scrolling effects.
-  static const LayoutOverflow scroll = LayoutOverflow(true, false);
+  static const LayoutOverflow scroll = LayoutOverflow(true, false, false);
+
+  /// Content scrolls but is not clipped, with reversed scroll direction.
+  ///
+  /// Similar to [scroll], but the scroll direction is reversed.
+  static const LayoutOverflow scrollReverse = LayoutOverflow(true, false, true);
 
   /// Content does not scroll but is clipped.
   ///
   /// Content that exceeds the container size is clipped and hidden,
   /// but the container does not provide scrolling to access it.
   /// This effectively hides any overflow without scrollbars.
-  static const LayoutOverflow clip = LayoutOverflow(false, true);
+  static const LayoutOverflow clip = LayoutOverflow(false, true, false);
 
   /// Whether the content can be scrolled within the container.
   final bool scrollable;
 
   /// Whether content that exceeds the container bounds should be clipped (hidden).
   final bool clipContent;
+
+  /// Whether the scroll direction is reversed.
+  final bool reverse;
 
   /// Creates a layout overflow configuration.
   ///
@@ -606,22 +619,24 @@ final class LayoutOverflow {
   /// - scrollable=true, clipContent=true: Content scrolls and is clipped (hidden)
   /// - scrollable=true, clipContent=false: Content scrolls but remains visible (scroll)
   /// - scrollable=false, clipContent=true: Content is clipped but not scrollable (clip)
-  const LayoutOverflow(this.scrollable, this.clipContent);
+  const LayoutOverflow(this.scrollable, this.clipContent, this.reverse);
 
   @override
   String toString() {
-    return 'LayoutOverflow(scrollable: $scrollable, clip: $clipContent)';
+    return 'LayoutOverflow(scrollable: $scrollable, clip: $clipContent, reverse: $reverse)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! LayoutOverflow) return false;
-    return scrollable == other.scrollable && clipContent == other.clipContent;
+    return scrollable == other.scrollable &&
+        clipContent == other.clipContent &&
+        reverse == other.reverse;
   }
 
   @override
-  int get hashCode => Object.hash(scrollable, clipContent);
+  int get hashCode => Object.hash(scrollable, clipContent, reverse);
 }
 
 // Units:
@@ -1121,143 +1136,6 @@ class _ConstrainedPosition implements PositionUnit {
       direction: direction,
     );
     return pos.clamp(minPos, maxPos);
-  }
-}
-
-abstract class EdgePositionGeometry {
-  /// The position offset from the top edge.
-  final PositionUnit top;
-
-  /// The position offset from the bottom edge.
-  final PositionUnit bottom;
-
-  const EdgePositionGeometry({
-    this.top = PositionUnit.zero,
-    this.bottom = PositionUnit.zero,
-  });
-
-  /// Resolves directional positions (start/end) to absolute positions (left/right)
-  /// based on the text direction.
-  EdgePosition resolve(LayoutTextDirection direction);
-}
-
-/// Defines position offsets for all four edges of a rectangle.
-///
-/// This class represents absolute positioning from each edge (left, top, right, bottom).
-/// The positions are resolved to actual coordinate values during layout.
-///
-/// Use this for positioning that doesn't depend on text direction, or when you
-/// need explicit control over left/right positioning.
-class EdgePosition extends EdgePositionGeometry {
-  /// The position offset from the left edge.
-  final PositionUnit left;
-
-  /// The position offset from the right edge.
-  final PositionUnit right;
-
-  /// Creates an EdgePosition with individual edge values.
-  const EdgePosition.only({
-    this.left = PositionUnit.zero,
-    this.right = PositionUnit.zero,
-    super.top,
-    super.bottom,
-  }) : super();
-
-  /// Creates an EdgePosition with the same value for all edges.
-  const EdgePosition.all(PositionUnit value)
-    : left = value,
-      right = value,
-      super(
-        top: value,
-        bottom: value,
-      );
-
-  /// Creates an EdgePosition with symmetric horizontal and vertical values.
-  const EdgePosition.symmetric({
-    PositionUnit horizontal = PositionUnit.zero,
-    PositionUnit vertical = PositionUnit.zero,
-  }) : left = horizontal,
-       right = horizontal,
-       super(
-         top: vertical,
-         bottom: vertical,
-       );
-
-  /// Linearly interpolates between two EdgePosition instances.
-  static EdgePosition lerp(EdgePosition a, EdgePosition b, double t) {
-    if (t <= 0.0) return a;
-    if (t >= 1.0) return b;
-    return EdgePosition.only(
-      left: PositionUnit.lerp(a.left, b.left, t),
-      top: PositionUnit.lerp(a.top, b.top, t),
-      right: PositionUnit.lerp(a.right, b.right, t),
-      bottom: PositionUnit.lerp(a.bottom, b.bottom, t),
-    );
-  }
-
-  /// Returns this EdgePosition as-is since it's already absolute.
-  @override
-  EdgePosition resolve(LayoutTextDirection direction) {
-    return this;
-  }
-}
-
-class DirectionalEdgePosition extends EdgePositionGeometry {
-  /// The position offset from the start edge (left in LTR, right in RTL).
-  final PositionUnit start;
-
-  /// The position offset from the end edge (right in LTR, left in RTL).
-  final PositionUnit end;
-
-  /// Creates a DirectionalEdgePosition with individual directional values.
-  const DirectionalEdgePosition.only({
-    this.start = PositionUnit.zero,
-    super.top,
-    this.end = PositionUnit.zero,
-    super.bottom,
-  }) : super();
-
-  /// Creates a DirectionalEdgePosition with the same value for all edges.
-  const DirectionalEdgePosition.all(PositionUnit value)
-    : this.only(
-        start: value,
-        end: value,
-        top: value,
-        bottom: value,
-      );
-
-  /// Creates a DirectionalEdgePosition with symmetric horizontal and vertical values.
-  const DirectionalEdgePosition.symmetric({
-    PositionUnit horizontal = PositionUnit.zero,
-    PositionUnit vertical = PositionUnit.zero,
-  }) : this.only(
-         start: horizontal,
-         end: horizontal,
-         top: vertical,
-         bottom: vertical,
-       );
-
-  /// Resolves directional positions to absolute positions based on text direction.
-  ///
-  /// In LTR text: start = left, end = right
-  /// In RTL text: start = right, end = left
-  @override
-  EdgePosition resolve(LayoutTextDirection direction) {
-    if (direction == LayoutTextDirection.ltr) {
-      return EdgePosition.only(
-        left: start,
-        top: top,
-        right: end,
-        bottom: bottom,
-      );
-    } else {
-      return EdgePosition.only(
-        left: end,
-        top: top,
-        right: start,
-        bottom: bottom,
-      );
-    }
   }
 }
 
