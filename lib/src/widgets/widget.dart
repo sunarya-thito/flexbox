@@ -1,9 +1,174 @@
-import 'package:flexiblebox/src/basic.dart';
+import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/layout.dart';
-import 'package:flexiblebox/src/rendering.dart';
 import 'package:flexiblebox/src/scrollable.dart';
+import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+
+/// An interface for widgets that participate in custom layout algorithms.
+///
+/// LayoutItem defines the common properties that layout widgets use to control
+/// their positioning, sizing, and behavior within a layout container. It provides
+/// a standardized way for layout algorithms to access and manipulate widget
+/// properties during the layout process.
+///
+/// This interface is implemented by widgets like [FlexItem] and [AbsoluteItem]
+/// that need to communicate layout constraints and positioning information to
+/// their parent layout containers.
+abstract class LayoutItem implements Widget {
+  /// The paint order for this item, controlling drawing order when overlapping.
+  /// Lower values are painted first (behind), higher values are painted last (on top).
+  int? get paintOrder;
+
+  /// The preferred width of this item.
+  SizeUnit? get width;
+
+  /// The preferred height of this item.
+  SizeUnit? get height;
+
+  /// The minimum width constraint for this item.
+  SizeUnit? get minWidth;
+
+  /// The maximum width constraint for this item.
+  SizeUnit? get maxWidth;
+
+  /// The minimum height constraint for this item.
+  SizeUnit? get minHeight;
+
+  /// The maximum height constraint for this item.
+  SizeUnit? get maxHeight;
+
+  /// The aspect ratio constraint (width/height) for this item.
+  double? get aspectRatio;
+
+  /// The offset from the top edge of the parent container.
+  PositionUnit? get top;
+
+  /// The offset from the left edge of the parent container.
+  PositionUnit? get left;
+
+  /// The offset from the bottom edge of the parent container.
+  PositionUnit? get bottom;
+
+  /// The offset from the right edge of the parent container.
+  PositionUnit? get right;
+}
+
+/// An interface for widgets that support absolute positioning within a layout container.
+///
+/// AbsoluteItem defines the contract for widgets that can be positioned absolutely
+/// within their parent layout container. Absolute positioning removes the widget
+/// from the normal document flow and places it at specific coordinates relative
+/// to the parent's bounds.
+///
+/// This interface provides factory constructors for creating absolute positioned
+/// widgets, either with a direct child widget or with a builder function that
+/// receives layout information.
+abstract class AbsoluteItem implements LayoutItem {
+  /// Creates an absolutely positioned item with a direct child widget.
+  ///
+  /// The [child] parameter is required and specifies the widget to be positioned
+  /// absolutely within its parent container.
+  ///
+  /// The [top], [left], [bottom], [right] parameters specify the position offsets
+  /// from the parent's edges. You can use any combination of these to position
+  /// the item. If both [top] and [bottom] are specified, the height is determined
+  /// by the difference. The same applies to [left] and [right] for width.
+  ///
+  /// The [width] and [height] parameters specify the explicit size of the item.
+  /// If null, the size is determined by content or positioning constraints.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio if specified.
+  ///
+  /// The [paintOrder] parameter controls the painting order when items overlap.
+  /// Lower values are painted first (behind), higher values are painted last (on top).
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// AbsoluteItem(
+  ///   top: PositionUnit.fixed(20),
+  ///   left: PositionUnit.fixed(30),
+  ///   width: SizeUnit.fixed(100),
+  ///   height: SizeUnit.fixed(50),
+  ///   child: Container(color: Colors.red),
+  /// )
+  /// ```
+  const factory AbsoluteItem({
+    Key? key,
+    int? paintOrder,
+    SizeUnit? width,
+    SizeUnit? height,
+    SizeUnit? minWidth,
+    SizeUnit? maxWidth,
+    SizeUnit? minHeight,
+    SizeUnit? maxHeight,
+    PositionUnit? top,
+    PositionUnit? left,
+    PositionUnit? bottom,
+    PositionUnit? right,
+    double? aspectRatio,
+    required Widget child,
+  }) = DirectAbsoluteItem;
+
+  /// Creates an absolutely positioned item with a builder function.
+  ///
+  /// The [builder] parameter is required and provides a function that constructs
+  /// the child widget dynamically. The builder receives the [BuildContext] and
+  /// a [LayoutBox] containing layout information.
+  ///
+  /// The [top], [left], [bottom], [right] parameters specify the position offsets
+  /// from the parent's edges. You can use any combination of these to position
+  /// the item. If both [top] and [bottom] are specified, the height is determined
+  /// by the difference. The same applies to [left] and [right] for width.
+  ///
+  /// The [width] and [height] parameters specify the explicit size of the item.
+  /// If null, the size is determined by content or positioning constraints.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio if specified.
+  ///
+  /// The [paintOrder] parameter controls the painting order when items overlap.
+  /// Lower values are painted first (behind), higher values are painted last (on top).
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// AbsoluteItem.builder(
+  ///   top: PositionUnit.fixed(20),
+  ///   left: PositionUnit.fixed(30),
+  ///   width: SizeUnit.fixed(100),
+  ///   height: SizeUnit.fixed(50),
+  ///   builder: (context, layoutBox) {
+  ///     return Container(
+  ///       color: Colors.red,
+  ///       child: Text('Position: ${layoutBox.offset}'),
+  ///     );
+  ///   },
+  /// )
+  /// ```
+  const factory AbsoluteItem.builder({
+    Key? key,
+    int? paintOrder,
+    SizeUnit? width,
+    SizeUnit? height,
+    SizeUnit? minWidth,
+    SizeUnit? maxWidth,
+    SizeUnit? minHeight,
+    SizeUnit? maxHeight,
+    PositionUnit? top,
+    PositionUnit? left,
+    PositionUnit? bottom,
+    PositionUnit? right,
+    double? aspectRatio,
+    required Widget Function(BuildContext context, LayoutBox box) builder,
+  }) = BuilderAbsoluteItem;
+}
 
 /// A widget that positions its child absolutely within a layout container.
 ///
@@ -15,7 +180,7 @@ import 'package:flutter/widgets.dart';
 /// ## Usage
 ///
 /// ```dart
-/// LayoutBox(
+/// LayoutBoxWidget(
 ///   children: [
 ///     AbsoluteItem(
 ///       top: PositionUnit.fixed(20),
@@ -50,68 +215,83 @@ import 'package:flutter/widgets.dart';
 ///
 /// The [paintOrder] property controls the drawing order when multiple
 /// absolutely positioned items overlap. Lower values are painted first.
-class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
+class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
+    implements AbsoluteItem {
   /// The paint order for this absolutely positioned item.
   ///
   /// Items with lower paint order values are drawn behind items with higher values.
   /// Useful for controlling layering when items overlap.
+  @override
   final int? paintOrder;
 
   /// The width of the absolutely positioned item.
   ///
   /// If null, the width is determined by the content or positioning constraints.
+  @override
   final SizeUnit? width;
 
   /// The height of the absolutely positioned item.
   ///
   /// If null, the height is determined by the content or positioning constraints.
+  @override
   final SizeUnit? height;
 
   /// The minimum width constraint for this item.
   ///
   /// The item will not shrink below this width, even if positioning would suggest otherwise.
+  @override
   final SizeUnit? minWidth;
 
   /// The maximum width constraint for this item.
   ///
   /// The item will not grow beyond this width, even if positioning would allow it.
+  @override
   final SizeUnit? maxWidth;
 
   /// The minimum height constraint for this item.
   ///
   /// The item will not shrink below this height, even if positioning would suggest otherwise.
+  @override
   final SizeUnit? minHeight;
 
   /// The maximum height constraint for this item.
   ///
   /// The item will not grow beyond this height, even if positioning would allow it.
+  @override
   final SizeUnit? maxHeight;
 
   /// The offset from the top edge of the parent container.
   ///
   /// Positions the item relative to the parent's top boundary.
+  @override
   final PositionUnit? top;
 
   /// The offset from the left edge of the parent container.
   ///
   /// Positions the item relative to the parent's left boundary.
+  @override
   final PositionUnit? left;
 
   /// The offset from the bottom edge of the parent container.
   ///
   /// Positions the item relative to the parent's bottom boundary.
+  @override
   final PositionUnit? bottom;
 
   /// The offset from the right edge of the parent container.
   ///
   /// Positions the item relative to the parent's right boundary.
+  @override
   final PositionUnit? right;
 
   /// The aspect ratio constraint (width/height) for this item.
   ///
   /// When specified, the item's dimensions will be adjusted to maintain
   /// this aspect ratio, potentially overriding explicit width/height values.
+  @override
   final double? aspectRatio;
+
+  final bool needLayoutBox;
 
   /// Creates an absolutely positioned item with the specified properties.
   ///
@@ -131,7 +311,29 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
   ///   child: Text('Absolutely positioned'),
   /// )
   /// ```
-  const AbsoluteItem({
+  ///
+  /// Creates a DirectAbsoluteItem with the specified properties.
+  ///
+  /// The [child] parameter is required and specifies the widget to be positioned
+  /// absolutely within its parent container.
+  ///
+  /// The [paintOrder] parameter controls the painting order when items overlap.
+  /// Lower values are painted first.
+  ///
+  /// The [width] and [height] parameters specify the explicit size of the item.
+  /// If null, the size is determined by content or positioning constraints.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item.
+  ///
+  /// The [top], [left], [bottom], [right] parameters specify the position offsets
+  /// from the parent's edges.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio if specified.
+  ///
+  /// The [needLayoutBox] parameter determines if the child needs access to
+  /// layout box information.
+  const DirectAbsoluteItem({
     super.key,
     this.paintOrder,
     this.width,
@@ -145,6 +347,7 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
     this.bottom,
     this.right,
     this.aspectRatio,
+    this.needLayoutBox = false,
     required super.child,
   });
 
@@ -183,6 +386,10 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
       parentData.layoutData = newLayoutData;
       parent.markNeedsLayout();
     }
+    if (parentData.needLayoutBox != needLayoutBox) {
+      parentData.needLayoutBox = needLayoutBox;
+      parent.markNeedsLayout();
+    }
   }
 
   /// The typical ancestor widget class for this widget.
@@ -190,7 +397,128 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
   /// Used by Flutter's debugging tools to provide better error messages
   /// when this widget is used incorrectly (not within a LayoutBox).
   @override
-  Type get debugTypicalAncestorWidgetClass => LayoutBox;
+  Type get debugTypicalAncestorWidgetClass => LayoutBoxWidget;
+}
+
+/// A builder variant of [AbsoluteItem] that allows dynamic child construction.
+///
+/// BuilderAbsoluteItem provides the same absolute positioning capabilities as
+/// [DirectAbsoluteItem], but instead of taking a pre-built child widget, it
+/// accepts a builder function that receives layout information at build time.
+///
+/// This is useful when the positioned content needs access to layout bounds,
+/// scroll positions, or other dynamic layout state that may change during
+/// the widget's lifetime.
+///
+/// ## Usage
+///
+/// ```dart
+/// BuilderAbsoluteItem(
+///   top: PositionUnit.fixed(20),
+///   left: PositionUnit.fixed(30),
+///   width: SizeUnit.fixed(100),
+///   height: SizeUnit.fixed(50),
+///   builder: (context, layoutBox) {
+///     return Container(
+///       color: Colors.red,
+///       child: Text('Position: ${layoutBox.offset}'),
+///     );
+///   },
+/// )
+/// ```
+class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
+  @override
+  final int? paintOrder;
+  @override
+  final SizeUnit? width;
+  @override
+  final SizeUnit? height;
+  @override
+  final SizeUnit? minWidth;
+  @override
+  final SizeUnit? maxWidth;
+  @override
+  final SizeUnit? minHeight;
+  @override
+  final SizeUnit? maxHeight;
+  @override
+  final PositionUnit? top;
+  @override
+  final PositionUnit? left;
+  @override
+  final PositionUnit? bottom;
+  @override
+  final PositionUnit? right;
+  @override
+  final double? aspectRatio;
+
+  final Widget Function(BuildContext context, LayoutBox box) builder;
+
+  /// Creates an absolutely positioned item with a builder function.
+  ///
+  /// The [builder] parameter is required and provides a function that constructs
+  /// the child widget dynamically. All positioning and sizing properties are
+  /// optional and provide fine-grained control over how this item is placed
+  /// within its parent container.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// BuilderAbsoluteItem(
+  ///   top: PositionUnit.fixed(10),
+  ///   left: PositionUnit.fixed(20),
+  ///   width: SizeUnit.fixed(200),
+  ///   height: SizeUnit.fixed(100),
+  ///   builder: (context, layoutBox) {
+  ///     return Text('Position: ${layoutBox.offset}');
+  ///   },
+  /// )
+  /// ```
+  const BuilderAbsoluteItem({
+    super.key,
+    this.paintOrder,
+    this.width,
+    this.height,
+    this.minWidth,
+    this.maxWidth,
+    this.minHeight,
+    this.maxHeight,
+    this.top,
+    this.left,
+    this.bottom,
+    this.right,
+    this.aspectRatio,
+    required this.builder,
+  });
+
+  /// Builds the widget tree for this builder absolute item.
+  ///
+  /// This method creates a [DirectAbsoluteItem] widget with the same properties,
+  /// but uses the [builder] function to construct the child widget dynamically.
+  /// The builder is called with the current [BuildContext] and a [LayoutBox]
+  /// providing access to layout information.
+  ///
+  /// Returns the constructed [DirectAbsoluteItem] widget.
+  @override
+  Widget build(BuildContext context) {
+    return DirectAbsoluteItem(
+      key: key,
+      paintOrder: paintOrder,
+      width: width,
+      height: height,
+      minWidth: minWidth,
+      maxWidth: maxWidth,
+      minHeight: minHeight,
+      maxHeight: maxHeight,
+      top: top,
+      left: left,
+      bottom: bottom,
+      right: right,
+      aspectRatio: aspectRatio,
+      needLayoutBox: true,
+      child: LayoutBoxBuilder(builder: builder),
+    );
+  }
 }
 
 /// A viewport widget that manages the rendering of layout children with scrolling support.
@@ -201,7 +529,7 @@ class AbsoluteItem extends ParentDataWidget<LayoutBoxParentData> {
 /// scrolling offsets, text direction, and layout configuration.
 ///
 /// This widget is typically not used directly but is created internally by
-/// [LayoutBox] to handle the scrolling and viewport logic.
+/// [LayoutBoxWidget] to handle the scrolling and viewport logic.
 class LayoutBoxViewport extends MultiChildRenderObjectWidget {
   /// The text direction for resolving directional layout properties.
   ///
@@ -272,7 +600,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
 
   /// Creates a layout viewport with the specified configuration.
   ///
-  /// This constructor is typically called internally by [LayoutBox] and
+  /// This constructor is typically called internally by [LayoutBoxWidget] and
   /// requires all parameters to be properly configured for the layout to work.
   ///
   /// The [children] parameter specifies the widgets to be laid out within
@@ -399,7 +727,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
 /// ## Basic Usage
 ///
 /// ```dart
-/// LayoutBox(
+/// LayoutBoxWidget(
 ///   layout: FlexLayout(
 ///     direction: FlexDirection.row,
 ///     alignItems: BoxAlignmentGeometry.center,
@@ -428,7 +756,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
 ///
 /// The [textDirection] property affects directional alignments and scrolling.
 /// If null, it uses the ambient [Directionality] from the widget tree.
-class LayoutBox extends StatelessWidget {
+class LayoutBoxWidget extends StatelessWidget {
   /// The text direction for resolving directional layout properties.
   ///
   /// If null, uses the ambient [Directionality] from the widget tree.
@@ -520,7 +848,7 @@ class LayoutBox extends StatelessWidget {
   /// ## Example
   ///
   /// ```dart
-  /// LayoutBox(
+  /// LayoutBoxWidget(
   ///   layout: FlexLayout(direction: FlexDirection.row),
   ///   horizontalOverflow: LayoutOverflow.scroll,
   ///   verticalOverflow: LayoutOverflow.hidden,
@@ -530,7 +858,7 @@ class LayoutBox extends StatelessWidget {
   ///
   /// Most other parameters have sensible defaults and can be customized
   /// based on specific layout requirements.
-  const LayoutBox({
+  const LayoutBoxWidget({
     super.key,
     this.textDirection,
     this.reversePaint = false,

@@ -2,6 +2,7 @@ import 'package:demo/cases/case_absolute.dart';
 import 'package:demo/cases/case_align_items_center_row_flex_grow.dart';
 import 'package:demo/cases/case_align_items_stretch_column.dart';
 import 'package:demo/cases/case_align_self_row.dart';
+import 'package:demo/cases/case_builder.dart';
 import 'package:demo/cases/case_column.dart';
 import 'package:demo/cases/case_column_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_column.dart';
@@ -10,6 +11,7 @@ import 'package:demo/cases/case_flex_wrap_reverse_column.dart';
 import 'package:demo/cases/case_flex_wrap_reverse_column_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_reverse_row_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_row_reverse.dart';
+import 'package:demo/cases/case_index_finder.dart';
 import 'package:demo/cases/case_items_start.dart';
 import 'package:demo/cases/case_row_reverse.dart';
 import 'package:demo/cases/case_rtl_column.dart';
@@ -251,6 +253,10 @@ final testCases = [
   CaseWrapItemsCenter(),
   CaseWrapItemsEnd(),
   CaseWrapItemsStart(),
+
+  // Tools
+  CaseIndexFinder(),
+  CaseBuilder(),
 ];
 late HighlighterTheme darkHighlighterTheme;
 void main(List<String> args) async {

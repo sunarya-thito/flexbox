@@ -1,8 +1,7 @@
-import 'package:flexiblebox/src/basic.dart';
+import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/layout/flex.dart';
-import 'package:flexiblebox/src/rendering.dart';
-import 'package:flexiblebox/src/widgets/widget.dart';
+import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flutter/widgets.dart';
 
 /// A widget that configures flex properties for an individual child within a [FlexBox].
@@ -30,67 +29,229 @@ import 'package:flutter/widgets.dart';
 ///   ],
 /// )
 /// ```
-class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
+abstract interface class FlexItem implements LayoutItem {
+  /// Creates a flex item with a direct child widget and specified flex properties.
+  ///
+  /// The [child] parameter is required and specifies the widget to be laid out
+  /// within the flex container.
+  ///
+  /// The [flexGrow] parameter controls how much this item grows relative to its
+  /// siblings when there is extra space in the main axis. A value of 0.0 means
+  /// the item will not grow. Default is 0.0.
+  ///
+  /// The [flexShrink] parameter controls how much this item shrinks relative to
+  /// its siblings when there is insufficient space in the main axis. A value of
+  /// 0.0 means the item will not shrink. Default is 0.0.
+  ///
+  /// The [width] and [height] parameters specify the preferred size of the item.
+  /// If null, the size is determined by the item's content and flex properties.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item, preventing it from becoming smaller or larger
+  /// than specified.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio (width/height)
+  /// if specified, potentially overriding explicit width/height values.
+  ///
+  /// The [top], [left], [bottom], [right] parameters are used for sticky
+  /// positioning within the flex container, allowing the item to be offset
+  /// from its normal position.
+  ///
+  /// The [alignSelf] parameter overrides the parent's [FlexBox.alignItems]
+  /// property for this individual item, controlling its alignment along the
+  /// cross axis.
+  ///
+  /// The [paintOrder] parameter controls the painting order of this item
+  /// relative to its siblings. Items with lower values are painted behind
+  /// items with higher values.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// FlexItem(
+  ///   flexGrow: 1.0,
+  ///   alignSelf: BoxAlignmentGeometry.center,
+  ///   child: Text('Flexible content'),
+  /// )
+  /// ```
+  const factory FlexItem({
+    Key? key,
+    int? paintOrder,
+    SizeUnit? width,
+    SizeUnit? height,
+    SizeUnit? minWidth,
+    SizeUnit? maxWidth,
+    SizeUnit? minHeight,
+    SizeUnit? maxHeight,
+    double flexGrow,
+    double flexShrink,
+    double? aspectRatio,
+    PositionUnit? top,
+    PositionUnit? left,
+    PositionUnit? bottom,
+    PositionUnit? right,
+    BoxAlignmentGeometry? alignSelf,
+    required Widget child,
+  }) = DirectFlexItem;
+
+  /// Creates a flex item with a builder function for dynamic child construction.
+  ///
+  /// The [builder] parameter is required and provides a function that constructs
+  /// the child widget dynamically. The builder receives the [BuildContext] and
+  /// a [LayoutBox] containing layout information that can be used to adapt the
+  /// content.
+  ///
+  /// The [flexGrow] parameter controls how much this item grows relative to its
+  /// siblings when there is extra space in the main axis. A value of 0.0 means
+  /// the item will not grow. Default is 0.0.
+  ///
+  /// The [flexShrink] parameter controls how much this item shrinks relative to
+  /// its siblings when there is insufficient space in the main axis. A value of
+  /// 0.0 means the item will not shrink. Default is 0.0.
+  ///
+  /// The [width] and [height] parameters specify the preferred size of the item.
+  /// If null, the size is determined by the item's content and flex properties.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item, preventing it from becoming smaller or larger
+  /// than specified.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio (width/height)
+  /// if specified, potentially overriding explicit width/height values.
+  ///
+  /// The [top], [left], [bottom], [right] parameters are used for sticky
+  /// positioning within the flex container, allowing the item to be offset
+  /// from its normal position.
+  ///
+  /// The [alignSelf] parameter overrides the parent's [FlexBox.alignItems]
+  /// property for this individual item, controlling its alignment along the
+  /// cross axis.
+  ///
+  /// The [paintOrder] parameter controls the painting order of this item
+  /// relative to its siblings. Items with lower values are painted behind
+  /// items with higher values.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// FlexItem.builder(
+  ///   flexGrow: 1.0,
+  ///   builder: (context, layoutBox) {
+  ///     return Text('Size: ${layoutBox.size}');
+  ///   },
+  /// )
+  /// ```
+  const factory FlexItem.builder({
+    Key? key,
+    int? paintOrder,
+    SizeUnit? width,
+    SizeUnit? height,
+    SizeUnit? minWidth,
+    SizeUnit? maxWidth,
+    SizeUnit? minHeight,
+    SizeUnit? maxHeight,
+    double flexGrow,
+    double flexShrink,
+    double? aspectRatio,
+    PositionUnit? top,
+    PositionUnit? left,
+    PositionUnit? bottom,
+    PositionUnit? right,
+    BoxAlignmentGeometry? alignSelf,
+    required Widget Function(BuildContext context, LayoutBox box) builder,
+  }) = BuilderFlexItem;
+
+  /// The flex grow factor for this item.
+  ///
+  /// Controls how much this item grows relative to its siblings when there is
+  /// extra space available in the main axis. A value of 0.0 means the item will
+  /// not grow.
+  double get flexGrow;
+
+  /// The flex shrink factor for this item.
+  ///
+  /// Controls how much this item shrinks relative to its siblings when there is
+  /// insufficient space in the main axis. A value of 0.0 means the item will
+  /// not shrink.
+  double get flexShrink;
+}
+
+class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
+    implements FlexItem {
   /// The order in which this item should be painted relative to its siblings.
   /// Lower values are painted first (behind), higher values are painted last (on top).
   /// Items with the same paint order are painted in document order.
+  @override
   final int? paintOrder;
 
   /// The preferred width of this flex item.
   /// If null, the item will size itself based on its content and flex properties.
+  @override
   final SizeUnit? width;
 
   /// The preferred height of this flex item.
   /// If null, the item will size itself based on its content and flex properties.
+  @override
   final SizeUnit? height;
 
   /// The minimum width constraint for this flex item.
   /// The item will not be sized smaller than this value.
+  @override
   final SizeUnit? minWidth;
 
   /// The maximum width constraint for this flex item.
   /// The item will not be sized larger than this value.
+  @override
   final SizeUnit? maxWidth;
 
   /// The minimum height constraint for this flex item.
   /// The item will not be sized smaller than this value.
+  @override
   final SizeUnit? minHeight;
 
   /// The maximum height constraint for this flex item.
   /// The item will not be sized larger than this value.
+  @override
   final SizeUnit? maxHeight;
 
   /// The flex grow factor for this item.
   /// Determines how much this item should grow relative to its siblings when
   /// there is extra space available in the main axis.
   /// A value of 0 means the item will not grow. Default is 0.0.
+  @override
   final double flexGrow;
 
   /// The flex shrink factor for this item.
   /// Determines how much this item should shrink relative to its siblings when
   /// there is insufficient space in the main axis.
   /// A value of 0 means the item will not shrink. Default is 0.0.
+  @override
   final double flexShrink;
 
   /// The aspect ratio constraint for this item.
   /// If specified, the item's width and height will be constrained to maintain
   /// this aspect ratio (width/height). This is useful for responsive design.
+  @override
   final double? aspectRatio;
 
   /// The offset from the top edge of the parent container.
-  /// Used for absolute positioning within the flex container.
+  /// Used for sticky positioning within the flex container.
+  @override
   final PositionUnit? top;
 
   /// The offset from the left edge of the parent container.
-  /// Used for absolute positioning within the flex container.
+  /// Used for sticky positioning within the flex container.
+  @override
   final PositionUnit? left;
 
   /// The offset from the bottom edge of the parent container.
-  /// Used for absolute positioning within the flex container.
+  /// Used for sticky positioning within the flex container.
+  @override
   final PositionUnit? bottom;
 
   /// The offset from the right edge of the parent container.
-  /// Used for absolute positioning within the flex container.
+  /// Used for sticky positioning within the flex container.
+  @override
   final PositionUnit? right;
 
   /// The cross-axis alignment for this specific item.
@@ -98,12 +259,36 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
   /// If null, uses the parent's alignItems setting.
   final BoxAlignmentGeometry? alignSelf;
 
-  /// Creates a flex item with the specified properties.
+  final bool needLayoutBox;
+
+  /// Creates a DirectFlexItem with the specified properties.
   ///
-  /// The [child] parameter is required and specifies the widget to be laid out.
-  /// All other parameters are optional and provide fine-grained control over
-  /// how this specific child behaves within the flex layout.
-  const FlexItem({
+  /// The [child] parameter is required and specifies the widget to be laid out
+  /// within the flex container.
+  ///
+  /// The [paintOrder] parameter controls the painting order relative to siblings.
+  /// Lower values are painted first.
+  ///
+  /// The [width] and [height] parameters specify the preferred size of the item.
+  /// If null, the size is determined by content and flex properties.
+  ///
+  /// The [minWidth], [maxWidth], [minHeight], [maxHeight] parameters set size
+  /// constraints for the item.
+  ///
+  /// The [flexGrow] parameter controls how much this item grows relative to
+  /// siblings when there is extra space. Default is 0.0.
+  ///
+  /// The [flexShrink] parameter controls how much this item shrinks relative to
+  /// siblings when there is insufficient space. Default is 0.0.
+  ///
+  /// The [aspectRatio] parameter maintains the width/height ratio if specified.
+  ///
+  /// The [top], [left], [bottom], [right] parameters are for sticky positioning.
+  ///
+  /// The [alignSelf] parameter overrides the parent's alignItems for this item.
+  ///
+  /// The [needLayoutBox] parameter determines if the child needs layout box info.
+  const DirectFlexItem({
     super.key,
     this.paintOrder,
     this.width,
@@ -120,6 +305,7 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
     this.bottom,
     this.right,
     this.alignSelf,
+    this.needLayoutBox = false,
     required super.child,
   });
 
@@ -159,6 +345,10 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
       parentData.layoutData = newLayoutData;
       parent.markNeedsLayout();
     }
+    if (parentData.needLayoutBox != needLayoutBox) {
+      parentData.needLayoutBox = needLayoutBox;
+      parent.markNeedsLayout();
+    }
   }
 
   /// The typical ancestor widget class for this widget.
@@ -167,6 +357,132 @@ class FlexItem extends ParentDataWidget<LayoutBoxParentData> {
   /// when this widget is used incorrectly.
   @override
   Type get debugTypicalAncestorWidgetClass => FlexBox;
+}
+
+/// A builder variant of [FlexItem] that allows dynamic child construction.
+///
+/// BuilderFlexItem provides the same flex layout capabilities as [DirectFlexItem],
+/// but instead of taking a pre-built child widget, it accepts a builder function
+/// that receives layout information at build time.
+///
+/// This is useful when the flex content needs access to layout bounds, scroll
+/// positions, or other dynamic layout state that may change during the widget's
+/// lifetime.
+///
+/// ## Usage
+///
+/// ```dart
+/// BuilderFlexItem(
+///   flexGrow: 1.0,
+///   builder: (context, layoutBox) {
+///     return Container(
+///       color: Colors.blue,
+///       child: Text('Size: ${layoutBox.size}'),
+///     );
+///   },
+/// )
+/// ```
+class BuilderFlexItem extends StatelessWidget implements FlexItem {
+  final Widget Function(BuildContext context, LayoutBox box) builder;
+  @override
+  final int? paintOrder;
+  @override
+  final SizeUnit? width;
+  @override
+  final SizeUnit? height;
+  @override
+  final SizeUnit? minWidth;
+  @override
+  final SizeUnit? maxWidth;
+  @override
+  final SizeUnit? minHeight;
+  @override
+  final SizeUnit? maxHeight;
+  @override
+  final double flexGrow;
+  @override
+  final double flexShrink;
+  @override
+  final double? aspectRatio;
+  @override
+  final PositionUnit? top;
+  @override
+  final PositionUnit? left;
+  @override
+  final PositionUnit? bottom;
+  @override
+  final PositionUnit? right;
+  final BoxAlignmentGeometry? alignSelf;
+
+  /// Creates a flex item with a builder function.
+  ///
+  /// The [builder] parameter is required and provides a function that constructs
+  /// the child widget dynamically. All flex and positioning properties are
+  /// optional and provide fine-grained control over how this item behaves
+  /// within the flex layout.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// BuilderFlexItem(
+  ///   flexGrow: 1.0,
+  ///   alignSelf: BoxAlignmentGeometry.center,
+  ///   builder: (context, layoutBox) {
+  ///     return Text('Size: ${layoutBox.size}');
+  ///   },
+  /// )
+  /// ```
+  const BuilderFlexItem({
+    super.key,
+    required this.builder,
+    this.paintOrder,
+    this.width,
+    this.height,
+    this.minWidth,
+    this.maxWidth,
+    this.minHeight,
+    this.maxHeight,
+    this.flexGrow = 0.0,
+    this.flexShrink = 0.0,
+    this.aspectRatio,
+    this.top,
+    this.left,
+    this.bottom,
+    this.right,
+    this.alignSelf,
+  });
+
+  /// Builds the widget tree for this builder flex item.
+  ///
+  /// This method creates a [DirectFlexItem] widget with the same properties,
+  /// but uses the [builder] function to construct the child widget dynamically.
+  /// The builder is called with the current [BuildContext] and a [LayoutBox]
+  /// providing access to layout information.
+  ///
+  /// Returns the constructed [DirectFlexItem] widget.
+  @override
+  Widget build(BuildContext context) {
+    return DirectFlexItem(
+      key: key,
+      paintOrder: paintOrder,
+      width: width,
+      height: height,
+      minWidth: minWidth,
+      maxWidth: maxWidth,
+      minHeight: minHeight,
+      maxHeight: maxHeight,
+      flexGrow: flexGrow,
+      flexShrink: flexShrink,
+      aspectRatio: aspectRatio,
+      top: top,
+      left: left,
+      bottom: bottom,
+      right: right,
+      alignSelf: alignSelf,
+      needLayoutBox: true,
+      child: LayoutBoxBuilder(builder: builder),
+    );
+  }
 }
 
 /// A flexible box layout widget that implements the CSS Flexbox specification.
@@ -427,8 +743,8 @@ class FlexBox extends StatelessWidget {
   ///   alignItems: BoxAlignmentGeometry.center,
   ///   justifyContent: BoxAlignmentBase.spaceBetween,
   ///   padding: EdgeSpacing.all(SizeUnit.fixed(16)),
-  ///   horizontalSpacing: SpacingUnit.fixed(8),
-  ///   verticalSpacing: SpacingUnit.fixed(8),
+  ///   rowGap: SpacingUnit.fixed(8),
+  ///   columnGap: SpacingUnit.fixed(8),
   ///   children: [
   ///     FlexItem(child: Text('Item 1')),
   ///     FlexItem(child: Text('Item 2')),
@@ -439,6 +755,8 @@ class FlexBox extends StatelessWidget {
   ///
   /// All parameters are optional except [children], which defaults to an empty list.
   /// The layout will automatically adapt to the provided configuration.
+  ///
+  /// Creates a FlexBox with the specified flex layout properties.
   const FlexBox({
     super.key,
     this.direction = FlexDirection.row,
@@ -466,7 +784,7 @@ class FlexBox extends StatelessWidget {
 
   /// Builds the widget tree for this flex container.
   ///
-  /// This method creates a [LayoutBox] widget configured with the flex layout
+  /// This method creates a [LayoutBoxWidget] widget configured with the flex layout
   /// properties. It resolves the text direction from the ambient [Directionality]
   /// if not explicitly provided, and constructs a [FlexLayout] object with
   /// all the flex-specific configuration.
@@ -474,7 +792,7 @@ class FlexBox extends StatelessWidget {
   /// The build process:
   /// 1. Resolves the text direction for RTL support
   /// 2. Creates a [FlexLayout] with all flex properties
-  /// 3. Wraps everything in a [LayoutBox] for rendering
+  /// 3. Wraps everything in a [LayoutBoxWidget] for rendering
   ///
   /// The resulting widget tree handles all the complex flexbox layout calculations
   /// and provides scrolling, overflow handling, and visual styling.
@@ -482,7 +800,7 @@ class FlexBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedTextDirection =
         textDirection ?? Directionality.maybeOf(context) ?? TextDirection.ltr;
-    return LayoutBox(
+    return LayoutBoxWidget(
       textDirection: resolvedTextDirection,
       reversePaint: reversePaint,
       horizontalController: horizontalController,
@@ -532,7 +850,7 @@ class FlexBox extends StatelessWidget {
 /// RowBox(
 ///   alignItems: BoxAlignmentGeometry.center,
 ///   justifyContent: BoxAlignmentBase.spaceBetween,
-///   horizontalSpacing: SpacingUnit.fixed(16),
+///   rowGap: SpacingUnit.fixed(16),
 ///   children: [
 ///     FlexItem(child: Text('Left')),
 ///     FlexItem(child: Text('Center')),

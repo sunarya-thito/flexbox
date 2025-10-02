@@ -1854,3 +1854,95 @@ extension SpacingUnitExtension on SpacingUnit {
     );
   }
 }
+
+/// Represents the bounds of content that overflows beyond the viewport edges.
+///
+/// OverflowBounds describes how much content extends beyond each edge of the
+/// viewport in a layout container. This is used to determine scrolling needs
+/// and handle overflow behavior.
+///
+/// Positive values indicate content extending beyond the viewport:
+/// - [top]: Content above the viewport top edge
+/// - [bottom]: Content below the viewport bottom edge
+/// - [left]: Content to the left of the viewport left edge
+/// - [right]: Content to the right of the viewport right edge
+///
+/// A value of 0 indicates no overflow in that direction.
+class OverflowBounds {
+  /// The amount of content overflowing above the viewport top edge.
+  ///
+  /// A positive value indicates how many pixels of content are above the viewport.
+  final double top;
+
+  /// The amount of content overflowing below the viewport bottom edge.
+  ///
+  /// A positive value indicates how many pixels of content are below the viewport.
+  final double bottom;
+
+  /// The amount of content overflowing to the left of the viewport left edge.
+  ///
+  /// A positive value indicates how many pixels of content are to the left of the viewport.
+  final double left;
+
+  /// The amount of content overflowing to the right of the viewport right edge.
+  ///
+  /// A positive value indicates how many pixels of content are to the right of the viewport.
+  final double right;
+
+  /// A constant representing no overflow in any direction.
+  static const OverflowBounds zero = OverflowBounds(
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  );
+
+  /// Creates an OverflowBounds with the specified overflow amounts.
+  ///
+  /// All parameters default to 0 if not specified, indicating no overflow.
+  const OverflowBounds({
+    required this.top,
+    required this.bottom,
+    required this.left,
+    required this.right,
+  });
+
+  /// Returns the hash code for this OverflowBounds.
+  @override
+  int get hashCode => Object.hash(top, bottom, left, right);
+
+  /// Compares this OverflowBounds with another object for equality.
+  ///
+  /// Returns true if [other] is an OverflowBounds with identical overflow values.
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    return other is OverflowBounds &&
+        other.top == top &&
+        other.bottom == bottom &&
+        other.left == left &&
+        other.right == right;
+  }
+
+  /// Returns a string representation of this OverflowBounds.
+  @override
+  String toString() {
+    return 'OverflowBounds(top: $top, bottom: $bottom, left: $left, right: $right)';
+  }
+
+  /// Returns true if there is overflow in any direction.
+  bool get hasOverflow => top > 0 || bottom > 0 || left > 0 || right > 0;
+
+  /// Returns true if there is overflow above the viewport.
+  bool get hasTopOverflow => top > 0;
+
+  /// Returns true if there is overflow below the viewport.
+  bool get hasBottomOverflow => bottom > 0;
+
+  /// Returns true if there is overflow to the left of the viewport.
+  bool get hasLeftOverflow => left > 0;
+
+  /// Returns true if there is overflow to the right of the viewport.
+  bool get hasRightOverflow => right > 0;
+}

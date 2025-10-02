@@ -1,6 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
+/// A widget that provides two-dimensional scrolling capabilities.
+///
+/// [ScrollableClient] wraps Flutter's [TwoDimensionalScrollable] to provide
+/// a convenient interface for creating scrollable areas with both horizontal
+/// and vertical scrolling. It supports primary scroll controllers, diagonal
+/// drag behavior, keyboard dismissal, and various scrolling configurations.
+///
+/// This widget is typically used as a building block for creating custom
+/// scrollable containers that need more control over scrolling behavior
+/// than standard Flutter scroll widgets provide.
 class ScrollableClient extends StatelessWidget {
   final bool? primary;
   final Axis mainAxis;
@@ -35,11 +45,11 @@ class ScrollableClient extends StatelessWidget {
   Widget build(BuildContext context) {
     assert(
       axisDirectionToAxis(verticalDetails.direction) == Axis.vertical,
-      'TwoDimensionalScrollView.verticalDetails are not Axis.vertical.',
+      'ScrollableClient.verticalDetails are not Axis.vertical.',
     );
     assert(
       axisDirectionToAxis(horizontalDetails.direction) == Axis.horizontal,
-      'TwoDimensionalScrollView.horizontalDetails are not Axis.horizontal.',
+      'ScrollableClient.horizontalDetails are not Axis.horizontal.',
     );
 
     ScrollableDetails mainAxisDetails = switch (mainAxis) {
@@ -56,9 +66,9 @@ class ScrollableClient extends StatelessWidget {
       // Using PrimaryScrollController for mainAxis.
       assert(
         mainAxisDetails.controller == null,
-        'TwoDimensionalScrollView.primary was explicitly set to true, but a '
+        'ScrollableClient.primary was explicitly set to true, but a '
         'ScrollController was provided in the ScrollableDetails of the '
-        'TwoDimensionalScrollView.mainAxis.',
+        'ScrollableClient.mainAxis.',
       );
       mainAxisDetails = mainAxisDetails.copyWith(
         controller: PrimaryScrollController.of(context),

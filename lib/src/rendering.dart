@@ -2,14 +2,23 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/basic.dart';
 import 'package:flexiblebox/src/layout.dart';
+import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+/// Parent data for children of [RenderLayoutBox].
+///
+/// This class extends Flutter's [ContainerBoxParentData] to include
+/// layout-specific information needed by the flexbox layout system.
+/// It stores layout data, caching information, and paint ordering
+/// for each child in a layout container.
 class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
   Key? debugKey;
   ChildLayoutCache? cache;
 
   LayoutData? layoutData;
+
+  bool needLayoutBox = false;
 
   int? get paintOrder => layoutData!.paintOrder;
 
@@ -17,12 +26,41 @@ class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
   RenderBox? _previousSortedSibling;
 }
 
+/// Render object for flexbox layout containers.
+///
+/// [RenderLayoutBox] is the core render object that implements the flexbox layout
+/// algorithm. It manages child positioning, scrolling, overflow handling, and
+/// integrates with Flutter's rendering pipeline. This render object supports
+/// complex layout scenarios including scrolling in both directions, custom
+/// layout algorithms, and viewport management.
+///
+/// It implements [RenderAbstractViewport] to provide scrolling capabilities
+/// and works with various layout algorithms through the [Layout] interface.
 class RenderLayoutBox extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, LayoutBoxParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, LayoutBoxParentData>,
         ParentLayout
     implements RenderAbstractViewport {
+  static RenderLayoutBox? find(BuildContext context) {
+    RenderObject? renderObject = context.findRenderObject();
+    return _findInDescendants(renderObject);
+  }
+
+  static RenderLayoutBox? _findInDescendants(RenderObject? renderObject) {
+    if (renderObject is RenderLayoutBox) {
+      return renderObject;
+    }
+    RenderLayoutBox? result;
+    renderObject?.visitChildren((child) {
+      if (result != null) {
+        return;
+      }
+      result = _findInDescendants(child);
+    });
+    return result;
+  }
+
   @override
   LayoutTextDirection get textDirection =>
       layoutTextDirectionFromTextDirection(layoutTextDirection);
@@ -58,6 +96,22 @@ class RenderLayoutBox extends RenderBox
     required this.borderRadius,
     required this.clipBehavior,
   });
+
+  int indexOfNearestChildAtOffset(Offset localOffset) {
+    final layoutHandle = _layoutHandle;
+    assert(
+      layoutHandle != null,
+      'LayoutBox must be laid out before calling indexOfNearestChildAtOffset',
+    );
+    if (layoutHandle == null) {
+      return -1;
+    }
+    return layoutHandle.indexOfNearestChildAtOffset(
+      layoutOffsetFromOffset(localOffset),
+    );
+  }
+
+  LayoutHandle? _layoutHandle;
 
   LayoutSize? _contentSize;
 
@@ -360,52 +414,42 @@ class RenderLayoutBox extends RenderBox
   RenderBox? _firstSortedChild;
   RenderBox? _lastSortedChild;
 
-  RenderBox? get relativeFirstPaintChild {
-    return reversePaint ? lastChild : firstChild;
-  }
-
-  RenderBox? get relativeLastPaintChild {
-    return reversePaint ? firstChild : lastChild;
-  }
-
   RenderBox? get sortedFirstPaintChild {
-    return (reversePaint ? _firstSortedChild : _lastSortedChild) ??
-        relativeFirstPaintChild;
+    return reversePaint
+        ? (_lastSortedChild ?? lastChild)
+        : (_firstSortedChild ?? firstChild);
   }
 
   RenderBox? get sortedLastPaintChild {
-    return (reversePaint ? _lastSortedChild : _firstSortedChild) ??
-        relativeLastPaintChild;
+    return reversePaint
+        ? (_firstSortedChild ?? firstChild)
+        : (_lastSortedChild ?? lastChild);
   }
 
-  RenderBox? relativeNextPaintSibling(RenderBox child) {
+  bool get isSorted => _firstSortedChild != null && _lastSortedChild != null;
+
+  RenderBox? sortedNextPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
+    if (isSorted) {
+      return reversePaint
+          ? childParentData._previousSortedSibling
+          : childParentData._nextSortedSibling;
+    }
     return reversePaint
         ? childParentData.previousSibling
         : childParentData.nextSibling;
   }
 
-  RenderBox? relativePreviousPaintSibling(RenderBox child) {
+  RenderBox? sortedPreviousPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
+    if (isSorted) {
+      return reversePaint
+          ? childParentData._nextSortedSibling
+          : childParentData._previousSortedSibling;
+    }
     return reversePaint
         ? childParentData.nextSibling
         : childParentData.previousSibling;
-  }
-
-  RenderBox? sortedNextPaintSibling(RenderBox child) {
-    final childParentData = child.parentData as LayoutBoxParentData;
-    return (reversePaint
-            ? childParentData._previousSortedSibling
-            : childParentData._nextSortedSibling) ??
-        relativeNextPaintSibling(child);
-  }
-
-  RenderBox? sortedPreviousPaintSibling(RenderBox child) {
-    final childParentData = child.parentData as LayoutBoxParentData;
-    return (reversePaint
-            ? childParentData._nextSortedSibling
-            : childParentData._previousSortedSibling) ??
-        relativePreviousPaintSibling(child);
   }
 
   @override
@@ -417,15 +461,23 @@ class RenderLayoutBox extends RenderBox
 
   @override
   void performLayout() {
+    _firstSortedChild = null;
+    _lastSortedChild = null;
     bool needsSorting = false;
     LayoutHandle layoutHandle = boxLayout.createLayoutHandle(this);
+    _layoutHandle = layoutHandle;
     RenderBox? child = firstChild;
+    int childIndex = 0;
     while (child != null) {
       final childParentData = child.parentData as LayoutBoxParentData;
       if (childParentData.paintOrder != null) {
         needsSorting = true;
       }
-      childParentData.cache = layoutHandle.setupCache();
+      final cache = childParentData.cache = layoutHandle.setupCache();
+      cache.index = childIndex;
+      childIndex++;
+      childParentData._nextSortedSibling = null;
+      childParentData._previousSortedSibling = null;
       child = childParentData.nextSibling;
     }
     final layoutConstraints = layoutConstraintsFromBoxConstraints(
@@ -764,7 +816,7 @@ class RenderLayoutBox extends RenderBox
   ChildLayout? get firstLayoutChild {
     RenderBox? child = firstChild;
     if (child != null) {
-      return RenderBoxChildLayout(child);
+      return RenderBoxChildLayout(child, this);
     }
     return null;
   }
@@ -773,20 +825,24 @@ class RenderLayoutBox extends RenderBox
   ChildLayout? get lastLayoutChild {
     RenderBox? child = lastChild;
     if (child != null) {
-      return RenderBoxChildLayout(child);
+      return RenderBoxChildLayout(child, this);
     }
     return null;
   }
 
   @override
   Size computeDryLayout(covariant BoxConstraints constraints) {
+    if (constraints.isTight) {
+      return constraints.smallest;
+    }
     final layoutHandle = boxLayout.createLayoutHandle(this);
-    return sizeFromLayoutSize(
+    Size size = sizeFromLayoutSize(
       layoutHandle.performLayout(
         layoutConstraintsFromBoxConstraints(constraints),
         true,
       ),
     );
+    return constraints.constrain(size);
   }
 
   @override
@@ -814,9 +870,18 @@ class RenderLayoutBox extends RenderBox
   }
 }
 
+/// Adapter that makes a [RenderBox] compatible with the flexbox layout system.
+///
+/// [RenderBoxChildLayout] implements the [ChildLayout] interface for Flutter's
+/// [RenderBox] objects, allowing them to participate in flexbox layouts.
+/// It provides the bridge between Flutter's rendering system and the
+/// flexbox layout algorithm, handling layout calculations, caching, and
+/// positioning for individual render box children.
 class RenderBoxChildLayout with ChildLayout {
+  final RenderLayoutBox parent;
   final RenderBox renderBox;
-  RenderBoxChildLayout(this.renderBox);
+
+  RenderBoxChildLayout(this.renderBox, this.parent);
 
   @override
   Object? get debugKey {
@@ -841,12 +906,6 @@ class RenderBoxChildLayout with ChildLayout {
   );
 
   @override
-  set offset(LayoutOffset value) {
-    (renderBox.parentData as LayoutBoxParentData).offset =
-        offsetFromLayoutOffset(value);
-  }
-
-  @override
   double getDistanceToBaseline(LayoutTextBaseline baseline) {
     return renderBox.getDistanceToBaseline(
           textBaselineFromLayoutTextBaseline(baseline),
@@ -859,7 +918,7 @@ class RenderBoxChildLayout with ChildLayout {
     final parentData = renderBox.parentData as LayoutBoxParentData;
     final next = parentData.nextSibling;
     if (next != null) {
-      return RenderBoxChildLayout(next);
+      return RenderBoxChildLayout(next, parent);
     }
     return null;
   }
@@ -869,7 +928,7 @@ class RenderBoxChildLayout with ChildLayout {
     final parentData = renderBox.parentData as LayoutBoxParentData;
     final previous = parentData.previousSibling;
     if (previous != null) {
-      return RenderBoxChildLayout(previous);
+      return RenderBoxChildLayout(previous, parent);
     }
     return null;
   }
@@ -904,9 +963,35 @@ class RenderBoxChildLayout with ChildLayout {
   }
 
   @override
-  void layout(LayoutConstraints constraints) {
+  void layout(
+    LayoutOffset offset,
+    LayoutSize size,
+    OverflowBounds overflowBounds,
+  ) {
+    double maxScrollX = parent.contentSize.width - parent.viewportSize.width;
+    double maxScrollY = parent.contentSize.height - parent.viewportSize.height;
+    maxScrollX = max(0.0, maxScrollX);
+    maxScrollY = max(0.0, maxScrollY);
+    (renderBox.parentData as LayoutBoxParentData).offset =
+        offsetFromLayoutOffset(offset);
     renderBox.layout(
-      boxConstraintsFromLayoutConstraints(constraints),
+      (renderBox.parentData as LayoutBoxParentData).needLayoutBox
+          ? WrappedLayoutConstraints(
+              size: sizeFromLayoutSize(size),
+              offset: offsetFromLayoutOffset(offset),
+              scrollX: parent.scrollOffsetX,
+              scrollY: parent.scrollOffsetY,
+              maxScrollX: maxScrollX,
+              maxScrollY: maxScrollY,
+              contentSize: sizeFromLayoutSize(parent.contentSize),
+              viewportSize: sizeFromLayoutSize(parent.viewportSize),
+              horizontalUserScrollDirection: parent.horizontalAxisDirection,
+              verticalUserScrollDirection: parent.verticalAxisDirection,
+              overflowBounds: overflowBounds,
+            )
+          : BoxConstraints.tight(
+              sizeFromLayoutSize(size),
+            ),
       parentUsesSize: true,
     );
   }

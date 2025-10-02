@@ -83,7 +83,7 @@ class FlexChildLayoutCache extends ChildLayoutCache {
 /// directly with [LayoutBox] for custom implementations:
 ///
 /// ```dart
-/// LayoutBox(
+/// LayoutBoxWidget(
 ///   layout: FlexLayout(
 ///     direction: FlexDirection.row,
 ///     wrap: FlexWrap.wrap,
@@ -191,6 +191,11 @@ class FlexLayout extends Layout {
 /// FlexLayoutCache manages caching for the complete flex layout operation,
 /// including line management, spacing calculations, and line distribution.
 /// This cache is reused across layout passes to improve performance.
+/// Cache for storing computed flex layout information.
+///
+/// [FlexLayoutCache] stores the results of flex layout calculations to avoid
+/// redundant computations. It maintains information about flex lines, spacing,
+/// and layout state that can be reused across layout passes.
 class FlexLayoutCache {
   /// The first flex line in the layout.
   FlexLineLayoutCache? firstLine;
@@ -279,6 +284,9 @@ class FlexLineLayoutCache {
   /// The last child in this line.
   ChildLayout? lastChild;
 
+  /// The cross axis bounds for this line.
+  LayoutRect? bounds;
+
   /// The previous line in the layout.
   FlexLineLayoutCache? previousLine;
 
@@ -307,14 +315,165 @@ class FlexLineLayoutCache {
 /// 1. **Line Breaking**: Distributing children into flex lines
 /// 2. **Main Axis Sizing**: Calculating sizes along the main axis with flex grow/shrink
 /// 3. **Cross Axis Sizing**: Calculating sizes along the cross axis
-/// 4. **Alignment**: Positioning items within lines and lines within the container
-/// 5. **Spacing**: Applying gaps between items and padding
+/// Handle for performing flexbox layout calculations.
+///
+/// [FlexLayoutHandle] implements the flexbox layout algorithm as specified
+/// in the CSS Flexbox specification. It manages the complex multi-pass layout
+/// process including:
+///
+/// 1. **Line Breaking**: Determining which children belong to which flex lines
+/// 2. **Main Sizing**: Calculating sizes along the main axis
+/// 3. **Flexing**: Applying flex-grow and flex-shrink factors
+/// 4. **Cross Sizing**: Calculating sizes along the cross axis
+/// 5. **Alignment**: Positioning items within lines and lines within the container
+/// 6. **Spacing**: Applying gaps between items and padding
 ///
 /// The algorithm follows the CSS Flexbox specification closely, with optimizations
 /// for Flutter's layout system and support for RTL text directions.
 class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   /// Creates a flex layout handle for the given layout and parent.
   FlexLayoutHandle(super.layout, super.parent);
+
+  @override
+  int indexOfNearestChildAtOffset(LayoutOffset offset) {
+    // find the line at the offset
+    // then find the child in that line at the offset
+
+    if (_cache == null) {
+      throw StateError('Layout has not been performed yet.');
+    }
+    double crossOffset = switch (layout.direction.axis) {
+      LayoutAxis.horizontal => offset.dy,
+      LayoutAxis.vertical => offset.dx,
+    };
+    double mainOffset = switch (layout.direction.axis) {
+      LayoutAxis.horizontal => offset.dx,
+      LayoutAxis.vertical => offset.dy,
+    };
+
+    bool reverseMain = layout.direction.reverse;
+    bool reverseCross = layout.wrap == FlexWrap.wrapReverse;
+
+    FlexLineLayoutCache? line = reverseCross
+        ? _cache!.lastLine
+        : _cache!.firstLine;
+    while (line != null) {
+      final previousLine = line.previousLine;
+      final nextLine = line.nextLine;
+
+      bool isInLine = false;
+
+      // if reverseCross is false, then 0 is at the start cross, and N is at the end cross
+      // if reverseCross is true, then 0 is at the end cross, and N is at the start cross
+      if (reverseCross) {
+        if (previousLine == null) {
+          isInLine = true;
+        } else {
+          // double crossMaxOffset =
+          //     line.bounds!.bottom +
+          //     (previousLine.bounds!.top - line.bounds!.bottom) / 2.0;
+          double crossMaxOffset = switch (layout.direction.axis) {
+            LayoutAxis.horizontal =>
+              line.bounds!.bottom +
+                  (previousLine.bounds!.top - line.bounds!.bottom) / 2.0,
+            LayoutAxis.vertical =>
+              line.bounds!.right +
+                  (previousLine.bounds!.left - line.bounds!.right) / 2.0,
+          };
+          if (crossOffset <= crossMaxOffset) {
+            isInLine = true;
+          }
+        }
+      } else {
+        if (nextLine == null) {
+          isInLine = true;
+        } else {
+          double crossMaxOffset = switch (layout.direction.axis) {
+            LayoutAxis.horizontal =>
+              line.bounds!.bottom +
+                  (nextLine.bounds!.top - line.bounds!.bottom) / 2.0,
+            LayoutAxis.vertical =>
+              line.bounds!.right +
+                  (nextLine.bounds!.left - line.bounds!.right) / 2.0,
+          };
+          if (crossOffset <= crossMaxOffset) {
+            isInLine = true;
+          }
+        }
+      }
+
+      if (isInLine) {
+        ChildLayout? child = reverseMain
+            ? (line.lastChild ?? parent.lastLayoutChild)
+            : line.firstChild;
+        while (child != null) {
+          if (child.layoutData.behavior == LayoutBehavior.absolute) {
+            child = reverseMain ? child.previousSibling : child.nextSibling;
+            continue;
+          }
+          final cache = child.layoutCache as FlexChildLayoutCache;
+          if (cache.lineCache != line) {
+            child = reverseMain ? child.previousSibling : child.nextSibling;
+            continue;
+          }
+          final previousChild = child.previousSibling;
+          final nextChild = child.nextSibling;
+          bool hasPrevious =
+              previousChild != null &&
+              cache.lineCache ==
+                  (previousChild.layoutCache as FlexChildLayoutCache)
+                      .lineCache &&
+              previousChild.layoutData.behavior != LayoutBehavior.absolute;
+          bool hasNext =
+              nextChild != null &&
+              cache.lineCache ==
+                  (nextChild.layoutCache as FlexChildLayoutCache).lineCache &&
+              nextChild.layoutData.behavior != LayoutBehavior.absolute;
+          final childBounds = child.offset & child.size;
+          // for child, the divider offset is at the center of the child
+          // instead of the gap between children
+          /*
+                  center            center            center
+              [      |      ]   [      |      ]   [      |      ]
+            0 [  0   |   1  ] 1 [  1   |   2  ] 2 [  2   |   3  ] 3
+              [      |      ]   [      |      ]   [      |      ]
+
+              ^____box 0____^   ^____box 1____^   ^____box 2____^
+          */
+          if (reverseMain) {
+            double mainMaxOffset = switch (layout.direction.axis) {
+              LayoutAxis.horizontal => childBounds.horizontalCenter,
+              LayoutAxis.vertical => childBounds.verticalCenter,
+            };
+            if (mainOffset <= mainMaxOffset) {
+              return cache.index + 1;
+            } else if (!hasPrevious) {
+              return cache.index;
+            }
+          } else {
+            double mainMaxOffset = switch (layout.direction.axis) {
+              LayoutAxis.horizontal => childBounds.horizontalCenter,
+              LayoutAxis.vertical => childBounds.verticalCenter,
+            };
+            if (mainOffset <= mainMaxOffset) {
+              return cache.index;
+            } else if (!hasNext) {
+              return cache.index + 1;
+            }
+          }
+
+          child = reverseMain ? previousChild : nextChild;
+        }
+
+        return line.lineIndex + 1000;
+      }
+
+      line = reverseCross ? previousLine : nextLine;
+    }
+
+    // technically we shouldn't get here since one of the lines should match
+    return -1;
+  }
 
   /// The layout cache for this flex operation.
   ///
@@ -835,21 +994,26 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         affectedCount: line.itemCount,
       );
 
-      if (spacingAdjustment != null) {
-        mainSpacingStart += spacingAdjustment.additionalStartSpacing;
-        mainSpacingEnd += spacingAdjustment.additionalEndSpacing;
-        mainSpacing += spacingAdjustment.additionalSpacing;
-        usedMainSize += spacingAdjustment.additionalStartSpacing;
-        usedMainSize += spacingAdjustment.additionalEndSpacing;
-        if (line.itemCount > 1) {
-          usedMainSize +=
-              (line.itemCount - 1) * spacingAdjustment.additionalSpacing;
-        }
-      }
-
       line.mainSpacing = mainSpacing;
       line.mainSpacingStart = mainSpacingStart;
       line.mainSpacingEnd = mainSpacingEnd;
+
+      if (spacingAdjustment != null) {
+        // mainSpacingStart += spacingAdjustment.additionalStartSpacing;
+        // mainSpacingEnd += spacingAdjustment.additionalEndSpacing;
+        // mainSpacing += spacingAdjustment.additionalSpacing;
+        line.mainSpacingStart += spacingAdjustment.additionalStartSpacing;
+        line.mainSpacingEnd += spacingAdjustment.additionalEndSpacing;
+        line.mainSpacing += spacingAdjustment.additionalSpacing;
+        // usedMainSize += spacingAdjustment.additionalStartSpacing;
+        // usedMainSize += spacingAdjustment.additionalEndSpacing;
+        line.mainSize += spacingAdjustment.additionalStartSpacing;
+        line.mainSize += spacingAdjustment.additionalEndSpacing;
+        if (line.itemCount > 1) {
+          line.mainSize +=
+              (line.itemCount - 1) * spacingAdjustment.additionalSpacing;
+        }
+      }
 
       // recompute cross spacing if needed
       double? adjustedCrossSize = layout.alignItems.adjustSize(
@@ -955,14 +1119,11 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   /// The returned rectangle defines the bounds of the visible content area
   /// and is used for scrolling calculations and viewport management.
 
-  bool ranPositioning = false;
   @override
   LayoutRect performPositioning(
     LayoutSize viewportSize,
     LayoutSize contentSize,
   ) {
-    assert(!ranPositioning, 'positioning can only be run once');
-    ranPositioning = true;
     LayoutRect bounds = LayoutRect.zero;
 
     double viewportMainSize = switch (layout.direction.axis) {
@@ -1173,39 +1334,39 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         double.infinity,
       );
 
-      // use preferred size to layout the children
-      child.layout(
-        LayoutConstraints.tightFor(
-          width: preferredWidth ?? 0.0,
-          height: preferredHeight ?? 0.0,
-        ),
+      LayoutOffset offset;
+      LayoutSize size = LayoutSize(
+        preferredWidth ?? child.size.width,
+        preferredHeight ?? child.size.height,
       );
 
       switch (parent.textDirection) {
         case LayoutTextDirection.ltr:
-          child.offset = LayoutOffset(
+          offset = LayoutOffset(
             leftOffset ??
                 (rightOffset != null
-                    ? viewportSize.width - rightOffset - child.size.width
+                    ? viewportSize.width - rightOffset - size.width
                     : 0.0),
             topOffset ??
                 (bottomOffset != null
-                    ? viewportSize.height - bottomOffset - child.size.height
+                    ? viewportSize.height - bottomOffset - size.height
                     : 0.0),
           );
         case LayoutTextDirection.rtl:
-          child.offset = LayoutOffset(
+          offset = LayoutOffset(
             rightOffset != null
-                ? viewportSize.width - rightOffset - child.size.width
+                ? viewportSize.width - rightOffset - size.width
                 : (leftOffset ?? 0.0),
             topOffset ??
                 (bottomOffset != null
-                    ? viewportSize.height - bottomOffset - child.size.height
+                    ? viewportSize.height - bottomOffset - size.height
                     : 0.0),
           );
       }
 
-      LayoutRect childBounds = child.offset & child.size;
+      child.layout(offset, size, OverflowBounds.zero);
+
+      LayoutRect childBounds = offset & size;
       bounds = bounds.expandToInclude(childBounds);
 
       child = child.nextSibling;
@@ -1461,23 +1622,47 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           rightBound,
           bottomBound,
         );
-        LayoutOffset boundOffset = _limitRectToBounds(contentRect, limitBounds);
-        dx = boundOffset.dx;
-        dy = boundOffset.dy;
+        double overflowTop = limitBounds.top - contentRect.top;
+        double overflowLeft = limitBounds.left - contentRect.left;
+        double overflowRight = contentRect.right - limitBounds.right;
+        double overflowBottom = contentRect.bottom - limitBounds.bottom;
+        LayoutOffset? boundOffset = _limitRectToBounds(
+          contentRect,
+          limitBounds,
+        );
+        if (boundOffset != null) {
+          dx = boundOffset.dx;
+          dy = boundOffset.dy;
+        } else {
+          final currentBounds = line.bounds;
+          if (currentBounds != null) {
+            // store the bounds for the line
+            line.bounds = currentBounds.expandToInclude(contentRect);
+          } else {
+            line.bounds = contentRect;
+          }
+        }
 
-        child.offset = LayoutOffset(dx, dy);
-
+        LayoutOffset offset = LayoutOffset(dx, dy);
+        LayoutSize size = switch (layout.direction.axis) {
+          LayoutAxis.horizontal => LayoutSize(
+            childCache.mainFlexSize ?? 0.0,
+            childCache.crossSize ?? 0.0,
+          ),
+          LayoutAxis.vertical => LayoutSize(
+            childCache.crossSize ?? 0.0,
+            childCache.mainFlexSize ?? 0.0,
+          ),
+        };
         child.layout(
-          switch (layout.direction.axis) {
-            LayoutAxis.horizontal => LayoutConstraints.tightFor(
-              width: childCache.mainFlexSize ?? 0.0,
-              height: childCache.crossSize ?? 0.0,
-            ),
-            LayoutAxis.vertical => LayoutConstraints.tightFor(
-              width: childCache.crossSize ?? 0.0,
-              height: childCache.mainFlexSize ?? 0.0,
-            ),
-          },
+          offset,
+          size,
+          OverflowBounds(
+            top: _validateOverflowBounds(overflowTop),
+            left: _validateOverflowBounds(overflowLeft),
+            right: _validateOverflowBounds(overflowRight),
+            bottom: _validateOverflowBounds(overflowBottom),
+          ),
         );
 
         LayoutRect childBounds = child.offset & child.size;
@@ -1488,8 +1673,6 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         } else {
           mainLineOffset -= line.mainSpacing;
         }
-
-        child.clearCache();
 
         child = child.nextSibling;
         childIndex++;
@@ -1504,6 +1687,13 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     return bounds;
   }
 
+  double _validateOverflowBounds(double value) {
+    if (value.isNaN || value.isNegative || value.isInfinite) {
+      return 0.0;
+    }
+    return value;
+  }
+
   /// Creates a new cache instance for flex child layout operations.
   ///
   /// Returns a [FlexChildLayoutCache] configured for storing flex-specific
@@ -1514,10 +1704,10 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   }
 }
 
-LayoutOffset _limitRectToBounds(LayoutRect content, LayoutRect bounds) {
+LayoutOffset? _limitRectToBounds(LayoutRect content, LayoutRect bounds) {
   // used to determine sticky position, so that it does not exceed the bounds
-  double newLeft = content.left;
-  double newTop = content.top;
+  double? newLeft;
+  double? newTop;
   if (content.left < bounds.left) {
     newLeft = bounds.left;
   }
@@ -1530,7 +1720,10 @@ LayoutOffset _limitRectToBounds(LayoutRect content, LayoutRect bounds) {
   if (content.bottom > bounds.bottom) {
     newTop = bounds.bottom - content.height;
   }
-  return LayoutOffset(newLeft, newTop);
+  if (newLeft == null && newTop == null) {
+    return null;
+  }
+  return LayoutOffset(newLeft ?? content.left, newTop ?? content.top);
 }
 
 double? _clampNullableDouble(double? value, double? min, double? max) {

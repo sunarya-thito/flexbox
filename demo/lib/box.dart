@@ -9,7 +9,7 @@ class Box extends StatefulWidget {
   final int number;
   final Widget? child;
 
-  const Box(this.number, {super.key}) : child = null;
+  const Box(this.number, {super.key, this.child});
   const Box.parent({super.key, this.child}) : number = 0;
 
   @override
@@ -47,19 +47,21 @@ class _BoxState extends State<Box> {
                 color: _randomPastelColor(widget.number),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child:
-                  widget.child ??
-                  Opacity(
-                    opacity: 0.7,
-                    child: Text(
-                      '${widget.number}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 0, 0, 0),
+              child: DefaultTextStyle(
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+                child:
+                    widget.child ??
+                    Opacity(
+                      opacity: 0.7,
+                      child: Text(
+                        '${widget.number}',
                       ),
                     ),
-                  ),
+              ),
             ),
             Positioned(
               top: widget.child == null ? 4 : null,

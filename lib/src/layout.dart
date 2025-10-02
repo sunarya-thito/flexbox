@@ -282,6 +282,9 @@ class LayoutRect {
   /// The bottom edge coordinate (calculated as top + height).
   double get bottom => top + height;
 
+  double get horizontalCenter => left + width / 2;
+  double get verticalCenter => top + height / 2;
+
   /// Expands this rectangle to include the bounds of another rectangle.
   ///
   /// Returns a new rectangle that encompasses both this rectangle
@@ -430,6 +433,8 @@ abstract class ChildLayoutCache {
   ///
   /// Stores the result of measuring the child according to its auto-sizing rules.
   LayoutSize? cachedAutoSize;
+
+  int index = -1;
 }
 
 /// Interface for child elements that participate in layout.
@@ -449,7 +454,11 @@ mixin ChildLayout {
   /// This method calculates and sets the child's size and position based on
   /// the provided constraints and the child's layout data. After calling this,
   /// the child's [size] and [offset] properties will be valid.
-  void layout(LayoutConstraints constraints);
+  void layout(
+    LayoutOffset offset,
+    LayoutSize size,
+    OverflowBounds overflowBounds,
+  );
 
   /// Performs a dry layout without modifying the child's state.
   ///
@@ -494,11 +503,6 @@ mixin ChildLayout {
   /// Only valid after [layout] has been called. Represents the final
   /// position assigned to this child relative to its parent.
   LayoutOffset get offset;
-
-  /// Sets the offset (position) of this child.
-  ///
-  /// Used by layout algorithms to position the child after sizing.
-  set offset(LayoutOffset value);
 
   /// The cache for storing computed layout results.
   ///
@@ -629,12 +633,6 @@ class ChildLayoutDryDelegate with ChildLayout {
     throw Exception('offset is not supported in dry delegate');
   }
 
-  /// Throws an exception - setting offset is not supported in dry layout.
-  @override
-  set offset(LayoutOffset value) {
-    throw Exception('offset is not supported in dry delegate');
-  }
-
   /// Performs a dry layout on the child.
   @override
   LayoutSize dryLayout(LayoutConstraints constraints) {
@@ -675,7 +673,11 @@ class ChildLayoutDryDelegate with ChildLayout {
   ///
   /// Dry delegates only perform measurements, not actual layout.
   @override
-  void layout(LayoutConstraints constraints) {
+  void layout(
+    LayoutOffset offset,
+    LayoutSize size,
+    OverflowBounds overflowBounds,
+  ) {
     throw Exception('layout is not supported in dry delegate');
   }
 
@@ -791,6 +793,10 @@ abstract class LayoutHandle<T extends Layout> {
 
   /// Creates a layout handle for the given layout and parent.
   LayoutHandle(this.layout, this.parent);
+
+  /// Finds the index of the child at the given offset.
+  /// Returns -1 if no child is found at the offset.
+  int indexOfNearestChildAtOffset(LayoutOffset offset);
 
   /// Creates a cache for storing layout computation results.
   ///

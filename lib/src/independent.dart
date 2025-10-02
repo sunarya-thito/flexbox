@@ -1,6 +1,11 @@
 import 'package:flexiblebox/src/basic.dart';
 import 'package:flexiblebox/src/layout.dart';
 
+/// Parent data for children in the independent layout system.
+///
+/// [BoxParentData] stores layout-specific information for each child in
+/// the independent box layout system. It maintains positioning, caching,
+/// and sibling relationships needed for layout calculations.
 class BoxParentData {
   LayoutOffset offset = LayoutOffset.zero;
 
@@ -20,6 +25,13 @@ class BoxParentData {
   Box? get previousSortedSibling => _previousSortedSibling ?? previousSibling;
 }
 
+/// A layout container in the independent layout system.
+///
+/// [Box] represents a node in the layout tree that can contain children
+/// and participate in layout calculations. It implements [ParentLayout]
+/// and provides the foundation for building layout hierarchies independent
+/// of Flutter's widget system. Boxes manage their children, handle layout
+/// constraints, and coordinate positioning and sizing.
 class Box with ParentLayout {
   @override
   LayoutTextDirection textDirection;
@@ -511,6 +523,12 @@ class Box with ParentLayout {
   }
 }
 
+/// Manages the layout pipeline for the independent layout system.
+///
+/// [LayoutPipelineOwner] coordinates layout operations across the layout tree,
+/// handling layout scheduling, constraint propagation, and visual updates.
+/// It maintains a queue of nodes that need layout and orchestrates the
+/// layout process to ensure all constraints are properly resolved.
 class LayoutPipelineOwner {
   final List<Box> _nodesNeedingLayout = [];
   final void Function()? onNeedVisualUpdate;
@@ -522,6 +540,12 @@ class LayoutPipelineOwner {
   }
 }
 
+/// Adapter that makes a [Box] compatible with the layout system.
+///
+/// [BoxChildLayout] implements the [ChildLayout] interface for [Box] objects,
+/// allowing boxes to participate as children in layout calculations.
+/// It provides the bridge between the box-based layout system and the
+/// generic layout algorithm interface.
 class BoxChildLayout with ChildLayout {
   final Box box;
   BoxChildLayout(this.box);
@@ -531,11 +555,6 @@ class BoxChildLayout with ChildLayout {
 
   @override
   LayoutOffset get offset => box.parentData.offset;
-
-  @override
-  set offset(LayoutOffset offset) {
-    box.parentData.offset = offset;
-  }
 
   @override
   void clearCache() {
@@ -574,8 +593,16 @@ class BoxChildLayout with ChildLayout {
   }
 
   @override
-  void layout(LayoutConstraints constraints) {
-    box.layout(constraints, parentUsesSize: true);
+  void layout(
+    LayoutOffset offset,
+    LayoutSize size,
+    OverflowBounds overflowBounds,
+  ) {
+    box.parentData.offset = offset;
+    assert(size.width.isFinite && size.height.isFinite);
+    if (box.size != size) {
+      box.size = size;
+    }
   }
 
   @override

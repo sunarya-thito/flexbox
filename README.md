@@ -1,7 +1,8 @@
 # FlexibleBox
 
 [![pub package](https://img.shields.io/pub/v/flexiblebox.svg)](https://pub.dev/packages/flexiblebox)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/sunarya-thito/flexbox/test.yml?branch=master)](https://github.com/sunarya-thito/flexbox/actions)
 
 A Flutter package that brings CSS Flexbox layout capabilities to your Flutter
 applications. Create responsive, flexible layouts with ease using familiar
@@ -10,13 +11,13 @@ flexbox concepts.
 ## Features
 
 - Complete Flexbox Implementation: Full CSS flexbox specification support
-- Responsive Design: Automatic layout adaptation to different screen sizes
 - Flexible Sizing: Support for flex grow, shrink, and basis properties
 - Advanced Alignment: Cross-axis and main-axis alignment options
 - Wrapping Support: Multi-line flex layouts with wrap and wrap-reverse
 - RTL Support: Right-to-left language support
 - Absolute Positioning: Position items absolutely within flex containers
 - Scrolling: Built-in scrollable flex containers
+- Sticky Positioning: Sticky items within flex layouts
 - Convenience Widgets: RowBox and ColumnBox for common use cases
 - Custom Spacing: Flexible spacing and padding systems
 
@@ -96,6 +97,126 @@ FlexItem(
   height: SizeUnit.fixed(100.0),        // Preferred height
   alignSelf: BoxAlignmentGeometry.start,     // Individual alignment
   child: YourWidget(),
+)
+```
+
+### AbsoluteItem
+
+For absolutely positioned children within a FlexBox.
+
+```dart
+AbsoluteItem(
+  left: PositionUnit.fixed(10.0),      // Left offset
+  top: PositionUnit.fixed(20.0),       // Top offset
+  right: PositionUnit.fixed(10.0),     // Right offset
+  bottom: PositionUnit.fixed(20.0),    // Bottom offset
+  width: SizeUnit.fixed(100.0),        // Fixed width
+  height: SizeUnit.fixed(50.0),        // Fixed height
+  child: YourWidget(),
+)
+```
+
+### Sticky FlexItem
+
+For sticky positioning within scrollable flex containers, use the `top`, `left`,
+`bottom`, and `right` properties on FlexItem. These create sticky elements that
+remain fixed relative to the viewport during scrolling.
+
+```dart
+FlexBox(
+  direction: FlexDirection.column,
+  // Make the container scrollable
+  height: SizeUnit.fixed(300.0), // Fixed height to enable scrolling
+  children: [
+    FlexItem(
+      height: SizeUnit.fixed(100.0),
+      child: Container(
+        color: Colors.blue,
+        child: Center(child: Text('Normal Item')),
+      ),
+    ),
+    // Sticky header that sticks to the top
+    FlexItem(
+      top: PositionUnit.fixed(0.0),    // Stick to top edge
+      left: PositionUnit.fixed(0.0),   // Stick to left edge
+      right: PositionUnit.fixed(0.0),  // Stick to right edge
+      height: SizeUnit.fixed(50.0),
+      child: Container(
+        color: Colors.red,
+        child: Center(child: Text('Sticky Header')),
+      ),
+    ),
+    FlexItem(
+      height: SizeUnit.fixed(200.0),
+      child: Container(
+        color: Colors.green,
+        child: Center(child: Text('Content')),
+      ),
+    ),
+    FlexItem(
+      height: SizeUnit.fixed(200.0),
+      child: Container(
+        color: Colors.yellow,
+        child: Center(child: Text('More Content')),
+      ),
+    ),
+  ],
+)
+```
+
+### Scrollable AbsoluteItem
+
+AbsoluteItem positions elements relative to the viewport bounds, not content
+bounds. This means `bottom: PositionUnit.fixed(10.0)` positions the element 10
+units from the bottom of the viewport, not the content.
+
+For scroll-aware positioning, use `PositionUnit.scrollOffset` to create elements
+that move with scroll:
+
+```dart
+FlexBox(
+  direction: FlexDirection.column,
+  height: SizeUnit.fixed(400.0), // Fixed height to enable scrolling
+  verticalOverflow: LayoutOverflow.scroll,
+  children: [
+    // Regular content
+    FlexItem(
+      height: SizeUnit.fixed(200.0),
+      child: Container(color: Colors.blue, child: Center(child: Text('Content 1'))),
+    ),
+    FlexItem(
+      height: SizeUnit.fixed(200.0),
+      child: Container(color: Colors.green, child: Center(child: Text('Content 2'))),
+    ),
+    FlexItem(
+      height: SizeUnit.fixed(200.0),
+      child: Container(color: Colors.yellow, child: Center(child: Text('Content 3'))),
+    ),
+    
+    // Absolute positioned element that moves with scroll
+    AbsoluteItem(
+      right: PositionUnit.fixed(20.0),      // 20px from right viewport edge
+      bottom: PositionUnit.fixed(20.0),     // 20px from bottom viewport edge
+      width: SizeUnit.fixed(60.0),
+      height: SizeUnit.fixed(60.0),
+      child: FloatingActionButton(
+        onPressed: () {},
+        child: Icon(Icons.add),
+      ),
+    ),
+    
+    // Element that follows scroll position
+    AbsoluteItem(
+      left: PositionUnit.fixed(10.0),
+      top: PositionUnit.scrollOffset + PositionUnit.fixed(10.0), // Moves with scroll
+      width: SizeUnit.fixed(40.0),
+      height: SizeUnit.fixed(40.0),
+      child: Container(
+        color: Colors.red,
+        child: Center(child: Text('Scroll\nIndicator')),
+      ),
+    ),
+  ],
 )
 ```
 
@@ -187,6 +308,23 @@ ColumnBox(
 - `SizeUnit.maxContent`: Maximum content size
 - `SizeUnit.fitContent`: Fit content size
 - `SizeUnit.viewportSize`: Viewport size
+
+#### PositionUnit
+
+- `PositionUnit.fixed(double)`: Fixed position
+- `PositionUnit.zero`: Zero position (equivalent to fixed(0.0))
+- `PositionUnit.viewportSize`: Full viewport size along the axis
+- `PositionUnit.contentSize`: Total content size along the axis
+- `PositionUnit.childSize`: Size of the positioned child element
+- `PositionUnit.boxOffset`: Offset from the box's natural position
+- `PositionUnit.scrollOffset`: Current scroll offset
+- `PositionUnit.contentOverflow`: Amount content overflows the viewport
+- `PositionUnit.contentUnderflow`: Amount content underflows the viewport
+- `PositionUnit.viewportStartBound`: Start boundary of the viewport
+- `PositionUnit.viewportEndBound`: End boundary of the viewport
+- `PositionUnit.cross(PositionUnit)`: Convert passed PositionUnit to cross axis
+- `PositionUnit.constrained({required PositionUnit position, PositionUnit min, PositionUnit max})`:
+  Position constrained within min/max bounds
 
 #### SpacingUnit
 
