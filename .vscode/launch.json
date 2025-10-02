@@ -45,7 +45,7 @@
             "name": "demo",
             "cwd": "demo",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
         },
         {
             "name": "demo (profile mode)",

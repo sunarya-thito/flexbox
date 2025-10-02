@@ -1,3 +1,8 @@
+## 0.0.5
+
+- Added `RotatedWidget` to rotate its child by a given angle in degrees.
+- Fixed alignment issues in `FlexLayout` when using `alignSelf: stretch`.
+
 ## 0.0.4
 
 - Added `indexOfNearestChildAtOffset` method to `LayoutBox` and `FlexLayout` to

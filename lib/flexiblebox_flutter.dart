@@ -7,6 +7,7 @@ export 'src/basic.dart';
 export 'src/widgets/flex.dart';
 export 'src/widgets/widget.dart';
 export 'src/rendering.dart';
+export 'src/widgets/rotated.dart';
 
 /// Extension methods for converting Flutter's [EdgeInsetsGeometry] to flexbox [EdgeSpacingGeometry].
 ///

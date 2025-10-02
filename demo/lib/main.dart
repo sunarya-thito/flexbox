@@ -13,6 +13,7 @@ import 'package:demo/cases/case_flex_wrap_reverse_row_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_row_reverse.dart';
 import 'package:demo/cases/case_index_finder.dart';
 import 'package:demo/cases/case_items_start.dart';
+import 'package:demo/cases/case_rotated.dart';
 import 'package:demo/cases/case_row_reverse.dart';
 import 'package:demo/cases/case_rtl_column.dart';
 import 'package:demo/cases/case_rtl_column_reverse.dart';
@@ -257,6 +258,7 @@ final testCases = [
   // Tools
   CaseIndexFinder(),
   CaseBuilder(),
+  CaseRotated(),
 ];
 late HighlighterTheme darkHighlighterTheme;
 void main(List<String> args) async {

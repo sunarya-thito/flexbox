@@ -1473,7 +1473,6 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         // alignSelf - acts as override to alignItems
         // alignItems - aligns all items in the line
         // alignContent - aligns all lines in the container
-
         double? alignSelf = child.layoutData.alignSelf?.align(
           parent: parent,
           axis: switch (layout.direction.axis) {
@@ -1533,7 +1532,16 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               contentSize: line.crossSize,
             );
           } else {
-            adjustCrossSize = layout.alignItems.adjustSize(
+            adjustCrossSize = child.layoutData.alignSelf?.adjustSize(
+              parent: parent,
+              axis: switch (layout.direction.axis) {
+                LayoutAxis.horizontal => LayoutAxis.vertical,
+                LayoutAxis.vertical => LayoutAxis.horizontal,
+              },
+              viewportSize: max(contentCrossSize, viewportCrossSize),
+              contentSize: contentCrossSize,
+            );
+            adjustCrossSize ??= layout.alignItems.adjustSize(
               parent: parent,
               axis: switch (layout.direction.axis) {
                 LayoutAxis.horizontal => LayoutAxis.vertical,
