@@ -1,3 +1,9 @@
+## 0.0.9
+
+- Fixed an issue where AbsoluteItem with unspecified width or height would not
+  default to `fit-content` if only one of the positioning properties (left/right
+  or top/bottom) is set.
+
 ## 0.0.8
 
 - No longer skips invisible children during layout to prevent issues with

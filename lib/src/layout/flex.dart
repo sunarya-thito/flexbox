@@ -1338,8 +1338,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
 
       LayoutOffset offset;
       LayoutSize size = LayoutSize(
-        preferredWidth ?? child.size.width,
-        preferredHeight ?? child.size.height,
+        preferredWidth ?? 0.0,
+        preferredHeight ?? 0.0,
       );
 
       switch (parent.textDirection) {

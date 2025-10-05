@@ -369,15 +369,23 @@ class _DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
     final parentData = renderObject.parentData as LayoutBoxParentData;
     final parent = renderObject.parent as RenderLayoutBox;
     parentData.debugKey = key;
+    var width = this.width;
+    var height = this.height;
+    if (width == null) {
+      if ((left == null && right != null) || (left != null && right == null)) {
+        width = SizeUnit.fitContent;
+      }
+    }
+    if (height == null) {
+      if ((top == null && bottom != null) || (top != null && bottom == null)) {
+        height = SizeUnit.fitContent;
+      }
+    }
     final newLayoutData = LayoutData(
       behavior: LayoutBehavior.absolute,
       paintOrder: paintOrder,
-      width: width == null && top == null && bottom == null
-          ? SizeUnit.fitContent
-          : width,
-      height: height == null && left == null && right == null
-          ? SizeUnit.fitContent
-          : height,
+      width: width,
+      height: height,
       minWidth: minWidth,
       maxWidth: maxWidth,
       minHeight: minHeight,
