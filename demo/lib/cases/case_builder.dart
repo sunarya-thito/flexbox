@@ -58,7 +58,8 @@ class CaseBuilder extends TestCase {
               key: key3,
               width: SizeUnit.fixed(150),
               height: SizeUnit.fixed(100),
-              top: PositionUnit.fixed(10),
+              top: PositionUnit.fixed(0),
+              bottom: PositionUnit.fixed(0),
               paintOrder: 9,
               builder: (context, box) {
                 return Box(

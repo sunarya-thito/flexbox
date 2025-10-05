@@ -797,11 +797,10 @@ class RenderLayoutBox extends RenderBox
         parentData.revealOffset ??
         parentData.offset; // This is the offset of the box within the viewport.
 
-    print('direct: $axisDirection');
-
     // shift the paint offset to account for the viewport padding
-    final padding = boxLayout.padding;
     final viewportSize = this.viewportSize;
+    final padding = boxLayout.padding;
+
     double top = padding.top.computeSpacing(
       axis: LayoutAxis.vertical,
       viewportSize: viewportSize.height,
@@ -818,6 +817,66 @@ class RenderLayoutBox extends RenderBox
       axis: LayoutAxis.horizontal,
       viewportSize: viewportSize.width,
     );
+
+    if (parentData.layoutData.behavior != LayoutBehavior.absolute) {
+      // double topBound =
+      //     parentData.layoutData.top?.computePosition(
+      //       parent: this,
+      //       child: RenderBoxChildLayout(box, this),
+      //       direction: LayoutAxis.vertical,
+      //     ) ??
+      //     0.0;
+      // double leftBound =
+      //     parentData.layoutData.left?.computePosition(
+      //       parent: this,
+      //       child: RenderBoxChildLayout(box, this),
+      //       direction: LayoutAxis.horizontal,
+      //     ) ??
+      //     0.0;
+      // double bottomBound =
+      //     parentData.layoutData.bottom?.computePosition(
+      //       parent: this,
+      //       child: RenderBoxChildLayout(box, this),
+      //       direction: LayoutAxis.vertical,
+      //     ) ??
+      //     0.0;
+      // double rightBound =
+      //     parentData.layoutData.right?.computePosition(
+      //       parent: this,
+      //       child: RenderBoxChildLayout(box, this),
+      //       direction: LayoutAxis.horizontal,
+      //     ) ??
+      //     0.0;
+      final childLayout = RenderBoxChildLayout(box, this);
+      if (parentData.layoutData.top != null) {
+        top += parentData.layoutData.top!.computePosition(
+          parent: this,
+          child: childLayout,
+          direction: LayoutAxis.vertical,
+        );
+      }
+      if (parentData.layoutData.left != null) {
+        left += parentData.layoutData.left!.computePosition(
+          parent: this,
+          child: childLayout,
+          direction: LayoutAxis.horizontal,
+        );
+      }
+      if (parentData.layoutData.bottom != null) {
+        bottom += parentData.layoutData.bottom!.computePosition(
+          parent: this,
+          child: childLayout,
+          direction: LayoutAxis.vertical,
+        );
+      }
+      if (parentData.layoutData.right != null) {
+        right += parentData.layoutData.right!.computePosition(
+          parent: this,
+          child: childLayout,
+          direction: LayoutAxis.horizontal,
+        );
+      }
+    }
 
     double startOffsetX = lerpDouble(-left, right, alignment)!;
     double startOffsetY = lerpDouble(-top, bottom, alignment)!;

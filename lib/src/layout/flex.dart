@@ -216,6 +216,11 @@ class FlexLayoutCache {
   /// The total number of lines in the layout.
   int lineCount = 0;
 
+  double paddingTop = 0.0;
+  double paddingBottom = 0.0;
+  double paddingLeft = 0.0;
+  double paddingRight = 0.0;
+
   /// Allocates and returns a new flex line cache.
   ///
   /// Creates a new line, assigns it an index, and links it into the line chain.
@@ -592,6 +597,20 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       },
       viewportSize: viewportCrossSize,
     );
+
+    // store padding in cache for later use
+    switch (layout.direction.axis) {
+      case LayoutAxis.horizontal:
+        cache.paddingTop = crossSpacingStart;
+        cache.paddingBottom = crossSpacingEnd;
+        cache.paddingLeft = mainSpacingStart;
+        cache.paddingRight = mainSpacingEnd;
+      case LayoutAxis.vertical:
+        cache.paddingTop = mainSpacingStart;
+        cache.paddingBottom = mainSpacingEnd;
+        cache.paddingLeft = crossSpacingStart;
+        cache.paddingRight = crossSpacingEnd;
+    }
 
     // reduce viewport size by padding
     viewportMainSize = max(
@@ -1568,20 +1587,24 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         double? rightBound;
         double? bottomBound;
         if (child.layoutData.top != null) {
-          topBound = child.layoutData.top!.computePosition(
-            parent: parent,
-            child: child,
-            direction: LayoutAxis.vertical,
-          );
+          topBound =
+              child.layoutData.top!.computePosition(
+                parent: parent,
+                child: child,
+                direction: LayoutAxis.vertical,
+              ) +
+              cache.paddingTop;
         } else {
           topBound = double.negativeInfinity;
         }
         if (child.layoutData.left != null) {
-          leftBound = child.layoutData.left!.computePosition(
-            parent: parent,
-            child: child,
-            direction: LayoutAxis.horizontal,
-          );
+          leftBound =
+              child.layoutData.left!.computePosition(
+                parent: parent,
+                child: child,
+                direction: LayoutAxis.horizontal,
+              ) +
+              cache.paddingLeft;
         } else {
           leftBound = double.negativeInfinity;
         }
@@ -1592,7 +1615,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
                 parent: parent,
                 child: child,
                 direction: LayoutAxis.horizontal,
-              );
+              ) -
+              cache.paddingRight;
         } else {
           rightBound = double.infinity;
         }
@@ -1603,7 +1627,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
                 parent: parent,
                 child: child,
                 direction: LayoutAxis.vertical,
-              );
+              ) -
+              cache.paddingBottom;
         } else {
           bottomBound = double.infinity;
         }
