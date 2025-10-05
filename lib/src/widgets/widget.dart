@@ -2,6 +2,7 @@ import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/scrollable.dart';
 import 'package:flexiblebox/src/widgets/builder.dart';
+import 'package:flexiblebox/src/widgets/fallback.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -368,8 +369,12 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
     final newLayoutData = LayoutData(
       behavior: LayoutBehavior.absolute,
       paintOrder: paintOrder,
-      width: width,
-      height: height,
+      width: width == null && top == null && bottom == null
+          ? SizeUnit.fitContent
+          : width,
+      height: height == null && left == null && right == null
+          ? SizeUnit.fitContent
+          : height,
       minWidth: minWidth,
       maxWidth: maxWidth,
       minHeight: minHeight,
@@ -502,7 +507,6 @@ class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
   @override
   Widget build(BuildContext context) {
     return DirectAbsoluteItem(
-      key: key,
       paintOrder: paintOrder,
       width: width,
       height: height,
@@ -516,7 +520,7 @@ class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
       right: right,
       aspectRatio: aspectRatio,
       needLayoutBox: true,
-      child: LayoutBoxBuilder(builder: builder),
+      child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
     );
   }
 }
@@ -756,7 +760,7 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
 ///
 /// The [textDirection] property affects directional alignments and scrolling.
 /// If null, it uses the ambient [Directionality] from the widget tree.
-class LayoutBoxWidget extends StatelessWidget {
+class LayoutBoxWidget extends StatefulWidget {
   /// The text direction for resolving directional layout properties.
   ///
   /// If null, uses the ambient [Directionality] from the widget tree.
@@ -877,60 +881,88 @@ class LayoutBoxWidget extends StatelessWidget {
     required this.children,
   });
 
-  /// Builds the widget tree for this layout container.
-  ///
-  /// This method creates a scrolling client that wraps a viewport. The process:
-  /// 1. Resolves text direction from ambient [Directionality] if not specified
-  /// 2. Creates scroll details for horizontal and vertical scrolling
-  /// 3. Resolves border radius for proper RTL support
-  /// 4. Returns a [ScrollableClient] containing a [LayoutBoxViewport]
-  ///
-  /// The resulting widget tree provides full scrolling support with the
-  /// specified layout algorithm managing child positioning.
+  @override
+  State<LayoutBoxWidget> createState() => _LayoutBoxWidgetState();
+}
+
+class _LayoutBoxWidgetState extends State<LayoutBoxWidget> {
+  void _collectSnappingItem(
+    RenderObject parent,
+    ValueSetter<RenderBox?> consume,
+  ) {
+    parent.visitChildren((child) {
+      if (child is RenderLayoutBox) {
+        // do not descend into nested LayoutBox
+        return;
+      }
+      final childParentData = child.parentData;
+      if (childParentData is LayoutBoxParentData) {
+        consume(child as RenderBox);
+        // no need to descend further
+        return;
+      }
+      _collectSnappingItem(child, consume);
+    });
+  }
+
+  void _snapToSnappableItem() {
+    RenderObject? found = context.findRenderObject();
+    // this should never happen, but just in case
+    assert(found != null, 'LayoutBoxWidget must have a RenderObject.');
+    if (found == null) {
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textDirection =
-        this.textDirection ??
+        widget.textDirection ??
         Directionality.maybeOf(context) ??
         TextDirection.ltr;
     final horizontalDetails = ScrollableDetails.horizontal(
-      controller: horizontalController,
-      reverse: reverseHorizontalScroll,
-      physics: !horizontalOverflow.scrollable
+      controller: widget.horizontalController,
+      reverse: widget.reverseHorizontalScroll,
+      physics: !widget.horizontalOverflow.scrollable
           ? const NeverScrollableScrollPhysics()
           : null,
     );
     final verticalDetails = ScrollableDetails.vertical(
-      controller: verticalController,
-      reverse: reverseVerticalScroll,
-      physics: !verticalOverflow.scrollable
+      controller: widget.verticalController,
+      reverse: widget.reverseVerticalScroll,
+      physics: !widget.verticalOverflow.scrollable
           ? const NeverScrollableScrollPhysics()
           : null,
     );
     final resolvedBorderRadius =
-        borderRadius?.resolve(textDirection) ?? BorderRadius.zero;
-    return ScrollableClient(
-      diagonalDragBehavior: diagonalDragBehavior,
-      horizontalDetails: horizontalDetails,
-      verticalDetails: verticalDetails,
-      builder: (context, verticalPosition, horizontalPosition) {
-        return LayoutBoxViewport(
-          textDirection: textDirection,
-          reversePaint: reversePaint,
-          mainScrollDirection: mainScrollDirection,
-          horizontal: horizontalPosition,
-          vertical: verticalPosition,
-          horizontalAxisDirection: horizontalDetails.direction,
-          verticalAxisDirection: verticalDetails.direction,
-          layout: layout,
-          horizontalOverflow: horizontalOverflow,
-          verticalOverflow: verticalOverflow,
-          textBaseline: textBaseline,
-          borderRadius: resolvedBorderRadius,
-          clipBehavior: clipBehavior,
-          children: children,
-        );
+        widget.borderRadius?.resolve(textDirection) ?? BorderRadius.zero;
+    return NotificationListener<ScrollEndNotification>(
+      onNotification: (notification) {
+        return false; // continue to propagate
       },
+      child: ScrollableClient(
+        diagonalDragBehavior: widget.diagonalDragBehavior,
+        horizontalDetails: horizontalDetails,
+        verticalDetails: verticalDetails,
+        builder: (context, verticalPosition, horizontalPosition) {
+          return LayoutBoxViewport(
+            textDirection: textDirection,
+            reversePaint: widget.reversePaint,
+            mainScrollDirection: widget.mainScrollDirection,
+            horizontal: horizontalPosition,
+            vertical: verticalPosition,
+            horizontalAxisDirection: horizontalDetails.direction,
+            verticalAxisDirection: verticalDetails.direction,
+            layout: widget.layout,
+            horizontalOverflow: widget.horizontalOverflow,
+            verticalOverflow: widget.verticalOverflow,
+            textBaseline: widget.textBaseline,
+            borderRadius: resolvedBorderRadius,
+            clipBehavior: widget.clipBehavior,
+            children: widget.children,
+          );
+        },
+      ),
     );
   }
 }

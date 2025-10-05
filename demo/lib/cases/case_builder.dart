@@ -2,7 +2,10 @@ import 'package:demo/box.dart';
 import 'package:demo/case.dart';
 import 'package:demo/helper.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
+final GlobalKey key3 = GlobalKey();
 
 class CaseBuilder extends TestCase {
   @override
@@ -27,6 +30,26 @@ class CaseBuilder extends TestCase {
             ),
             FlexItem(
               key: key2,
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(2),
+            ),
+            FlexItem(
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(1),
+            ),
+            FlexItem(
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(2),
+            ),
+            FlexItem(
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(1),
+            ),
+            FlexItem(
               width: SizeUnit.fixed(150),
               height: SizeUnit.fixed(100),
               child: Box(2),
@@ -69,6 +92,72 @@ class CaseBuilder extends TestCase {
               width: SizeUnit.fixed(150),
               height: SizeUnit.fixed(100),
               child: Box(7),
+            ),
+            FlexItem(
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(5),
+            ),
+            FlexItem(
+              width: SizeUnit.fixed(150),
+              height: SizeUnit.fixed(100),
+              child: Box(6),
+            ),
+
+            // Floating button to show key7
+            AbsoluteItem(
+              bottom: PositionUnit.fixed(10),
+              right: PositionUnit.fixed(10),
+              child: RowBox(
+                rowGap: SpacingUnit.fixed(10),
+                children: [
+                  FlexItem(
+                    width: SizeUnit.fixed(50),
+                    height: SizeUnit.fixed(50),
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        Scrollable.ensureVisible(
+                          key3.currentContext!,
+                          alignment: 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: const Icon(Icons.arrow_upward),
+                    ),
+                  ),
+                  FlexItem(
+                    width: SizeUnit.fixed(50),
+                    height: SizeUnit.fixed(50),
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        Scrollable.ensureVisible(
+                          key3.currentContext!,
+                          alignment: 0.5,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: const Icon(Icons.center_focus_strong),
+                    ),
+                  ),
+                  FlexItem(
+                    width: SizeUnit.fixed(50),
+                    height: SizeUnit.fixed(50),
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        Scrollable.ensureVisible(
+                          key3.currentContext!,
+                          alignment: 1.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: const Icon(Icons.arrow_downward),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

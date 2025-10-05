@@ -11,6 +11,8 @@ import 'package:flexiblebox/src/basic.dart';
 /// This class is immutable and used throughout the layout system to
 /// communicate layout requirements between widgets and layout algorithms.
 final class LayoutData {
+  static const LayoutData empty = LayoutData();
+
   /// The layout behavior for this child (normal flow or absolute positioning).
   ///
   /// Determines how this child participates in the layout algorithm:
@@ -126,7 +128,7 @@ final class LayoutData {
   ///   alignSelf: BoxAlignmentGeometry.center,
   /// )
   /// ```
-  LayoutData({
+  const LayoutData({
     this.behavior = LayoutBehavior.none,
     this.flexGrow = 0.0,
     this.flexShrink = 0.0,
@@ -457,8 +459,9 @@ mixin ChildLayout {
   void layout(
     LayoutOffset offset,
     LayoutSize size,
-    OverflowBounds overflowBounds,
-  );
+    OverflowBounds overflowBounds, {
+    LayoutOffset? revealOffset,
+  });
 
   /// Performs a dry layout without modifying the child's state.
   ///
@@ -676,8 +679,9 @@ class ChildLayoutDryDelegate with ChildLayout {
   void layout(
     LayoutOffset offset,
     LayoutSize size,
-    OverflowBounds overflowBounds,
-  ) {
+    OverflowBounds overflowBounds, {
+    LayoutOffset? revealOffset,
+  }) {
     throw Exception('layout is not supported in dry delegate');
   }
 
@@ -771,6 +775,8 @@ abstract class Layout {
   const Layout();
 
   LayoutAxis get mainAxis;
+
+  EdgeSpacing get padding;
 
   /// Creates a layout handle for performing layout operations.
   ///

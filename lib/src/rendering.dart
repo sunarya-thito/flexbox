@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flexiblebox/src/basic.dart';
 import 'package:flexiblebox/src/layout.dart';
@@ -16,14 +17,21 @@ class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
   Key? debugKey;
   ChildLayoutCache? cache;
 
-  LayoutData? layoutData;
+  // used to store the size that was attempted during layout
+  // but the child was not laid out because it was skipped
+  // due to being out of viewport
+  Size? attemptedSize;
+
+  LayoutData layoutData = LayoutData.empty;
 
   bool needLayoutBox = false;
 
-  int? get paintOrder => layoutData!.paintOrder;
+  int? get paintOrder => layoutData.paintOrder;
 
   RenderBox? _nextSortedSibling;
   RenderBox? _previousSortedSibling;
+
+  Offset? revealOffset;
 }
 
 /// Render object for flexbox layout containers.
@@ -339,11 +347,27 @@ class RenderLayoutBox extends RenderBox
           final Matrix4 transform = descendant.getTransformTo(viewport.parent);
           return MatrixUtils.transformRect(
             transform,
-            rect ?? descendant.paintBounds,
+            rect ?? _obtainSafePaintBounds(descendant),
           );
         }
         return rect;
     }
+  }
+
+  static Rect _obtainSafePaintBounds(RenderObject object) {
+    if (object is RenderBox) {
+      final parentData = object.parentData as BoxParentData;
+      if (!object.hasSize) {
+        if (parentData is LayoutBoxParentData) {
+          // was skipped during layout
+          // due to being out of viewport
+          return Offset.zero & (parentData.attemptedSize ?? const Size(0, 0));
+        }
+        // has not been laid out yet
+        return Offset.zero & const Size(0, 0);
+      }
+    }
+    return object.paintBounds;
   }
 
   static Rect? _showInViewportForAxisDirection({
@@ -508,9 +532,13 @@ class RenderLayoutBox extends RenderBox
   }
 
   bool _childOutOfViewport(RenderBox child) {
+    if (!child.hasSize) {
+      // was being skipped out during layout
+      return true;
+    }
     final childParentData = child.parentData as LayoutBoxParentData;
     final childRect = childParentData.offset & child.size;
-    return !childRect.overlaps(visibleContentBounds.outerRect);
+    return !childRect.overlaps(actualPaintBounds ?? paintBounds);
   }
 
   void _sortChildren() {
@@ -652,7 +680,7 @@ class RenderLayoutBox extends RenderBox
     return false;
   }
 
-  int _compareChildren(RenderBox a, RenderBox b) {
+  static int _compareChildren(RenderBox a, RenderBox b) {
     final aParentData = a.parentData as LayoutBoxParentData;
     final bParentData = b.parentData as LayoutBoxParentData;
 
@@ -666,7 +694,7 @@ class RenderLayoutBox extends RenderBox
   }
 
   /// Merges two sorted linked lists. This is a helper for the merge sort.
-  RenderBox? _merge(RenderBox? a, RenderBox? b) {
+  static RenderBox? _merge(RenderBox? a, RenderBox? b) {
     if (a == null) return b;
     if (b == null) return a;
 
@@ -690,7 +718,7 @@ class RenderLayoutBox extends RenderBox
     return result;
   }
 
-  RenderBox? _getMiddle(RenderBox? head) {
+  static RenderBox? _getMiddle(RenderBox? head) {
     if (head == null) return head;
 
     RenderBox? slow = head;
@@ -707,7 +735,7 @@ class RenderLayoutBox extends RenderBox
     return slow;
   }
 
-  RenderBox? _mergeSort(RenderBox? head) {
+  static RenderBox? _mergeSort(RenderBox? head) {
     if (head == null ||
         (head.parentData as LayoutBoxParentData)._nextSortedSibling == null) {
       return head;
@@ -740,7 +768,8 @@ class RenderLayoutBox extends RenderBox
       Axis.horizontal => (horizontal.pixels, horizontalAxisDirection),
     };
 
-    rect ??= target.paintBounds;
+    rect ??= _obtainSafePaintBounds(target);
+
     RenderObject child = target;
     while (child.parent != this) {
       child = child.parent!;
@@ -763,8 +792,38 @@ class RenderLayoutBox extends RenderBox
     };
 
     // The scroll offset in the viewport to `rect`.
-    final Offset paintOffset = (box.parentData as LayoutBoxParentData)
-        .offset; // This is the offset of the box within the viewport.
+    final parentData = box.parentData as LayoutBoxParentData;
+    Offset paintOffset =
+        parentData.revealOffset ??
+        parentData.offset; // This is the offset of the box within the viewport.
+
+    print('direct: $axisDirection');
+
+    // shift the paint offset to account for the viewport padding
+    final padding = boxLayout.padding;
+    final viewportSize = this.viewportSize;
+    double top = padding.top.computeSpacing(
+      axis: LayoutAxis.vertical,
+      viewportSize: viewportSize.height,
+    );
+    double left = padding.left.computeSpacing(
+      axis: LayoutAxis.horizontal,
+      viewportSize: viewportSize.width,
+    );
+    double bottom = padding.bottom.computeSpacing(
+      axis: LayoutAxis.vertical,
+      viewportSize: viewportSize.height,
+    );
+    double right = padding.right.computeSpacing(
+      axis: LayoutAxis.horizontal,
+      viewportSize: viewportSize.width,
+    );
+
+    double startOffsetX = lerpDouble(-left, right, alignment)!;
+    double startOffsetY = lerpDouble(-top, bottom, alignment)!;
+
+    paintOffset = paintOffset.translate(startOffsetX, startOffsetY);
+
     leadingScrollOffset += switch (axisDirection) {
       AxisDirection.up => size.height - paintOffset.dy - box.size.height,
       AxisDirection.left => size.width - paintOffset.dx - box.size.width,
@@ -898,7 +957,12 @@ class RenderBoxChildLayout with ChildLayout {
   }
 
   @override
-  LayoutSize get size => layoutSizeFromSize(renderBox.size);
+  LayoutSize get size => layoutSizeFromSize(
+    renderBox.hasSize
+        ? renderBox.size
+        : (renderBox.parentData as LayoutBoxParentData).attemptedSize ??
+              const Size(0, 0),
+  );
 
   @override
   LayoutOffset get offset => layoutOffsetFromOffset(
@@ -966,16 +1030,67 @@ class RenderBoxChildLayout with ChildLayout {
   void layout(
     LayoutOffset offset,
     LayoutSize size,
-    OverflowBounds overflowBounds,
-  ) {
+    OverflowBounds overflowBounds, {
+    LayoutOffset? revealOffset,
+  }) {
+    // Check whether the requested BB is inside
+    // the viewport BB.
+    double top = offset.dy;
+    double left = offset.dx;
+    double bottom = top + size.height;
+    double right = left + size.width;
+    // note that these bounds include the scroll offset
+    double rightViewport = parent.viewportSize.width;
+    double bottomViewport = parent.viewportSize.height;
+    // the [Layout] ensures that we already have a valid
+    // [viewportSize] before we get here.
+
+    // if the requested BB is completely outside
+    // the viewport BB, we can skip the layout
+    // unless we have the overflow set to visible
+
+    bool skip = false;
+    if (parent.horizontalOverflow.clipContent &&
+        (right < 0.0 || left > rightViewport)) {
+      skip = true;
+    }
+    if (parent.verticalOverflow.clipContent &&
+        (bottom < 0.0 || top > bottomViewport)) {
+      skip = true;
+    }
+
+    // here we are safe to assume that these skipped children
+    // won't be available for hit testing or painting
+
+    if (skip) {
+      // when skipping this child,
+      // size won't be available
+      // but its safe to get the offset
+      // that also means its safe to call
+      // [applyPaintTransform], [getTransformTo],
+      // and [getOffsetToReveal], unless
+      // the child has different implementation
+      // of these methods
+      final parentData = renderBox.parentData as LayoutBoxParentData;
+      parentData.offset = offsetFromLayoutOffset(offset);
+      parentData.attemptedSize = sizeFromLayoutSize(size);
+      parentData.revealOffset = revealOffset == null
+          ? null
+          : offsetFromLayoutOffset(revealOffset);
+      return;
+    }
+
     double maxScrollX = parent.contentSize.width - parent.viewportSize.width;
     double maxScrollY = parent.contentSize.height - parent.viewportSize.height;
     maxScrollX = max(0.0, maxScrollX);
     maxScrollY = max(0.0, maxScrollY);
-    (renderBox.parentData as LayoutBoxParentData).offset =
-        offsetFromLayoutOffset(offset);
+    final parentData = renderBox.parentData as LayoutBoxParentData;
+    parentData.offset = offsetFromLayoutOffset(offset);
+    parentData.revealOffset = revealOffset == null
+        ? null
+        : offsetFromLayoutOffset(revealOffset);
     renderBox.layout(
-      (renderBox.parentData as LayoutBoxParentData).needLayoutBox
+      parentData.needLayoutBox
           ? WrappedLayoutConstraints(
               size: sizeFromLayoutSize(size),
               offset: offsetFromLayoutOffset(offset),
@@ -1013,7 +1128,7 @@ class RenderBoxChildLayout with ChildLayout {
 
   @override
   LayoutData get layoutData =>
-      (renderBox.parentData as LayoutBoxParentData).layoutData!;
+      (renderBox.parentData as LayoutBoxParentData).layoutData;
 }
 
 LayoutSize layoutSizeFromSize(Size size) {

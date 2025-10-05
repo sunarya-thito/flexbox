@@ -123,6 +123,7 @@ class FlexLayout extends Layout {
   ///
   /// Adds space between the container's edges and the flex content.
   /// Uses [EdgeSpacing] for responsive padding values.
+  @override
   final EdgeSpacing padding;
 
   /// The horizontal spacing between adjacent flex items.
@@ -559,55 +560,37 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       LayoutAxis.vertical => layout.rowGap,
     };
     double mainSpacingStart = mainSpacingStartUnit.computeSpacing(
-      parent: parent,
       axis: layout.direction.axis,
-      maxSpace: viewportMainSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
+      viewportSize: viewportMainSize,
     );
     double mainSpacingEnd = mainSpacingEndUnit.computeSpacing(
-      parent: parent,
       axis: layout.direction.axis,
-      maxSpace: viewportMainSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
+      viewportSize: viewportMainSize,
     );
     double mainSpacing = mainSpacingUnit.computeSpacing(
-      parent: parent,
+      viewportSize: viewportMainSize,
       axis: layout.direction.axis,
-      maxSpace: viewportMainSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
     );
     double crossSpacingStart = crossSpacingStartUnit.computeSpacing(
-      parent: parent,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
         LayoutAxis.vertical => LayoutAxis.horizontal,
       },
-      maxSpace: viewportCrossSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
+      viewportSize: viewportCrossSize,
     );
     double crossSpacingEnd = crossSpacingEndUnit.computeSpacing(
-      parent: parent,
+      viewportSize: viewportCrossSize,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
         LayoutAxis.vertical => LayoutAxis.horizontal,
       },
-      maxSpace: viewportCrossSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
     );
     double crossSpacing = crossSpacingUnit.computeSpacing(
-      parent: parent,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
         LayoutAxis.vertical => LayoutAxis.horizontal,
       },
-      maxSpace: viewportCrossSize,
-      availableSpace: 0.0,
-      affectedCount: 0,
+      viewportSize: viewportCrossSize,
     );
 
     // reduce viewport size by padding
@@ -1634,6 +1617,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         double overflowLeft = limitBounds.left - contentRect.left;
         double overflowRight = contentRect.right - limitBounds.right;
         double overflowBottom = contentRect.bottom - limitBounds.bottom;
+        LayoutOffset? revealOffset = LayoutOffset(dx, dy);
         LayoutOffset? boundOffset = _limitRectToBounds(
           contentRect,
           limitBounds,
@@ -1642,6 +1626,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           dx = boundOffset.dx;
           dy = boundOffset.dy;
         } else {
+          revealOffset = null;
           final currentBounds = line.bounds;
           if (currentBounds != null) {
             // store the bounds for the line
@@ -1671,9 +1656,10 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
             right: _validateOverflowBounds(overflowRight),
             bottom: _validateOverflowBounds(overflowBottom),
           ),
+          revealOffset: revealOffset,
         );
 
-        LayoutRect childBounds = child.offset & child.size;
+        LayoutRect childBounds = offset & size;
         bounds = bounds.expandToInclude(childBounds);
 
         if (!reverseMain) {

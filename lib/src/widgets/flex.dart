@@ -2,6 +2,7 @@ import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/layout/flex.dart';
 import 'package:flexiblebox/src/widgets/builder.dart';
+import 'package:flexiblebox/src/widgets/fallback.dart';
 import 'package:flutter/widgets.dart';
 
 /// A widget that configures flex properties for an individual child within a [FlexBox].
@@ -463,7 +464,6 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
   @override
   Widget build(BuildContext context) {
     return DirectFlexItem(
-      key: key,
       paintOrder: paintOrder,
       width: width,
       height: height,
@@ -480,7 +480,7 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
       right: right,
       alignSelf: alignSelf,
       needLayoutBox: true,
-      child: LayoutBoxBuilder(builder: builder),
+      child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
     );
   }
 }

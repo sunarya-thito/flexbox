@@ -1517,11 +1517,8 @@ abstract class SpacingUnit {
   ///
   /// Returns the computed spacing value.
   double computeSpacing({
-    required ParentLayout parent,
     required LayoutAxis axis,
-    required double maxSpace,
-    required double availableSpace,
-    required int affectedCount,
+    required double viewportSize,
   });
 }
 
@@ -1538,11 +1535,8 @@ class _FixedSpacing implements SpacingUnit {
   /// Returns the fixed spacing value.
   @override
   double computeSpacing({
-    required ParentLayout parent,
     required LayoutAxis axis,
-    required double maxSpace,
-    required double availableSpace,
-    required int affectedCount,
+    required double viewportSize,
   }) {
     return value;
   }
@@ -1557,16 +1551,10 @@ class _SpacingViewportSizeReference implements SpacingUnit {
   /// Returns the viewport size along the axis.
   @override
   double computeSpacing({
-    required ParentLayout parent,
     required LayoutAxis axis,
-    required double maxSpace,
-    required double availableSpace,
-    required int affectedCount,
+    required double viewportSize,
   }) {
-    return switch (axis) {
-      LayoutAxis.horizontal => parent.viewportSize.width,
-      LayoutAxis.vertical => parent.viewportSize.height,
-    };
+    return viewportSize;
   }
 }
 
@@ -1597,25 +1585,16 @@ class _CalculatedSpacing implements SpacingUnit {
   /// the same layout context, then applies the [operation] to combine them.
   @override
   double computeSpacing({
-    required ParentLayout parent,
     required LayoutAxis axis,
-    required double maxSpace,
-    required double availableSpace,
-    required int affectedCount,
+    required double viewportSize,
   }) {
     double first = this.first.computeSpacing(
-      parent: parent,
       axis: axis,
-      maxSpace: maxSpace,
-      availableSpace: availableSpace,
-      affectedCount: affectedCount,
+      viewportSize: viewportSize,
     );
     double second = this.second.computeSpacing(
-      parent: parent,
       axis: axis,
-      maxSpace: maxSpace,
-      availableSpace: availableSpace,
-      affectedCount: affectedCount,
+      viewportSize: viewportSize,
     );
     return operation(first, second);
   }
@@ -1647,34 +1626,22 @@ class _ConstrainedSpacing implements SpacingUnit {
   /// and finally clamps the result to ensure it stays within the allowed range.
   @override
   double computeSpacing({
-    required ParentLayout parent,
     required LayoutAxis axis,
-    required double maxSpace,
-    required double availableSpace,
-    required int affectedCount,
+    required double viewportSize,
   }) {
-    double sz = spacing.computeSpacing(
-      parent: parent,
+    double sp = spacing.computeSpacing(
       axis: axis,
-      maxSpace: maxSpace,
-      availableSpace: availableSpace,
-      affectedCount: affectedCount,
+      viewportSize: viewportSize,
     );
-    double minSz = min.computeSpacing(
-      parent: parent,
+    double minSp = min.computeSpacing(
       axis: axis,
-      maxSpace: maxSpace,
-      availableSpace: availableSpace,
-      affectedCount: affectedCount,
+      viewportSize: viewportSize,
     );
-    double maxSz = max.computeSpacing(
-      parent: parent,
+    double maxSp = max.computeSpacing(
       axis: axis,
-      maxSpace: maxSpace,
-      availableSpace: availableSpace,
-      affectedCount: affectedCount,
+      viewportSize: viewportSize,
     );
-    return sz.clamp(minSz, maxSz);
+    return sp.clamp(minSp, maxSp);
   }
 }
 

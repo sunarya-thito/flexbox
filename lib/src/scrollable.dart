@@ -21,9 +21,7 @@ class ScrollableClient extends StatelessWidget {
   final DiagonalDragBehavior diagonalDragBehavior;
   final DragStartBehavior dragStartBehavior;
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
-  final Clip clipBehavior;
   final HitTestBehavior hitTestBehavior;
-  final bool overscroll;
 
   const ScrollableClient({
     super.key,
@@ -36,9 +34,7 @@ class ScrollableClient extends StatelessWidget {
     this.diagonalDragBehavior = DiagonalDragBehavior.none,
     this.dragStartBehavior = DragStartBehavior.start,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
-    this.clipBehavior = Clip.hardEdge,
     this.hitTestBehavior = HitTestBehavior.opaque,
-    this.overscroll = false,
   });
 
   @override
@@ -84,7 +80,6 @@ class ScrollableClient extends StatelessWidget {
         Axis.vertical => mainAxisDetails,
         Axis.horizontal => verticalDetails,
       },
-
       diagonalDragBehavior: diagonalDragBehavior,
       viewportBuilder: builder,
       dragStartBehavior: dragStartBehavior,

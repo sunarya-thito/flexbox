@@ -596,8 +596,9 @@ class BoxChildLayout with ChildLayout {
   void layout(
     LayoutOffset offset,
     LayoutSize size,
-    OverflowBounds overflowBounds,
-  ) {
+    OverflowBounds overflowBounds, {
+    LayoutOffset? revealOffset,
+  }) {
     box.parentData.offset = offset;
     assert(size.width.isFinite && size.height.isFinite);
     if (box.size != size) {
