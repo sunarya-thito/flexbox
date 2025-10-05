@@ -113,7 +113,7 @@ abstract class AbsoluteItem implements LayoutItem {
     PositionUnit? right,
     double? aspectRatio,
     required Widget child,
-  }) = DirectAbsoluteItem;
+  }) = _DirectAbsoluteItem;
 
   /// Creates an absolutely positioned item with a builder function.
   ///
@@ -168,7 +168,7 @@ abstract class AbsoluteItem implements LayoutItem {
     PositionUnit? right,
     double? aspectRatio,
     required Widget Function(BuildContext context, LayoutBox box) builder,
-  }) = BuilderAbsoluteItem;
+  }) = _BuilderAbsoluteItem;
 }
 
 /// A widget that positions its child absolutely within a layout container.
@@ -216,7 +216,7 @@ abstract class AbsoluteItem implements LayoutItem {
 ///
 /// The [paintOrder] property controls the drawing order when multiple
 /// absolutely positioned items overlap. Lower values are painted first.
-class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
+class _DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
     implements AbsoluteItem {
   /// The paint order for this absolutely positioned item.
   ///
@@ -294,6 +294,8 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
 
   final bool needLayoutBox;
 
+  final Key? layoutKey;
+
   /// Creates an absolutely positioned item with the specified properties.
   ///
   /// The [child] parameter is required and specifies the widget to be positioned.
@@ -334,7 +336,7 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
   ///
   /// The [needLayoutBox] parameter determines if the child needs access to
   /// layout box information.
-  const DirectAbsoluteItem({
+  const _DirectAbsoluteItem({
     super.key,
     this.paintOrder,
     this.width,
@@ -349,6 +351,7 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
     this.right,
     this.aspectRatio,
     this.needLayoutBox = false,
+    this.layoutKey,
     required super.child,
   });
 
@@ -386,6 +389,7 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
       aspectRatio: aspectRatio,
       flexGrow: 0.0,
       flexShrink: 0.0,
+      key: layoutKey ?? key,
     );
     if (parentData.layoutData != newLayoutData) {
       parentData.layoutData = newLayoutData;
@@ -408,7 +412,7 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
 /// A builder variant of [AbsoluteItem] that allows dynamic child construction.
 ///
 /// BuilderAbsoluteItem provides the same absolute positioning capabilities as
-/// [DirectAbsoluteItem], but instead of taking a pre-built child widget, it
+/// [_DirectAbsoluteItem], but instead of taking a pre-built child widget, it
 /// accepts a builder function that receives layout information at build time.
 ///
 /// This is useful when the positioned content needs access to layout bounds,
@@ -431,7 +435,7 @@ class DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
 ///   },
 /// )
 /// ```
-class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
+class _BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
   @override
   final int? paintOrder;
   @override
@@ -479,7 +483,7 @@ class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
   ///   },
   /// )
   /// ```
-  const BuilderAbsoluteItem({
+  const _BuilderAbsoluteItem({
     super.key,
     this.paintOrder,
     this.width,
@@ -498,15 +502,15 @@ class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
 
   /// Builds the widget tree for this builder absolute item.
   ///
-  /// This method creates a [DirectAbsoluteItem] widget with the same properties,
+  /// This method creates a [_DirectAbsoluteItem] widget with the same properties,
   /// but uses the [builder] function to construct the child widget dynamically.
   /// The builder is called with the current [BuildContext] and a [LayoutBox]
   /// providing access to layout information.
   ///
-  /// Returns the constructed [DirectAbsoluteItem] widget.
+  /// Returns the constructed [_DirectAbsoluteItem] widget.
   @override
   Widget build(BuildContext context) {
-    return DirectAbsoluteItem(
+    return _DirectAbsoluteItem(
       paintOrder: paintOrder,
       width: width,
       height: height,
@@ -520,6 +524,7 @@ class BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
       right: right,
       aspectRatio: aspectRatio,
       needLayoutBox: true,
+      layoutKey: key,
       child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
     );
   }
@@ -886,34 +891,6 @@ class LayoutBoxWidget extends StatefulWidget {
 }
 
 class _LayoutBoxWidgetState extends State<LayoutBoxWidget> {
-  void _collectSnappingItem(
-    RenderObject parent,
-    ValueSetter<RenderBox?> consume,
-  ) {
-    parent.visitChildren((child) {
-      if (child is RenderLayoutBox) {
-        // do not descend into nested LayoutBox
-        return;
-      }
-      final childParentData = child.parentData;
-      if (childParentData is LayoutBoxParentData) {
-        consume(child as RenderBox);
-        // no need to descend further
-        return;
-      }
-      _collectSnappingItem(child, consume);
-    });
-  }
-
-  void _snapToSnappableItem() {
-    RenderObject? found = context.findRenderObject();
-    // this should never happen, but just in case
-    assert(found != null, 'LayoutBoxWidget must have a RenderObject.');
-    if (found == null) {
-      return;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final textDirection =

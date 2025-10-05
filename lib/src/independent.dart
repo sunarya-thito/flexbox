@@ -521,6 +521,18 @@ class Box with ParentLayout {
     }
     return null;
   }
+
+  @override
+  ChildLayout? findChildByKey(Object key) {
+    Box? child = firstChild;
+    while (child != null) {
+      if (child.parentData.layoutData?.key == key) {
+        return BoxChildLayout(child);
+      }
+      child = child.parentData.nextSibling;
+    }
+    return null;
+  }
 }
 
 /// Manages the layout pipeline for the independent layout system.

@@ -105,6 +105,19 @@ class RenderLayoutBox extends RenderBox
     required this.clipBehavior,
   });
 
+  @override
+  ChildLayout? findChildByKey(Object key) {
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final childParentData = child.parentData as LayoutBoxParentData;
+      if (childParentData.layoutData.key == key) {
+        return RenderBoxChildLayout(child, this);
+      }
+      child = childParentData.nextSibling;
+    }
+    return null;
+  }
+
   int indexOfNearestChildAtOffset(Offset localOffset) {
     final layoutHandle = _layoutHandle;
     assert(
@@ -222,7 +235,8 @@ class RenderLayoutBox extends RenderBox
           );
           final childParentData = child.parentData as LayoutBoxParentData;
           final childOffset = childParentData.offset;
-          final childBounds = childOffset & child.size;
+          final childBounds =
+              childOffset & (childParentData.attemptedSize ?? child.size);
           // no need to bother painting children that are out of the paint bounds
           if (paintBounds.overlaps(childBounds)) {
             context.paintChild(child, childOffset + offset);

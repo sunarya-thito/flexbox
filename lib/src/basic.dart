@@ -723,7 +723,6 @@ abstract class PositionUnit {
   static const PositionUnit zero = _FixedPosition(0);
   static const PositionUnit viewportSize = _ViewportSizeReference();
   static const PositionUnit contentSize = _ContentSizeReference();
-  static const PositionUnit childSize = _ChildSizeReference();
   static const PositionUnit boxOffset = _BoxOffset();
   static const PositionUnit scrollOffset = _ScrollOffset();
   static const PositionUnit contentOverflow = _ContentOverflow();
@@ -732,6 +731,12 @@ abstract class PositionUnit {
   static const PositionUnit viewportEndBound = _ViewportEndBound();
   const factory PositionUnit.fixed(double value) = _FixedPosition;
   const factory PositionUnit.cross(PositionUnit position) = _CrossPosition;
+  const factory PositionUnit.calculated({
+    required PositionUnit first,
+    required PositionUnit second,
+    required CalculationOperation operation,
+  }) = _CalculatedPosition;
+  const factory PositionUnit.childSize([Object? key]) = _ChildSizeReference;
   const factory PositionUnit.constrained({
     required PositionUnit position,
     PositionUnit min,
@@ -937,21 +942,28 @@ class _ContentSizeReference implements PositionUnit {
 }
 
 class _ChildSizeReference implements PositionUnit {
-  const _ChildSizeReference();
+  final Object? key;
 
-  /// Returns the size of the child element along the specified axis.
-  ///
-  /// For horizontal axis, returns child width.
-  /// For vertical axis, returns child height.
+  const _ChildSizeReference([this.key]);
   @override
   double computePosition({
     required ParentLayout parent,
     required ChildLayout child,
     required LayoutAxis direction,
   }) {
+    if (key == null) {
+      return switch (direction) {
+        LayoutAxis.horizontal => child.size.width,
+        LayoutAxis.vertical => child.size.height,
+      };
+    }
+    ChildLayout? otherChild = parent.findChildByKey(key!);
+    if (otherChild == null) {
+      return 0.0;
+    }
     return switch (direction) {
-      LayoutAxis.horizontal => child.size.width,
-      LayoutAxis.vertical => child.size.height,
+      LayoutAxis.horizontal => otherChild.size.width,
+      LayoutAxis.vertical => otherChild.size.height,
     };
   }
 }

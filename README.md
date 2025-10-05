@@ -40,6 +40,7 @@ Import the package:
 
 ```dart
 import 'package:flexiblebox/flexiblebox_flutter.dart';
+import 'package:flexiblebox/flexiblebox_extensions.dart'; // For convenient extension methods
 ```
 
 Create a simple flex layout:
@@ -47,7 +48,7 @@ Create a simple flex layout:
 ```dart
 FlexBox(
   direction: FlexDirection.row,
-  rowGap: SpacingUnit.fixed(8.0),
+  rowGap: 8.0.spacing,
   children: [
     FlexItem(
       flexGrow: 1.0,
@@ -58,7 +59,7 @@ FlexBox(
       ),
     ),
     FlexItem(
-      width: SizeUnit.fixed(100.0),
+      width: 100.0.size,
       child: Container(
         color: Colors.blue,
         height: 100,
@@ -82,8 +83,8 @@ FlexBox(
   alignItems: BoxAlignmentGeometry.start,     // Cross-axis alignment
   alignContent: BoxAlignmentContent.start,    // Content alignment (for wrapping)
   justifyContent: BoxAlignmentBase.start,     // Main-axis distribution
-  rowGap: SpacingUnit.fixed(8.0),             // Spacing between items horizontally
-  columnGap: SpacingUnit.fixed(8.0),          // Spacing between items vertically
+  rowGap: 8.0.spacing,                        // Spacing between items horizontally
+  columnGap: 8.0.spacing,                     // Spacing between items vertically
   children: [                                 // Flex items
     FlexItem(child: Text('Item 1')),
     FlexItem(child: Text('Item 2')),
@@ -99,8 +100,8 @@ Configures individual children within a FlexBox.
 FlexItem(
   flexGrow: 1.0,                              // Growth factor
   flexShrink: 0.0,                            // Shrink factor
-  width: SizeUnit.fixed(200.0),               // Preferred width
-  height: SizeUnit.fixed(100.0),              // Preferred height
+  width: 200.0.size,                          // Preferred width
+  height: 100.0.size,                         // Preferred height
   alignSelf: BoxAlignmentGeometry.start,      // Individual alignment
   child: Container(
     color: Colors.blue,
@@ -115,12 +116,12 @@ For absolutely positioned children within a FlexBox.
 
 ```dart
 AbsoluteItem(
-  left: PositionUnit.fixed(10.0),              // Left offset from viewport edge
-  top: PositionUnit.fixed(20.0),               // Top offset from viewport edge
-  right: PositionUnit.fixed(10.0),             // Right offset from viewport edge
-  bottom: PositionUnit.fixed(20.0),            // Bottom offset from viewport edge
-  width: SizeUnit.fixed(100.0),                // Fixed width
-  height: SizeUnit.fixed(50.0),                // Fixed height
+  left: 10.0.position,                         // Left offset from viewport edge
+  top: 20.0.position,                          // Top offset from viewport edge
+  right: 10.0.position,                        // Right offset from viewport edge
+  bottom: 20.0.position,                       // Bottom offset from viewport edge
+  width: 100.0.size,                           // Fixed width
+  height: 50.0.size,                           // Fixed height
   child: Container(
     color: Colors.green,
     child: Center(child: Text('Absolute')),
@@ -133,8 +134,8 @@ AbsoluteItem(
 For sticky positioning within scrollable flex containers, use the `top`, `left`,
 `bottom`, and `right` properties on FlexItem. These create sticky elements that
 remain fixed relative to the viewport during scrolling. You must also set
-`verticalOverflow` or `horizontalOverflow` to `LayoutOverflow.scroll` on the
-FlexBox.
+`verticalOverflow` or `horizontalOverflow` to `LayoutOverflow.hidden` or
+`LayoutOverflow.scroll` on the FlexBox.
 
 ```dart
 // Wrap FlexBox in a SizedBox to constrain its size and enable scrolling
@@ -142,10 +143,9 @@ SizedBox(
   height: 300.0, // Fixed height to enable scrolling
   child: FlexBox(
     direction: FlexDirection.column,
-    verticalOverflow: LayoutOverflow.scroll, // Enable vertical scrolling
     children: [
       FlexItem(
-        height: SizeUnit.fixed(100.0),
+        height: 100.0.size,
         child: Container(
           color: Colors.blue,
           child: Center(child: Text('Normal Item')),
@@ -153,24 +153,24 @@ SizedBox(
       ),
       // Sticky header that sticks to the top
       FlexItem(
-        top: PositionUnit.fixed(0.0),    // Stick to top edge
-        left: PositionUnit.fixed(0.0),   // Stick to left edge
-        right: PositionUnit.fixed(0.0),  // Stick to right edge
-        height: SizeUnit.fixed(50.0),
+        top: 0.0.position,    // Stick to top edge
+        left: 0.0.position,   // Stick to left edge
+        right: 0.0.position,  // Stick to right edge
+        height: 50.0.size,
         child: Container(
           color: Colors.red,
           child: Center(child: Text('Sticky Header')),
         ),
       ),
       FlexItem(
-        height: SizeUnit.fixed(200.0),
+        height: 200.0.size,
         child: Container(
           color: Colors.green,
           child: Center(child: Text('Content')),
         ),
       ),
       FlexItem(
-        height: SizeUnit.fixed(200.0),
+        height: 200.0.size,
         child: Container(
           color: Colors.yellow,
           child: Center(child: Text('More Content')),
@@ -196,25 +196,24 @@ SizedBox(
   height: 400.0, // Fixed height to enable scrolling
   child: FlexBox(
     direction: FlexDirection.column,
-    verticalOverflow: LayoutOverflow.scroll,
     children: [
       // Regular content
       FlexItem(
-        height: SizeUnit.fixed(200.0),
+        height: 200.0.size,
         child: Container(
           color: Colors.blue,
           child: Center(child: Text('Content 1')),
         ),
       ),
       FlexItem(
-        height: SizeUnit.fixed(200.0),
+        height: 200.0.size,
         child: Container(
           color: Colors.green,
           child: Center(child: Text('Content 2')),
         ),
       ),
       FlexItem(
-        height: SizeUnit.fixed(200.0),
+        height: 200.0.size,
         child: Container(
           color: Colors.yellow,
           child: Center(child: Text('Content 3')),
@@ -223,10 +222,10 @@ SizedBox(
       
       // Absolute positioned element that stays fixed in viewport
       AbsoluteItem(
-        right: PositionUnit.fixed(20.0),      // 20px from right viewport edge
-        bottom: PositionUnit.fixed(20.0),     // 20px from bottom viewport edge
-        width: SizeUnit.fixed(60.0),
-        height: SizeUnit.fixed(60.0),
+        right: 20.0.position,                 // 20px from right viewport edge
+        bottom: 20.0.position,                // 20px from bottom viewport edge
+        width: 60.0.size,
+        height: 60.0.size,
         child: FloatingActionButton(
           onPressed: () {},
           child: Icon(Icons.add),
@@ -235,10 +234,10 @@ SizedBox(
       
       // Element that follows scroll position
       AbsoluteItem(
-        left: PositionUnit.fixed(10.0),
-        top: PositionUnit.scrollOffset + PositionUnit.fixed(10.0), // Moves with scroll
-        width: SizeUnit.fixed(40.0),
-        height: SizeUnit.fixed(40.0),
+        left: 10.0.position,
+        top: PositionUnit.scrollOffset + 10.0.position, // Moves with scroll
+        width: 40.0.size,
+        height: 40.0.size,
         child: Container(
           color: Colors.red,
           child: Center(child: Text('Scroll\nIndicator')),
@@ -259,7 +258,7 @@ Horizontal flex layout (equivalent to `FlexBox(direction: FlexDirection.row)`):
 RowBox(
   alignItems: BoxAlignmentGeometry.center,
   justifyContent: BoxAlignmentBase.spaceBetween,
-  rowGap: SpacingUnit.fixed(8.0),
+  rowGap: 8.0.spacing,
   children: [
     FlexItem(child: Text('Left')),
     FlexItem(child: Text('Center')),
@@ -276,12 +275,57 @@ Vertical flex layout (equivalent to `FlexBox(direction: FlexDirection.column)`):
 ColumnBox(
   alignItems: BoxAlignmentGeometry.stretch,
   justifyContent: BoxAlignmentBase.start,
-  columnGap: SpacingUnit.fixed(12.0),
+  columnGap: 12.0.spacing,
   children: [
     FlexItem(child: Text('Top')),
     FlexItem(child: Text('Middle')),
     FlexItem(child: Text('Bottom')),
   ],
+)
+```
+
+## Extension Methods
+
+The package provides convenient extension methods on `int` and `double` for
+creating units:
+
+```dart
+import 'package:flexiblebox/flexiblebox_extensions.dart';
+
+// Size units
+100.size              // SizeUnit.fixed(100.0)
+50.0.size             // SizeUnit.fixed(50.0)
+0.5.relativeSize      // SizeUnit.viewportSize * 0.5 (50% of viewport)
+
+// Position units
+10.position           // PositionUnit.fixed(10.0)
+20.0.position         // PositionUnit.fixed(20.0)
+0.25.relativePosition // PositionUnit.viewportSize * 0.25 (25% of viewport)
+
+// Spacing units
+8.spacing             // SpacingUnit.fixed(8.0)
+16.0.spacing          // SpacingUnit.fixed(16.0)
+0.1.relativeSpacing   // SpacingUnit.viewportSize * 0.1 (10% of viewport)
+
+// Percentage helper
+50.percent            // 0.5 (useful for calculations)
+```
+
+These extensions make the code more concise and readable:
+
+```dart
+// Without extensions
+FlexItem(
+  width: SizeUnit.fixed(100.0),
+  height: SizeUnit.fixed(50.0),
+  child: MyWidget(),
+)
+
+// With extensions
+FlexItem(
+  width: 100.size,
+  height: 50.size,
+  child: MyWidget(),
 )
 ```
 
@@ -333,7 +377,9 @@ ColumnBox(
 
 #### SizeUnit
 
-- `SizeUnit.fixed(double)`: Fixed size
+- `100.size` or `SizeUnit.fixed(double)`: Fixed size
+- `100.0.relativeSize` or `SizeUnit.viewportSize * 100.0.size`:
+  Viewport-relative size
 - `SizeUnit.minContent`: Minimum content size
 - `SizeUnit.maxContent`: Maximum content size
 - `SizeUnit.fitContent`: Fit content size
@@ -341,8 +387,10 @@ ColumnBox(
 
 #### PositionUnit
 
-- `PositionUnit.fixed(double)`: Fixed position
-- `PositionUnit.zero`: Zero position (equivalent to fixed(0.0))
+- `10.position` or `PositionUnit.fixed(double)`: Fixed position
+- `10.0.relativePosition` or `PositionUnit.viewportSize * 10.0.position`:
+  Viewport-relative position
+- `PositionUnit.zero`: Zero position (equivalent to `0.position`)
 - `PositionUnit.viewportSize`: Full viewport size along the axis
 - `PositionUnit.contentSize`: Total content size along the axis
 - `PositionUnit.childSize`: Size of the positioned child element
@@ -358,7 +406,9 @@ ColumnBox(
 
 #### SpacingUnit
 
-- `SpacingUnit.fixed(double)`: Fixed spacing
+- `8.spacing` or `SpacingUnit.fixed(double)`: Fixed spacing
+- `8.0.relativeSpacing` or `SpacingUnit.viewportSize * 8.0.spacing`:
+  Viewport-based spacing
 - `SpacingUnit.viewportSize`: Viewport-based spacing
 
 ### Math Operations
@@ -368,22 +418,22 @@ operations:
 
 ```dart
 // Basic arithmetic
-SizeUnit combinedWidth = SizeUnit.fixed(100.0) + SizeUnit.fixed(50.0);
-PositionUnit offset = PositionUnit.fixed(200.0) - PositionUnit.fixed(50.0);
-SpacingUnit scaled = SpacingUnit.fixed(10.0) * 2.0; // Multiply by scalar
+SizeUnit combinedWidth = 100.size + 50.size;
+PositionUnit offset = 200.position - 50.position;
+SpacingUnit scaled = 10.spacing * 2.0; // Multiply by scalar
 
 // Complex expressions (equivalent to CSS calc())
 SizeUnit halfViewport = SizeUnit.viewportSize * 0.5; // 50% of viewport size
-SizeUnit responsiveSize = SizeUnit.fixed(100.0) + SizeUnit.viewportSize * 0.2; // 100px + 20% viewport
+SizeUnit responsiveSize = 100.size + SizeUnit.viewportSize * 0.2; // 100px + 20% viewport
 PositionUnit centered = PositionUnit.viewportSize * 0.5 - PositionUnit.childSize * 0.5; // Center child
 
 // Negation
-SizeUnit negative = -SizeUnit.fixed(100.0);
+SizeUnit negative = -100.size;
 
 // Constraints
-PositionUnit clamped = PositionUnit.fixed(150.0).clamp(
-  min: PositionUnit.fixed(0.0),
-  max: PositionUnit.fixed(300.0),
+PositionUnit clamped = 150.position.clamp(
+  min: 0.position,
+  max: 300.position,
 );
 ```
 

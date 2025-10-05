@@ -1,3 +1,11 @@
+## 0.0.7
+
+- Added `package:flexiblebox/flexiblebox_extensions.dart` with extension methods
+  for `int` and `double` to create `SizeUnit`, `PositionUnit`, and `SpacingUnit`
+  more easily.
+- Added `PositionUnit.childSize([Object? key])` to reference the size of another
+  child by its key, or the current child if no key is provided.
+
 ## 0.0.6
 
 - Added fallback intrinsic and dry layout size to LayoutBoxBuilder

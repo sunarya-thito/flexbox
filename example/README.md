@@ -1,16 +1,51 @@
-# example
+# FlexibleBox Example
 
-A new Flutter project.
+This example app demonstrates the core features of the FlexibleBox package.
 
-## Getting Started
+## Features Demonstrated
 
-This project is a starting point for a Flutter application.
+### 1. Flex Direction
 
-A few resources to get you started if this is your first Flutter project:
+- **Row**: Horizontal layout of items
+- **Column**: Vertical layout of items
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 2. Flex Grow
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Shows how items with `flexGrow` expand to fill available space proportionally.
+
+### 3. Flex Shrink
+
+Shows how items with `flexShrink` compress when the container is too small.
+
+### 4. Row Gap
+
+Demonstrates horizontal spacing between flex items using `rowGap`.
+
+### 5. Column Gap
+
+Demonstrates vertical spacing between flex items using `columnGap`.
+
+### 6. Sticky Items
+
+Shows how items can be offset from their normal position using `top`, `left`,
+`bottom`, and `right` properties on `FlexItem`.
+
+### 7. Absolute Positioning
+
+Demonstrates `AbsoluteItem` for positioning items absolutely within the flex
+container, without affecting the layout of other items.
+
+## Running the Example
+
+```bash
+flutter run
+```
+
+## Key Concepts
+
+- **FlexBox**: The main container widget that implements flexbox layout
+- **FlexItem**: Wraps children to specify flex properties (grow, shrink, size)
+- **AbsoluteItem**: For absolute positioning within the flex container
+- **SizeUnit**: Used to specify dimensions (fixed, percentage, etc.)
+- **SpacingUnit**: Used to specify gaps between items
+- **PositionUnit**: Used for positioning (top, left, right, bottom)

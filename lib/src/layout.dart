@@ -13,6 +13,8 @@ import 'package:flexiblebox/src/basic.dart';
 final class LayoutData {
   static const LayoutData empty = LayoutData();
 
+  final Object? key;
+
   /// The layout behavior for this child (normal flow or absolute positioning).
   ///
   /// Determines how this child participates in the layout algorithm:
@@ -129,6 +131,7 @@ final class LayoutData {
   /// )
   /// ```
   const LayoutData({
+    this.key,
     this.behavior = LayoutBehavior.none,
     this.flexGrow = 0.0,
     this.flexShrink = 0.0,
@@ -248,6 +251,35 @@ class LayoutOffset {
   }
 }
 
+class LayoutRange {
+  final double start;
+  final double end;
+
+  const LayoutRange(this.start, this.end);
+
+  bool overlaps(LayoutRange other) {
+    if (end <= other.start || other.end <= start) {
+      return false;
+    }
+    return true;
+  }
+
+  bool contains(double value) {
+    return value >= start && value <= end;
+  }
+
+  bool containsRange(LayoutRange other) {
+    return other.start >= start && other.end <= end;
+  }
+
+  LayoutRange expandToInclude(LayoutRange other) {
+    return LayoutRange(
+      min(start, other.start),
+      max(end, other.end),
+    );
+  }
+}
+
 /// Represents a rectangle with position and size.
 ///
 /// Used to define the bounds of layout elements and perform
@@ -286,6 +318,9 @@ class LayoutRect {
 
   double get horizontalCenter => left + width / 2;
   double get verticalCenter => top + height / 2;
+
+  LayoutRange get horizontalRange => LayoutRange(left, right);
+  LayoutRange get verticalRange => LayoutRange(top, bottom);
 
   /// Expands this rectangle to include the bounds of another rectangle.
   ///
@@ -763,6 +798,8 @@ mixin ParentLayout {
   /// Returns a [ChildLayoutDryDelegate] chain in reverse order
   /// for performing measurement-only layout operations.
   ChildLayout? getLastDryLayout(LayoutHandle layoutHandle);
+
+  ChildLayout? findChildByKey(Object key);
 }
 
 /// Abstract base class for layout algorithms.

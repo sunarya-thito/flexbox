@@ -262,6 +262,8 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
 
   final bool needLayoutBox;
 
+  final Key? layoutKey;
+
   /// Creates a DirectFlexItem with the specified properties.
   ///
   /// The [child] parameter is required and specifies the widget to be laid out
@@ -307,6 +309,7 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
     this.right,
     this.alignSelf,
     this.needLayoutBox = false,
+    this.layoutKey,
     required super.child,
   });
 
@@ -341,6 +344,7 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
       aspectRatio: aspectRatio,
       flexGrow: flexGrow,
       flexShrink: flexShrink,
+      key: layoutKey ?? key,
     );
     if (parentData.layoutData != newLayoutData) {
       parentData.layoutData = newLayoutData;

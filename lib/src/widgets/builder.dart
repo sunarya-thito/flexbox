@@ -297,7 +297,7 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
 /// LayoutBox mixin offers a comprehensive set of properties and convenience getters
 /// that provide information about the current layout state, scrolling position,
 /// and viewport bounds. It's used by builder variants of layout widgets like
-/// [BuilderFlexItem] and [BuilderAbsoluteItem] to access dynamic layout information.
+/// [BuilderFlexItem] and [_BuilderAbsoluteItem] to access dynamic layout information.
 ///
 /// This mixin provides both raw layout data and computed convenience properties
 /// for common layout calculations, making it easier to create responsive widgets
