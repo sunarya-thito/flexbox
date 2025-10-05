@@ -1,3 +1,4 @@
+import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,8 +15,13 @@ extension TestExtension on WidgetTester {
     final finder = find.byKey(key);
     expect(finder, findsOneWidget, reason: 'Cannot find widget for $key');
     final renderBox = renderObject<RenderBox>(finder);
-    final offset = (renderBox.parentData as BoxParentData).offset;
-    expect(offset & renderBox.size, rect, reason: 'Rect for $key');
+    final parentData = renderBox.parentData as LayoutBoxParentData;
+    final offset = parentData.offset;
+    expect(
+      offset & renderBox.size,
+      rect,
+      reason: 'Rect for $key',
+    );
   }
 
   void expectOffset(Key key, Offset offset) {

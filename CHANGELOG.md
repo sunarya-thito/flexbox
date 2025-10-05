@@ -1,3 +1,8 @@
+## 0.0.8
+
+- No longer skips invisible children during layout to prevent issues with
+  `LayoutBuilder` and widget tests.
+
 ## 0.0.7
 
 - Added `package:flexiblebox/flexiblebox_extensions.dart` with extension methods

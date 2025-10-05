@@ -17,11 +17,6 @@ class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
   Key? debugKey;
   ChildLayoutCache? cache;
 
-  // used to store the size that was attempted during layout
-  // but the child was not laid out because it was skipped
-  // due to being out of viewport
-  Size? attemptedSize;
-
   LayoutData layoutData = LayoutData.empty;
 
   bool needLayoutBox = false;
@@ -235,8 +230,7 @@ class RenderLayoutBox extends RenderBox
           );
           final childParentData = child.parentData as LayoutBoxParentData;
           final childOffset = childParentData.offset;
-          final childBounds =
-              childOffset & (childParentData.attemptedSize ?? child.size);
+          final childBounds = childOffset & child.size;
           // no need to bother painting children that are out of the paint bounds
           if (paintBounds.overlaps(childBounds)) {
             context.paintChild(child, childOffset + offset);
@@ -361,27 +355,11 @@ class RenderLayoutBox extends RenderBox
           final Matrix4 transform = descendant.getTransformTo(viewport.parent);
           return MatrixUtils.transformRect(
             transform,
-            rect ?? _obtainSafePaintBounds(descendant),
+            rect ?? descendant.paintBounds,
           );
         }
         return rect;
     }
-  }
-
-  static Rect _obtainSafePaintBounds(RenderObject object) {
-    if (object is RenderBox) {
-      final parentData = object.parentData as BoxParentData;
-      if (!object.hasSize) {
-        if (parentData is LayoutBoxParentData) {
-          // was skipped during layout
-          // due to being out of viewport
-          return Offset.zero & (parentData.attemptedSize ?? const Size(0, 0));
-        }
-        // has not been laid out yet
-        return Offset.zero & const Size(0, 0);
-      }
-    }
-    return object.paintBounds;
   }
 
   static Rect? _showInViewportForAxisDirection({
@@ -782,7 +760,7 @@ class RenderLayoutBox extends RenderBox
       Axis.horizontal => (horizontal.pixels, horizontalAxisDirection),
     };
 
-    rect ??= _obtainSafePaintBounds(target);
+    rect ??= target.paintBounds;
 
     RenderObject child = target;
     while (child.parent != this) {
@@ -1030,12 +1008,7 @@ class RenderBoxChildLayout with ChildLayout {
   }
 
   @override
-  LayoutSize get size => layoutSizeFromSize(
-    renderBox.hasSize
-        ? renderBox.size
-        : (renderBox.parentData as LayoutBoxParentData).attemptedSize ??
-              const Size(0, 0),
-  );
+  LayoutSize get size => layoutSizeFromSize(renderBox.size);
 
   @override
   LayoutOffset get offset => layoutOffsetFromOffset(
@@ -1106,53 +1079,6 @@ class RenderBoxChildLayout with ChildLayout {
     OverflowBounds overflowBounds, {
     LayoutOffset? revealOffset,
   }) {
-    // Check whether the requested BB is inside
-    // the viewport BB.
-    double top = offset.dy;
-    double left = offset.dx;
-    double bottom = top + size.height;
-    double right = left + size.width;
-    // note that these bounds include the scroll offset
-    double rightViewport = parent.viewportSize.width;
-    double bottomViewport = parent.viewportSize.height;
-    // the [Layout] ensures that we already have a valid
-    // [viewportSize] before we get here.
-
-    // if the requested BB is completely outside
-    // the viewport BB, we can skip the layout
-    // unless we have the overflow set to visible
-
-    bool skip = false;
-    if (parent.horizontalOverflow.clipContent &&
-        (right < 0.0 || left > rightViewport)) {
-      skip = true;
-    }
-    if (parent.verticalOverflow.clipContent &&
-        (bottom < 0.0 || top > bottomViewport)) {
-      skip = true;
-    }
-
-    // here we are safe to assume that these skipped children
-    // won't be available for hit testing or painting
-
-    if (skip) {
-      // when skipping this child,
-      // size won't be available
-      // but its safe to get the offset
-      // that also means its safe to call
-      // [applyPaintTransform], [getTransformTo],
-      // and [getOffsetToReveal], unless
-      // the child has different implementation
-      // of these methods
-      final parentData = renderBox.parentData as LayoutBoxParentData;
-      parentData.offset = offsetFromLayoutOffset(offset);
-      parentData.attemptedSize = sizeFromLayoutSize(size);
-      parentData.revealOffset = revealOffset == null
-          ? null
-          : offsetFromLayoutOffset(revealOffset);
-      return;
-    }
-
     double maxScrollX = parent.contentSize.width - parent.viewportSize.width;
     double maxScrollY = parent.contentSize.height - parent.viewportSize.height;
     maxScrollX = max(0.0, maxScrollX);
