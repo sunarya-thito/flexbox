@@ -200,5 +200,13 @@ void main() {
       final unit = evaluateSpacingUnit('12.5px');
       expect(unit.toCodeString(), SpacingUnit.fixed(12.5).toCodeString());
     });
+
+    test('viewportSize shorthand', () {
+      final unit = evaluateSpacingUnit('50%');
+      expect(
+        unit.toCodeString(),
+        (SpacingUnit.viewportSize * 0.5).toCodeString(),
+      );
+    });
   });
 }

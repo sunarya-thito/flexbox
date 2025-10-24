@@ -271,5 +271,13 @@ void main() {
       final unit = evaluatePositionUnit('12.5px');
       expect(unit.toCodeString(), PositionUnit.fixed(12.5).toCodeString());
     });
+
+    test('viewportSize shorthand', () {
+      final unit = evaluatePositionUnit('50%');
+      expect(
+        unit.toCodeString(),
+        (PositionUnit.viewportSize * 0.5).toCodeString(),
+      );
+    });
   });
 }

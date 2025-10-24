@@ -1,3 +1,20 @@
+## 1.0.0
+
+- Added `Scrollbars` widget with customizable scrollbar UI for FlexBox
+  containers
+- Added `PositionType` enum (none, relative) for controlling positioning
+  behavior
+- Added `toCodeString()` methods to all unit types (SizeUnit, PositionUnit,
+  SpacingUnit) for serialization
+- Added evaluation system to parse layout units from string expressions
+- Added `BoxConstraintsWithData<T>` for passing typed data through constraints
+- Added `SpacingUnit.childSize()` to reference child dimensions in spacing
+  calculations
+- Updated `SpacingUnit.computeSpacing()` to require parent parameter
+- Changed calculated unit constructors to use positional parameters (breaking
+  change)
+- Added `position` and `alignSelf` parameters to FlexItem
+
 ## 0.0.9
 
 - Fixed an issue where AbsoluteItem with unspecified width or height would not
