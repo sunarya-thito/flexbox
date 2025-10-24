@@ -383,6 +383,7 @@ class _DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
     }
     final newLayoutData = LayoutData(
       behavior: LayoutBehavior.absolute,
+      position: PositionType.none,
       paintOrder: paintOrder,
       width: width,
       height: height,

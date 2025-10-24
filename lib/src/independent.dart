@@ -187,7 +187,9 @@ class Box with ParentLayout {
       child = childParentData.nextSibling;
     }
     final layoutConstraints = constraints;
-    LayoutSize contentSize = layoutHandle.performLayout(layoutConstraints);
+    LayoutSize contentSize = layoutHandle.performLayout(
+      layoutConstraints,
+    );
     final viewportSize = layoutConstraints.constrain(contentSize);
     _contentSize = contentSize;
     assert(() {
@@ -205,6 +207,7 @@ class Box with ParentLayout {
     _contentBounds = layoutHandle.performPositioning(
       viewportSize,
       contentSize,
+      ParentRect.zero,
     );
     assert(contentSize.width.isFinite && contentSize.height.isFinite);
     size = viewportSize;
@@ -606,6 +609,7 @@ class BoxChildLayout with ChildLayout {
 
   @override
   void layout(
+    LayoutRect parentOffset,
     LayoutOffset offset,
     LayoutSize size,
     OverflowBounds overflowBounds, {

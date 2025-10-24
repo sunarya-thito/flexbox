@@ -2,10 +2,19 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flexiblebox/src/basic.dart';
+import 'package:flexiblebox/src/constraints.dart';
 import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+
+class RelativePositioning {
+  final ParentRect relativeRect;
+
+  const RelativePositioning({
+    required this.relativeRect,
+  });
+}
 
 /// Parent data for children of [RenderLayoutBox].
 ///
@@ -100,6 +109,50 @@ class RenderLayoutBox extends RenderBox
     required this.clipBehavior,
   });
 
+  double get scrollProgressX {
+    final scrollMax = max(0.0, contentSize.width - viewportSize.width);
+    if (scrollMax == 0.0) {
+      return 0.0;
+    }
+    return horizontal.pixels / scrollMax;
+  }
+
+  double get scrollProgressY {
+    final scrollMax = max(0.0, contentSize.height - viewportSize.height);
+    if (scrollMax == 0.0) {
+      return 0.0;
+    }
+    return vertical.pixels / scrollMax;
+  }
+
+  set scrollProgressX(double value) {
+    final scrollMax = max(0.0, contentSize.width - viewportSize.width);
+    horizontal.jumpTo(value * scrollMax);
+  }
+
+  set scrollProgressY(double value) {
+    final scrollMax = max(0.0, contentSize.height - viewportSize.height);
+    vertical.jumpTo(value * scrollMax);
+  }
+
+  void setScrollProgressX(double value, Duration duration, Curve curve) {
+    final scrollMax = max(0.0, contentSize.width - viewportSize.width);
+    horizontal.moveTo(value * scrollMax, duration: duration, curve: curve);
+  }
+
+  void setScrollProgressY(double value, Duration duration, Curve curve) {
+    final scrollMax = max(0.0, contentSize.height - viewportSize.height);
+    vertical.moveTo(value * scrollMax, duration: duration, curve: curve);
+  }
+
+  double get maxScrollX {
+    return max(0.0, contentSize.width - viewportSize.width);
+  }
+
+  double get maxScrollY {
+    return max(0.0, contentSize.height - viewportSize.height);
+  }
+
   @override
   ChildLayout? findChildByKey(Object key) {
     RenderBox? child = firstChild;
@@ -134,6 +187,8 @@ class RenderLayoutBox extends RenderBox
   // bounds including absolute positioned children
   LayoutRect? _contentBounds;
 
+  LayoutSize? _viewportSize;
+
   @override
   LayoutSize get contentSize {
     assert(
@@ -152,7 +207,13 @@ class RenderLayoutBox extends RenderBox
   }
 
   @override
-  LayoutSize get viewportSize => layoutSizeFromSize(size);
+  LayoutSize get viewportSize {
+    assert(
+      _viewportSize != null,
+      'viewportSize is not available before layout. Call layout first.',
+    );
+    return _viewportSize!;
+  }
 
   @override
   double get scrollOffsetX => horizontalOverflow.reverse
@@ -482,6 +543,7 @@ class RenderLayoutBox extends RenderBox
     bool needsSorting = false;
     LayoutHandle layoutHandle = boxLayout.createLayoutHandle(this);
     _layoutHandle = layoutHandle;
+    final constraints = this.constraints;
     RenderBox? child = firstChild;
     int childIndex = 0;
     while (child != null) {
@@ -499,13 +561,34 @@ class RenderLayoutBox extends RenderBox
     final layoutConstraints = layoutConstraintsFromBoxConstraints(
       constraints,
     );
-    LayoutSize contentSize = layoutHandle.performLayout(layoutConstraints);
+    LayoutSize contentSize = layoutHandle.performLayout(
+      layoutConstraints,
+    );
     final viewportSize = layoutConstraints.constrain(contentSize);
+    _viewportSize = viewportSize;
     _contentSize = contentSize;
     size = sizeFromLayoutSize(viewportSize);
+    ParentRect relativeRect;
+    if (constraints is BoxConstraintsWithData &&
+        constraints.data is RelativePositioning) {
+      final relativePositioning = constraints.data as RelativePositioning;
+      relativeRect = relativePositioning.relativeRect;
+    } else {
+      // relativeRect = layoutRectFromRect(
+      //   Offset.zero & size,
+      // );
+      relativeRect = ParentRect.fromLTWH(
+        0,
+        0,
+        size.width,
+        size.height,
+        ParentEdge.zero,
+      );
+    }
     _contentBounds = layoutHandle.performPositioning(
       viewportSize,
       contentSize,
+      relativeRect,
     );
     assert(contentSize.width.isFinite && contentSize.height.isFinite);
     horizontal.applyViewportDimension(size.width);
@@ -794,18 +877,22 @@ class RenderLayoutBox extends RenderBox
     final padding = boxLayout.padding;
 
     double top = padding.top.computeSpacing(
+      parent: this,
       axis: LayoutAxis.vertical,
       viewportSize: viewportSize.height,
     );
     double left = padding.left.computeSpacing(
+      parent: this,
       axis: LayoutAxis.horizontal,
       viewportSize: viewportSize.width,
     );
     double bottom = padding.bottom.computeSpacing(
+      parent: this,
       axis: LayoutAxis.vertical,
       viewportSize: viewportSize.height,
     );
     double right = padding.right.computeSpacing(
+      parent: this,
       axis: LayoutAxis.horizontal,
       viewportSize: viewportSize.width,
     );
@@ -1074,6 +1161,7 @@ class RenderBoxChildLayout with ChildLayout {
 
   @override
   void layout(
+    ParentRect relativeRect,
     LayoutOffset offset,
     LayoutSize size,
     OverflowBounds overflowBounds, {
@@ -1090,18 +1178,31 @@ class RenderBoxChildLayout with ChildLayout {
         : offsetFromLayoutOffset(revealOffset);
     renderBox.layout(
       parentData.needLayoutBox
-          ? WrappedLayoutConstraints(
-              size: sizeFromLayoutSize(size),
-              offset: offsetFromLayoutOffset(offset),
-              scrollX: parent.scrollOffsetX,
-              scrollY: parent.scrollOffsetY,
-              maxScrollX: maxScrollX,
-              maxScrollY: maxScrollY,
-              contentSize: sizeFromLayoutSize(parent.contentSize),
-              viewportSize: sizeFromLayoutSize(parent.viewportSize),
-              horizontalUserScrollDirection: parent.horizontalAxisDirection,
-              verticalUserScrollDirection: parent.verticalAxisDirection,
-              overflowBounds: overflowBounds,
+          ? BoxConstraintsWithData<LayoutBox>.tightFor(
+              data: LayoutBoxImpl(
+                size: sizeFromLayoutSize(size),
+                offset: offsetFromLayoutOffset(offset),
+                scrollX: parent.scrollOffsetX,
+                scrollY: parent.scrollOffsetY,
+                maxScrollX: maxScrollX,
+                maxScrollY: maxScrollY,
+                contentSize: sizeFromLayoutSize(parent.contentSize),
+                viewportSize: sizeFromLayoutSize(parent.viewportSize),
+                horizontalUserScrollDirection: parent.horizontalAxisDirection,
+                verticalUserScrollDirection: parent.verticalAxisDirection,
+                overflowBounds: overflowBounds,
+                relativeRect: relativeRect,
+              ),
+              width: size.width,
+              height: size.height,
+            )
+          : parentData.layoutData.position == PositionType.none
+          ? BoxConstraintsWithData<RelativePositioning>.tightFor(
+              data: RelativePositioning(
+                relativeRect: relativeRect,
+              ),
+              width: size.width,
+              height: size.height,
             )
           : BoxConstraints.tight(
               sizeFromLayoutSize(size),

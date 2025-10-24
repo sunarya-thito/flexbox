@@ -2,6 +2,11 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/layout.dart';
 
+enum PositionType {
+  none,
+  relative,
+}
+
 /// Defines the direction in which children are laid out in a flex container.
 ///
 /// The flex direction determines the primary axis along which flex items are placed.
@@ -150,6 +155,7 @@ abstract class BoxAlignmentGeometry {
     required LayoutAxis axis,
     required double viewportSize,
     required double contentSize,
+    required double childSize,
   }) => null;
 
   /// Determines if this alignment requires baseline information.
@@ -349,8 +355,9 @@ class _StretchBoxAlignment extends BoxAlignmentContent {
     required LayoutAxis axis,
     required double viewportSize,
     required double contentSize,
+    required double childSize,
   }) {
-    return contentSize;
+    return max(childSize, contentSize);
   }
 }
 
@@ -658,6 +665,12 @@ final class LayoutOverflow {
 /// - Content-based sizes ([minContent], [maxContent], [fitContent])
 /// - Viewport-relative sizes ([viewportSize])
 abstract class SizeUnit {
+  const factory SizeUnit.calc(
+    SizeUnit a,
+    SizeUnit b,
+    CalculationOperation operation,
+  ) = _CalculatedSize;
+
   /// Linearly interpolates between two size units.
   ///
   /// This creates a smooth transition between different sizing strategies,
@@ -711,9 +724,16 @@ abstract class SizeUnit {
     required LayoutSize contentSize,
     required LayoutSize viewportSize,
   });
+
+  String toCodeString();
 }
 
 abstract class PositionUnit {
+  const factory PositionUnit.calc(
+    PositionUnit a,
+    PositionUnit b,
+    CalculationOperation operation,
+  ) = _CalculatedPosition;
   static PositionUnit lerp(PositionUnit a, PositionUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
@@ -731,11 +751,6 @@ abstract class PositionUnit {
   static const PositionUnit viewportEndBound = _ViewportEndBound();
   const factory PositionUnit.fixed(double value) = _FixedPosition;
   const factory PositionUnit.cross(PositionUnit position) = _CrossPosition;
-  const factory PositionUnit.calculated({
-    required PositionUnit first,
-    required PositionUnit second,
-    required CalculationOperation operation,
-  }) = _CalculatedPosition;
   const factory PositionUnit.childSize([Object? key]) = _ChildSizeReference;
   const factory PositionUnit.constrained({
     required PositionUnit position,
@@ -761,6 +776,8 @@ abstract class PositionUnit {
     required ChildLayout child,
     required LayoutAxis direction,
   });
+
+  String toCodeString();
 }
 
 typedef CalculationOperation = double Function(double a, double b);
@@ -795,11 +812,19 @@ class _CalculatedSize extends SizeUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedSize({
-    required this.first,
-    required this.second,
-    required this.operation,
-  });
+  const _CalculatedSize(this.first, this.second, this.operation);
+
+  @override
+  String toCodeString() {
+    final op = operation == calculationAdd
+        ? '+'
+        : operation == calculationSubtract
+        ? '-'
+        : operation == calculationMultiply
+        ? '*'
+        : '/';
+    return '(${first.toCodeString()} $op ${second.toCodeString()})';
+  }
 
   /// Computes the size by calculating both operands and applying the operation.
   ///
@@ -850,11 +875,19 @@ class _CalculatedPosition implements PositionUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedPosition({
-    required this.first,
-    required this.second,
-    required this.operation,
-  });
+  const _CalculatedPosition(this.first, this.second, this.operation);
+
+  @override
+  String toCodeString() {
+    final op = operation == calculationAdd
+        ? '+'
+        : operation == calculationSubtract
+        ? '-'
+        : operation == calculationMultiply
+        ? '*'
+        : '/';
+    return '(${first.toCodeString()} $op ${second.toCodeString()})';
+  }
 
   /// Computes the position by calculating both operands and applying the operation.
   ///
@@ -890,6 +923,9 @@ class _FixedPosition implements PositionUnit {
 
   const _FixedPosition(this.value);
 
+  @override
+  String toCodeString() => '${value}px';
+
   /// Returns the fixed position value.
   @override
   double computePosition({
@@ -903,6 +939,9 @@ class _FixedPosition implements PositionUnit {
 
 class _ViewportSizeReference implements PositionUnit {
   const _ViewportSizeReference();
+
+  @override
+  String toCodeString() => 'viewportSize';
 
   /// Returns the size of the viewport along the specified axis.
   ///
@@ -923,6 +962,9 @@ class _ViewportSizeReference implements PositionUnit {
 
 class _ContentSizeReference implements PositionUnit {
   const _ContentSizeReference();
+
+  @override
+  String toCodeString() => 'contentSize';
 
   /// Returns the size of the content along the specified axis.
   ///
@@ -945,6 +987,18 @@ class _ChildSizeReference implements PositionUnit {
   final Object? key;
 
   const _ChildSizeReference([this.key]);
+
+  @override
+  String toCodeString() {
+    if (key == null) {
+      return 'childSize';
+    }
+    if (key is String) {
+      return 'childSize("$key")';
+    }
+    return 'childSize(#$key)';
+  }
+
   @override
   double computePosition({
     required ParentLayout parent,
@@ -971,6 +1025,9 @@ class _ChildSizeReference implements PositionUnit {
 class _BoxOffset implements PositionUnit {
   const _BoxOffset();
 
+  @override
+  String toCodeString() => 'boxOffset';
+
   /// Returns the current scroll offset of the parent along the specified axis.
   ///
   /// For horizontal axis, returns the X scroll offset.
@@ -991,6 +1048,9 @@ class _BoxOffset implements PositionUnit {
 class _ScrollOffset implements PositionUnit {
   const _ScrollOffset();
 
+  @override
+  String toCodeString() => 'scrollOffset';
+
   /// Returns the current scroll offset of the parent along the specified axis.
   ///
   /// For horizontal axis, returns the X scroll offset.
@@ -1010,6 +1070,9 @@ class _ScrollOffset implements PositionUnit {
 
 class _ContentOverflow implements PositionUnit {
   const _ContentOverflow();
+
+  @override
+  String toCodeString() => 'contentOverflow';
 
   /// Returns the amount by which content overflows the viewport.
   ///
@@ -1036,6 +1099,9 @@ class _ContentOverflow implements PositionUnit {
 class _ContentUnderflow implements PositionUnit {
   const _ContentUnderflow();
 
+  @override
+  String toCodeString() => 'contentUnderflow';
+
   /// Returns the amount of empty space when content is smaller than viewport.
   ///
   /// This is the positive difference between viewport size and content size.
@@ -1061,6 +1127,9 @@ class _ContentUnderflow implements PositionUnit {
 class _ViewportEndBound implements PositionUnit {
   const _ViewportEndBound();
 
+  @override
+  String toCodeString() => 'viewportEndBound';
+
   /// Returns the position of the viewport's end bound relative to content.
   ///
   /// This calculates: contentSize + scrollOffset
@@ -1083,6 +1152,9 @@ class _CrossPosition implements PositionUnit {
   final PositionUnit position;
 
   const _CrossPosition(this.position);
+
+  @override
+  String toCodeString() => 'cross(${position.toCodeString()})';
 
   /// Computes the position by evaluating the wrapped unit on the cross axis.
   ///
@@ -1121,6 +1193,17 @@ class _ConstrainedPosition implements PositionUnit {
     this.min = const _FixedPosition(double.negativeInfinity),
     this.max = const _FixedPosition(double.infinity),
   });
+
+  @override
+  String toCodeString() {
+    if (min is _FixedPosition &&
+        (min as _FixedPosition).value == double.negativeInfinity &&
+        max is _FixedPosition &&
+        (max as _FixedPosition).value == double.infinity) {
+      return position.toCodeString();
+    }
+    return 'clamp(${position.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
+  }
 
   /// Computes the position and clamps it between min and max bounds.
   ///
@@ -1166,6 +1249,17 @@ class _ConstrainedSize extends SizeUnit {
     this.min = const _FixedSize(0),
     this.max = const _FixedSize(double.infinity),
   });
+
+  @override
+  String toCodeString() {
+    if (min is _FixedSize &&
+        (min as _FixedSize).value == 0 &&
+        max is _FixedSize &&
+        (max as _FixedSize).value == double.infinity) {
+      return size.toCodeString();
+    }
+    return 'clamp(${size.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
+  }
 
   /// Computes the size and clamps it between min and max bounds.
   ///
@@ -1218,6 +1312,9 @@ class _FixedSize extends SizeUnit {
 
   const _FixedSize(this.value);
 
+  @override
+  String toCodeString() => '${value}px';
+
   /// Returns the fixed size value.
   @override
   double computeSize({
@@ -1238,6 +1335,9 @@ class _FixedSize extends SizeUnit {
 /// If the viewport size is infinite (during intrinsic sizing), returns 0.0.
 class _SizeViewportSizeReference extends SizeUnit {
   const _SizeViewportSizeReference();
+
+  @override
+  String toCodeString() => 'viewportSize';
 
   /// Returns the viewport size along the axis, or 0.0 if infinite.
   @override
@@ -1260,6 +1360,9 @@ class _SizeViewportSizeReference extends SizeUnit {
 
 class _MinContent extends SizeUnit {
   const _MinContent();
+
+  @override
+  String toCodeString() => 'minContent';
 
   /// Returns the minimum intrinsic size of the child along the specified axis.
   ///
@@ -1284,6 +1387,9 @@ class _MinContent extends SizeUnit {
 class _MaxContent extends SizeUnit {
   const _MaxContent();
 
+  @override
+  String toCodeString() => 'maxContent';
+
   /// Returns the maximum intrinsic size of the child along the specified axis.
   ///
   /// This sizes the element to its maximum possible width/height based on
@@ -1306,6 +1412,9 @@ class _MaxContent extends SizeUnit {
 
 class _FitContent extends SizeUnit {
   const _FitContent();
+
+  @override
+  String toCodeString() => 'fitContent';
 
   /// Returns the size that fits the child's content exactly.
   ///
@@ -1481,6 +1590,12 @@ class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
 }
 
 abstract class SpacingUnit {
+  const factory SpacingUnit.calc(
+    SpacingUnit a,
+    SpacingUnit b,
+    CalculationOperation operation,
+  ) = _CalculatedSpacing;
+
   /// Linearly interpolates between two spacing units.
   ///
   /// Creates smooth transitions between different spacing strategies,
@@ -1507,12 +1622,9 @@ abstract class SpacingUnit {
     SpacingUnit max,
   }) = _ConstrainedSpacing;
 
-  /// Creates a calculated spacing using two operands and an operation.
-  const factory SpacingUnit.computed({
-    required SpacingUnit first,
-    required SpacingUnit second,
-    required CalculationOperation operation,
-  }) = _CalculatedSpacing;
+  const factory SpacingUnit.childSize([Object? key]) = _ChildSizeSpacing;
+
+  const SpacingUnit();
 
   /// Computes the actual spacing value.
   ///
@@ -1529,9 +1641,12 @@ abstract class SpacingUnit {
   ///
   /// Returns the computed spacing value.
   double computeSpacing({
+    required ParentLayout parent,
     required LayoutAxis axis,
     required double viewportSize,
   });
+
+  String toCodeString();
 }
 
 /// A spacing unit that represents a fixed, unchanging spacing value.
@@ -1544,9 +1659,13 @@ class _FixedSpacing implements SpacingUnit {
 
   const _FixedSpacing(this.value);
 
+  @override
+  String toCodeString() => '${value}px';
+
   /// Returns the fixed spacing value.
   @override
   double computeSpacing({
+    required ParentLayout parent,
     required LayoutAxis axis,
     required double viewportSize,
   }) {
@@ -1560,9 +1679,13 @@ class _FixedSpacing implements SpacingUnit {
 class _SpacingViewportSizeReference implements SpacingUnit {
   const _SpacingViewportSizeReference();
 
+  @override
+  String toCodeString() => 'viewportSize';
+
   /// Returns the viewport size along the axis.
   @override
   double computeSpacing({
+    required ParentLayout parent,
     required LayoutAxis axis,
     required double viewportSize,
   }) {
@@ -1585,11 +1708,19 @@ class _CalculatedSpacing implements SpacingUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedSpacing({
-    required this.first,
-    required this.second,
-    required this.operation,
-  });
+  const _CalculatedSpacing(this.first, this.second, this.operation);
+
+  @override
+  String toCodeString() {
+    final op = operation == calculationAdd
+        ? '+'
+        : operation == calculationSubtract
+        ? '-'
+        : operation == calculationMultiply
+        ? '*'
+        : '/';
+    return '(${first.toCodeString()} $op ${second.toCodeString()})';
+  }
 
   /// Computes the spacing by calculating both operands and applying the operation.
   ///
@@ -1597,14 +1728,17 @@ class _CalculatedSpacing implements SpacingUnit {
   /// the same layout context, then applies the [operation] to combine them.
   @override
   double computeSpacing({
+    required ParentLayout parent,
     required LayoutAxis axis,
     required double viewportSize,
   }) {
     double first = this.first.computeSpacing(
+      parent: parent,
       axis: axis,
       viewportSize: viewportSize,
     );
     double second = this.second.computeSpacing(
+      parent: parent,
       axis: axis,
       viewportSize: viewportSize,
     );
@@ -1632,28 +1766,76 @@ class _ConstrainedSpacing implements SpacingUnit {
     this.max = const _FixedSpacing(double.infinity),
   });
 
+  @override
+  String toCodeString() {
+    if (min is _FixedSpacing &&
+        (min as _FixedSpacing).value == 0 &&
+        max is _FixedSpacing &&
+        (max as _FixedSpacing).value == double.infinity) {
+      return spacing.toCodeString();
+    }
+    return 'clamp(${spacing.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
+  }
+
   /// Computes the spacing and clamps it between min and max bounds.
   ///
   /// First computes the base spacing, then computes the min and max bounds,
   /// and finally clamps the result to ensure it stays within the allowed range.
   @override
   double computeSpacing({
+    required ParentLayout parent,
     required LayoutAxis axis,
     required double viewportSize,
   }) {
-    double sp = spacing.computeSpacing(
+    double val = spacing.computeSpacing(
+      parent: parent,
       axis: axis,
       viewportSize: viewportSize,
     );
-    double minSp = min.computeSpacing(
+    double minVal = min.computeSpacing(
+      parent: parent,
       axis: axis,
       viewportSize: viewportSize,
     );
-    double maxSp = max.computeSpacing(
+    double maxVal = max.computeSpacing(
+      parent: parent,
       axis: axis,
       viewportSize: viewportSize,
     );
-    return sp.clamp(minSp, maxSp);
+    return val.clamp(minVal, maxVal);
+  }
+}
+
+class _ChildSizeSpacing implements SpacingUnit {
+  final Object? key;
+
+  const _ChildSizeSpacing([this.key]);
+
+  @override
+  String toCodeString() {
+    if (key == null) {
+      return 'childSize';
+    }
+    if (key is String) {
+      return 'childSize("$key")';
+    }
+    return 'childSize(#$key)';
+  }
+
+  @override
+  double computeSpacing({
+    required ParentLayout parent,
+    required LayoutAxis axis,
+    required double viewportSize,
+  }) {
+    ChildLayout? otherChild = parent.findChildByKey(key!);
+    if (otherChild == null) {
+      return 0.0;
+    }
+    return switch (axis) {
+      LayoutAxis.horizontal => otherChild.size.width,
+      LayoutAxis.vertical => otherChild.size.height,
+    };
   }
 }
 
@@ -1661,45 +1843,64 @@ extension PositionUnitExtension on PositionUnit {
   /// Adds two position units together.
   PositionUnit operator +(PositionUnit other) {
     return _CalculatedPosition(
-      first: this,
-      second: other,
-      operation: calculationAdd,
+      this,
+      other,
+      calculationAdd,
     );
   }
 
   /// Subtracts one position unit from another.
   PositionUnit operator -(PositionUnit other) {
     return _CalculatedPosition(
-      first: this,
-      second: other,
-      operation: calculationSubtract,
+      this,
+      other,
+      calculationSubtract,
     );
   }
 
   /// Multiplies two position units.
-  PositionUnit operator *(PositionUnit other) {
+  PositionUnit operator *(Object other) {
+    if (other is PositionUnit) {
+      return _CalculatedPosition(
+        this,
+        other,
+        calculationMultiply,
+      );
+    }
+    if (other is double) {
+      return _CalculatedPosition(
+        this,
+        PositionUnit.fixed(other),
+        calculationMultiply,
+      );
+    }
+    throw ArgumentError('Cannot multiply PositionUnit by $other');
+  }
+
+  /// Multiplies a position unit by a scalar.
+  PositionUnit times(double other) {
     return _CalculatedPosition(
-      first: this,
-      second: other,
-      operation: calculationMultiply,
+      this,
+      PositionUnit.fixed(other),
+      calculationMultiply,
     );
   }
 
   /// Divides one position unit by another.
   PositionUnit operator /(PositionUnit other) {
     return _CalculatedPosition(
-      first: this,
-      second: other,
-      operation: calculationDivide,
+      this,
+      other,
+      calculationDivide,
     );
   }
 
   /// Negates this position unit (equivalent to 0 - this).
   PositionUnit operator -() {
     return _CalculatedPosition(
-      first: const _FixedPosition(0),
-      second: this,
-      operation: calculationSubtract,
+      const _FixedPosition(0),
+      this,
+      calculationSubtract,
     );
   }
 
@@ -1720,45 +1921,55 @@ extension SizeUnitExtension on SizeUnit {
   /// Adds two size units together.
   SizeUnit operator +(SizeUnit other) {
     return _CalculatedSize(
-      first: this,
-      second: other,
-      operation: calculationAdd,
+      this,
+      other,
+      calculationAdd,
     );
   }
 
   /// Subtracts one size unit from another.
   SizeUnit operator -(SizeUnit other) {
     return _CalculatedSize(
-      first: this,
-      second: other,
-      operation: calculationSubtract,
+      this,
+      other,
+      calculationSubtract,
     );
   }
 
   /// Multiplies two size units.
-  SizeUnit operator *(SizeUnit other) {
-    return _CalculatedSize(
-      first: this,
-      second: other,
-      operation: calculationMultiply,
-    );
+  SizeUnit operator *(Object other) {
+    if (other is SizeUnit) {
+      return _CalculatedSize(
+        this,
+        other,
+        calculationMultiply,
+      );
+    }
+    if (other is double) {
+      return _CalculatedSize(
+        this,
+        SizeUnit.fixed(other),
+        calculationMultiply,
+      );
+    }
+    throw ArgumentError('Cannot multiply SizeUnit by $other');
   }
 
   /// Divides one size unit by another.
   SizeUnit operator /(SizeUnit other) {
     return _CalculatedSize(
-      first: this,
-      second: other,
-      operation: calculationDivide,
+      this,
+      other,
+      calculationDivide,
     );
   }
 
   /// Negates this size unit (equivalent to 0 - this).
   SizeUnit operator -() {
     return _CalculatedSize(
-      first: const _FixedSize(0),
-      second: this,
-      operation: calculationSubtract,
+      const _FixedSize(0),
+      this,
+      calculationSubtract,
     );
   }
 
@@ -1779,45 +1990,55 @@ extension SpacingUnitExtension on SpacingUnit {
   /// Adds two spacing units together.
   SpacingUnit operator +(SpacingUnit other) {
     return _CalculatedSpacing(
-      first: this,
-      second: other,
-      operation: calculationAdd,
+      this,
+      other,
+      calculationAdd,
     );
   }
 
   /// Subtracts one spacing unit from another.
   SpacingUnit operator -(SpacingUnit other) {
     return _CalculatedSpacing(
-      first: this,
-      second: other,
-      operation: calculationSubtract,
+      this,
+      other,
+      calculationSubtract,
     );
   }
 
   /// Multiplies two spacing units.
-  SpacingUnit operator *(SpacingUnit other) {
-    return _CalculatedSpacing(
-      first: this,
-      second: other,
-      operation: calculationMultiply,
-    );
+  SpacingUnit operator *(Object other) {
+    if (other is SpacingUnit) {
+      return _CalculatedSpacing(
+        this,
+        other,
+        calculationMultiply,
+      );
+    }
+    if (other is double) {
+      return _CalculatedSpacing(
+        this,
+        SpacingUnit.fixed(other),
+        calculationMultiply,
+      );
+    }
+    throw ArgumentError('Cannot multiply SpacingUnit by $other');
   }
 
   /// Divides one spacing unit by another.
   SpacingUnit operator /(SpacingUnit other) {
     return _CalculatedSpacing(
-      first: this,
-      second: other,
-      operation: calculationDivide,
+      this,
+      other,
+      calculationDivide,
     );
   }
 
   /// Negates this spacing unit (equivalent to 0 - this).
   SpacingUnit operator -() {
     return _CalculatedSpacing(
-      first: const _FixedSpacing(0),
-      second: this,
-      operation: calculationSubtract,
+      const _FixedSpacing(0),
+      this,
+      calculationSubtract,
     );
   }
 

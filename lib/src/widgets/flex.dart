@@ -92,6 +92,7 @@ abstract interface class FlexItem implements LayoutItem {
     PositionUnit? bottom,
     PositionUnit? right,
     BoxAlignmentGeometry? alignSelf,
+    PositionType? position,
     required Widget child,
   }) = DirectFlexItem;
 
@@ -159,6 +160,7 @@ abstract interface class FlexItem implements LayoutItem {
     PositionUnit? bottom,
     PositionUnit? right,
     BoxAlignmentGeometry? alignSelf,
+    PositionType? position,
     required Widget Function(BuildContext context, LayoutBox box) builder,
   }) = BuilderFlexItem;
 
@@ -175,6 +177,10 @@ abstract interface class FlexItem implements LayoutItem {
   /// insufficient space in the main axis. A value of 0.0 means the item will
   /// not shrink.
   double get flexShrink;
+
+  PositionType? get position;
+
+  BoxAlignmentGeometry? get alignSelf;
 }
 
 class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
@@ -255,9 +261,14 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
   @override
   final PositionUnit? right;
 
+  /// The positioning type for this item.
+  @override
+  final PositionType? position;
+
   /// The cross-axis alignment for this specific item.
   /// Overrides the [FlexBox.alignItems] property for this individual child.
   /// If null, uses the parent's alignItems setting.
+  @override
   final BoxAlignmentGeometry? alignSelf;
 
   final bool needLayoutBox;
@@ -310,6 +321,7 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
     this.alignSelf,
     this.needLayoutBox = false,
     this.layoutKey,
+    this.position,
     required super.child,
   });
 
@@ -344,6 +356,7 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
       aspectRatio: aspectRatio,
       flexGrow: flexGrow,
       flexShrink: flexShrink,
+      position: position ?? PositionType.relative,
       key: layoutKey ?? key,
     );
     if (parentData.layoutData != newLayoutData) {
@@ -417,6 +430,9 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
   final PositionUnit? bottom;
   @override
   final PositionUnit? right;
+  @override
+  final PositionType? position;
+  @override
   final BoxAlignmentGeometry? alignSelf;
 
   /// Creates a flex item with a builder function.
@@ -455,6 +471,7 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
     this.bottom,
     this.right,
     this.alignSelf,
+    this.position,
   });
 
   /// Builds the widget tree for this builder flex item.
@@ -483,6 +500,8 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
       bottom: bottom,
       right: right,
       alignSelf: alignSelf,
+      position: position,
+      layoutKey: key,
       needLayoutBox: true,
       child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
     );

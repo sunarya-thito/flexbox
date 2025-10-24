@@ -510,7 +510,10 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   ///
   /// Returns the total size needed for the layout content.
   @override
-  LayoutSize performLayout(LayoutConstraints constraints, [bool dry = false]) {
+  LayoutSize performLayout(
+    LayoutConstraints constraints, [
+    bool dry = false,
+  ]) {
     double viewportWidth = constraints.maxWidth;
     double viewportHeight = constraints.maxHeight;
     bool avoidWrapping = false;
@@ -565,18 +568,22 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       LayoutAxis.vertical => layout.rowGap,
     };
     double mainSpacingStart = mainSpacingStartUnit.computeSpacing(
+      parent: parent,
       axis: layout.direction.axis,
       viewportSize: viewportMainSize,
     );
     double mainSpacingEnd = mainSpacingEndUnit.computeSpacing(
+      parent: parent,
       axis: layout.direction.axis,
       viewportSize: viewportMainSize,
     );
     double mainSpacing = mainSpacingUnit.computeSpacing(
+      parent: parent,
       viewportSize: viewportMainSize,
       axis: layout.direction.axis,
     );
     double crossSpacingStart = crossSpacingStartUnit.computeSpacing(
+      parent: parent,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
         LayoutAxis.vertical => LayoutAxis.horizontal,
@@ -584,6 +591,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       viewportSize: viewportCrossSize,
     );
     double crossSpacingEnd = crossSpacingEndUnit.computeSpacing(
+      parent: parent,
       viewportSize: viewportCrossSize,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
@@ -591,6 +599,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       },
     );
     double crossSpacing = crossSpacingUnit.computeSpacing(
+      parent: parent,
       axis: switch (layout.direction.axis) {
         LayoutAxis.horizontal => LayoutAxis.vertical,
         LayoutAxis.vertical => LayoutAxis.horizontal,
@@ -605,11 +614,13 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         cache.paddingBottom = crossSpacingEnd;
         cache.paddingLeft = mainSpacingStart;
         cache.paddingRight = mainSpacingEnd;
+        break;
       case LayoutAxis.vertical:
         cache.paddingTop = mainSpacingStart;
         cache.paddingBottom = mainSpacingEnd;
         cache.paddingLeft = crossSpacingStart;
         cache.paddingRight = crossSpacingEnd;
+        break;
     }
 
     // reduce viewport size by padding
@@ -828,10 +839,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     double usedCrossSize = 0.0;
     // check for flexes in the lines
     FlexLineLayoutCache? line = cache.firstLine;
-    double stretchLineCrossSize = switch (layout.direction.axis) {
-      LayoutAxis.horizontal => viewportHeight / cache.lineCount,
-      LayoutAxis.vertical => viewportWidth / cache.lineCount,
-    };
+    double stretchLineCrossSize = viewportCrossSize / cache.lineCount;
     while (line != null) {
       bool lineResolved = false;
       int resolveCount = 0;
@@ -1001,14 +1009,9 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
       line.mainSpacingEnd = mainSpacingEnd;
 
       if (spacingAdjustment != null) {
-        // mainSpacingStart += spacingAdjustment.additionalStartSpacing;
-        // mainSpacingEnd += spacingAdjustment.additionalEndSpacing;
-        // mainSpacing += spacingAdjustment.additionalSpacing;
         line.mainSpacingStart += spacingAdjustment.additionalStartSpacing;
         line.mainSpacingEnd += spacingAdjustment.additionalEndSpacing;
         line.mainSpacing += spacingAdjustment.additionalSpacing;
-        // usedMainSize += spacingAdjustment.additionalStartSpacing;
-        // usedMainSize += spacingAdjustment.additionalEndSpacing;
         line.mainSize += spacingAdjustment.additionalStartSpacing;
         line.mainSize += spacingAdjustment.additionalEndSpacing;
         if (line.itemCount > 1) {
@@ -1024,11 +1027,9 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           LayoutAxis.horizontal => LayoutAxis.vertical,
           LayoutAxis.vertical => LayoutAxis.horizontal,
         },
-        viewportSize: switch (layout.direction.axis) {
-          LayoutAxis.horizontal => viewportHeight,
-          LayoutAxis.vertical => viewportWidth,
-        },
+        viewportSize: viewportCrossSize,
         contentSize: stretchLineCrossSize,
+        childSize: line.crossSize,
       );
 
       if (adjustedCrossSize != null) {
@@ -1093,25 +1094,6 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     };
   }
 
-  void debugPrintLines() {
-    // print out the line info
-    // [hash1, hash2, hash3][hash4, hash5][hash6]
-    List<String> lineHashes = [];
-    FlexLineLayoutCache? line = cache.firstLine;
-    while (line != null) {
-      List<String> childHashes = [];
-      ChildLayout? child = line.firstChild;
-      while (child != null && child != line.lastChild) {
-        childHashes.add(child.debugKey.toString());
-        child = child.nextSibling;
-      }
-      lineHashes.add('[${childHashes.join(', ')}]');
-      line = line.nextLine;
-    }
-    // ignore: avoid_print
-    print('lines: ${lineHashes.join()}');
-  }
-
   /// Calculates the positioning rectangle for content within the viewport.
   ///
   /// This method determines how the flex content should be positioned within
@@ -1125,8 +1107,26 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   LayoutRect performPositioning(
     LayoutSize viewportSize,
     LayoutSize contentSize,
+    ParentRect relativeRect,
   ) {
     LayoutRect bounds = LayoutRect.zero;
+
+    // readjust viewport size to account for padding
+    viewportSize = LayoutSize(
+      max(
+        viewportSize.width - cache.paddingLeft - cache.paddingRight,
+        0.0,
+      ),
+      max(
+        viewportSize.height - cache.paddingTop - cache.paddingBottom,
+        0.0,
+      ),
+    );
+    // readjust content size to account for padding
+    contentSize = LayoutSize(
+      contentSize.width - cache.paddingLeft - cache.paddingRight,
+      contentSize.height - cache.paddingTop - cache.paddingBottom,
+    );
 
     double viewportMainSize = switch (layout.direction.axis) {
       LayoutAxis.horizontal => viewportSize.width,
@@ -1156,6 +1156,11 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         child = child.nextSibling;
         continue;
       }
+
+      LayoutSize absoluteViewportSize = LayoutSize(
+        relativeRect.width,
+        relativeRect.height,
+      );
 
       double? topOffset;
       double? leftOffset;
@@ -1201,12 +1206,34 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
 
       double? aspectRatio = data.aspectRatio;
 
+      //
+      // if both start and end offsets are null, use padding as offsets
+      // also adjust available size accordingly
+      if (topOffset == null && bottomOffset == null) {
+        double paddingTop = relativeRect.edges.top;
+        topOffset = paddingTop;
+        availableHeight ??= relativeRect.height;
+      }
+      if (leftOffset == null && rightOffset == null) {
+        double paddingLeft = relativeRect.edges.left;
+        leftOffset = paddingLeft;
+        availableWidth ??= relativeRect.width;
+      }
+      //
+
       if (topOffset != null && bottomOffset != null) {
-        availableHeight = viewportSize.height - topOffset - bottomOffset;
+        availableHeight ??= viewportSize.height - topOffset - bottomOffset;
       }
       if (leftOffset != null && rightOffset != null) {
-        availableWidth = viewportSize.width - leftOffset - rightOffset;
+        availableWidth ??= viewportSize.width - leftOffset - rightOffset;
       }
+
+      //
+      LayoutSize contentSize = LayoutSize(
+        availableWidth ?? viewportSize.width,
+        availableHeight ?? viewportSize.height,
+      );
+      //
 
       if (data.maxWidth != null) {
         maxWidth = data.maxWidth!.computeSize(
@@ -1214,10 +1241,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.horizontal,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
       }
       if (data.maxHeight != null) {
@@ -1226,10 +1251,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.vertical,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
       }
       if (data.minWidth != null) {
@@ -1238,10 +1261,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.horizontal,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
       }
       if (data.minHeight != null) {
@@ -1250,10 +1271,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.vertical,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
       }
 
@@ -1265,10 +1284,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.horizontal,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
         preferredWidth = _clampNullableDouble(
           preferredWidth,
@@ -1288,10 +1305,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           child: child,
           layoutHandle: this,
           axis: LayoutAxis.vertical,
-          contentSize: availableWidth != null && availableHeight != null
-              ? LayoutSize(availableWidth, availableHeight)
-              : viewportSize,
-          viewportSize: viewportSize,
+          contentSize: contentSize,
+          viewportSize: absoluteViewportSize,
         );
         preferredHeight = _clampNullableDouble(
           preferredHeight,
@@ -1347,11 +1362,11 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           offset = LayoutOffset(
             leftOffset ??
                 (rightOffset != null
-                    ? viewportSize.width - rightOffset - size.width
+                    ? relativeRect.width - rightOffset - size.width
                     : 0.0),
             topOffset ??
                 (bottomOffset != null
-                    ? viewportSize.height - bottomOffset - size.height
+                    ? relativeRect.height - bottomOffset - size.height
                     : 0.0),
           );
         case LayoutTextDirection.rtl:
@@ -1366,7 +1381,12 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           );
       }
 
-      child.layout(offset, size, OverflowBounds.zero);
+      offset = LayoutOffset(
+        offset.dx - relativeRect.left,
+        offset.dy - relativeRect.top,
+      );
+
+      child.layout(ParentRect.zero, offset, size, OverflowBounds.zero);
 
       LayoutRect childBounds = offset & size;
       bounds = bounds.expandToInclude(childBounds);
@@ -1425,7 +1445,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
     FlexLineLayoutCache? line = cache.firstLine;
     while (line != null) {
       double mainLineOffset = reverseMain
-          ? contentMainSize - line.mainSpacingEnd
+          ? contentMainSize + line.mainSpacingEnd
           : line.mainSpacingStart;
 
       final justifyContent = layout.justifyContent.align(
@@ -1522,6 +1542,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               },
               viewportSize: max(contentCrossSize, viewportCrossSize),
               contentSize: line.crossSize,
+              childSize: childCache.crossSize ?? 0.0,
             );
 
             adjustCrossSize ??= layout.alignItems.adjustSize(
@@ -1532,6 +1553,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               },
               viewportSize: max(contentCrossSize, viewportCrossSize),
               contentSize: line.crossSize,
+              childSize: childCache.crossSize ?? 0.0,
             );
           } else {
             adjustCrossSize = child.layoutData.alignSelf?.adjustSize(
@@ -1542,6 +1564,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               },
               viewportSize: max(contentCrossSize, viewportCrossSize),
               contentSize: contentCrossSize,
+              childSize: childCache.crossSize ?? 0.0,
             );
             adjustCrossSize ??= layout.alignItems.adjustSize(
               parent: parent,
@@ -1551,6 +1574,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               },
               viewportSize: max(contentCrossSize, viewportCrossSize),
               contentSize: contentCrossSize,
+              childSize: childCache.crossSize ?? 0.0,
             );
           }
 
@@ -1672,7 +1696,20 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
             childCache.mainFlexSize ?? 0.0,
           ),
         };
+        ParentRect newRelativeRect = ParentRect.fromLTWH(
+          relativeRect.left + dx,
+          relativeRect.top + dy,
+          relativeRect.width,
+          relativeRect.height,
+          ParentEdge(
+            left: relativeRect.edges.left + cache.paddingLeft,
+            top: relativeRect.edges.top + cache.paddingTop,
+            right: relativeRect.edges.right + cache.paddingRight,
+            bottom: relativeRect.edges.bottom + cache.paddingBottom,
+          ),
+        );
         child.layout(
+          newRelativeRect,
           offset,
           size,
           OverflowBounds(

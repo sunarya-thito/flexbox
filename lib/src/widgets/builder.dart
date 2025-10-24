@@ -1,5 +1,6 @@
+import 'package:flexiblebox/flexiblebox_dart.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flexiblebox/src/constraints.dart';
 import 'package:flutter/widgets.dart';
 
 // hidden from public API
@@ -13,7 +14,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// This class is typically used internally by the layout system and is not
 /// part of the public API.
-class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
+class LayoutBoxImpl with LayoutBox implements RelativePositioning {
   @override
   final Size size;
   @override
@@ -36,8 +37,10 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
   final AxisDirection verticalUserScrollDirection;
   @override
   final OverflowBounds overflowBounds;
+  @override
+  final ParentRect relativeRect;
 
-  WrappedLayoutConstraints({
+  LayoutBoxImpl({
     required this.size,
     required this.offset,
     required this.scrollX,
@@ -49,214 +52,8 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
     required this.horizontalUserScrollDirection,
     required this.verticalUserScrollDirection,
     required this.overflowBounds,
+    required this.relativeRect,
   });
-
-  // note: math operations only affect size
-
-  BoxConstraints _copyWith({
-    Size? size,
-  }) {
-    return BoxConstraints(
-      minWidth: size?.width ?? this.size.width,
-      maxWidth: size?.width ?? this.size.width,
-      minHeight: size?.height ?? this.size.height,
-      maxHeight: size?.height ?? this.size.height,
-    );
-  }
-
-  @override
-  BoxConstraints operator %(double value) {
-    return _copyWith(size: Size(size.width % value, size.height % value));
-  }
-
-  @override
-  BoxConstraints operator *(double factor) {
-    return _copyWith(size: Size(size.width * factor, size.height * factor));
-  }
-
-  @override
-  BoxConstraints operator /(double factor) {
-    return _copyWith(size: Size(size.width / factor, size.height / factor));
-  }
-
-  @override
-  Size get biggest => size;
-
-  @override
-  Size constrain(Size size) {
-    return this.size;
-  }
-
-  @override
-  Size constrainDimensions(double width, double height) {
-    return size;
-  }
-
-  @override
-  double constrainHeight([double height = double.infinity]) {
-    return size.height;
-  }
-
-  @override
-  Size constrainSizeAndAttemptToPreserveAspectRatio(Size size) {
-    return this.size;
-  }
-
-  @override
-  double constrainWidth([double width = double.infinity]) {
-    return size.width;
-  }
-
-  @override
-  BoxConstraints copyWith({
-    double? minWidth,
-    double? maxWidth,
-    double? minHeight,
-    double? maxHeight,
-  }) {
-    return BoxConstraints(
-      minWidth: minWidth ?? size.width,
-      maxWidth: maxWidth ?? size.width,
-      minHeight: minHeight ?? size.height,
-      maxHeight: maxHeight ?? size.height,
-    );
-  }
-
-  @override
-  bool debugAssertIsValid({
-    bool isAppliedConstraint = false,
-    InformationCollector? informationCollector,
-  }) {
-    return true;
-  }
-
-  @override
-  BoxConstraints deflate(EdgeInsetsGeometry edges) {
-    final insets = edges.resolve(TextDirection.ltr);
-    return _copyWith(
-      size: Size(
-        size.width - insets.horizontal,
-        size.height - insets.vertical,
-      ),
-    );
-  }
-
-  @override
-  BoxConstraints enforce(BoxConstraints constraints) {
-    return _copyWith(
-      size: Size(
-        size.width.clamp(constraints.minWidth, constraints.maxWidth),
-        size.height.clamp(constraints.minHeight, constraints.maxHeight),
-      ),
-    );
-  }
-
-  @override
-  BoxConstraints get flipped => _copyWith(
-    size: Size(size.height, size.width),
-  );
-
-  @override
-  bool get hasBoundedHeight => true;
-
-  @override
-  bool get hasBoundedWidth => true;
-
-  @override
-  bool get hasInfiniteHeight => false;
-
-  @override
-  bool get hasInfiniteWidth => false;
-
-  @override
-  bool get hasTightHeight => true;
-
-  @override
-  bool get hasTightWidth => true;
-
-  @override
-  BoxConstraints heightConstraints() {
-    return BoxConstraints.tightFor(height: size.height);
-  }
-
-  @override
-  bool get isNormalized => true;
-
-  @override
-  bool isSatisfiedBy(Size size) {
-    return size.width == this.size.width && size.height == this.size.height;
-  }
-
-  @override
-  bool get isTight => true;
-
-  @override
-  BoxConstraints loosen() {
-    return BoxConstraints(
-      maxWidth: size.width,
-      maxHeight: size.height,
-    );
-  }
-
-  @override
-  double get maxHeight => size.height;
-
-  @override
-  double get maxWidth => size.width;
-
-  @override
-  double get minHeight => size.height;
-
-  @override
-  double get minWidth => size.width;
-
-  @override
-  BoxConstraints normalize() {
-    return this;
-  }
-
-  @override
-  Size get smallest => size;
-
-  @override
-  BoxConstraints tighten({double? width, double? height}) {
-    return _copyWith(
-      size: Size(
-        width ?? size.width,
-        height ?? size.height,
-      ),
-    );
-  }
-
-  @override
-  BoxConstraints widthConstraints() {
-    return BoxConstraints.tightFor(width: size.width);
-  }
-
-  @override
-  BoxConstraints operator ~/(double factor) {
-    return _copyWith(
-      size: Size(
-        (size.width ~/ factor).toDouble(),
-        (size.height ~/ factor).toDouble(),
-      ),
-    );
-  }
-
-  @override
-  String toString() {
-    return 'WrappedLayoutConstraints('
-        'size: $size, '
-        'offset: $offset, '
-        'scrollX: $scrollX, scrollY: $scrollY, '
-        'maxScrollX: $maxScrollX, maxScrollY: $maxScrollY, '
-        'contentSize: $contentSize, '
-        'viewportSize: $viewportSize, '
-        'horizontalUserScrollDirection: $horizontalUserScrollDirection, '
-        'verticalUserScrollDirection: $verticalUserScrollDirection, '
-        'overflowBounds: $overflowBounds'
-        ')';
-  }
 
   @override
   int get hashCode => Object.hash(
@@ -271,13 +68,14 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
     horizontalUserScrollDirection,
     verticalUserScrollDirection,
     overflowBounds,
+    relativeRect,
   );
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other.runtimeType != runtimeType) return false;
-    return other is WrappedLayoutConstraints &&
+    return other is LayoutBoxImpl &&
         other.size == size &&
         other.offset == offset &&
         other.scrollX == scrollX &&
@@ -288,7 +86,8 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
         other.viewportSize == viewportSize &&
         other.horizontalUserScrollDirection == horizontalUserScrollDirection &&
         other.verticalUserScrollDirection == verticalUserScrollDirection &&
-        other.overflowBounds == overflowBounds;
+        other.overflowBounds == overflowBounds &&
+        other.relativeRect == relativeRect;
   }
 }
 
@@ -326,7 +125,7 @@ class WrappedLayoutConstraints with LayoutBox implements BoxConstraints {
 ///
 /// The mixin also provides convenience getters like [width], [height], [offsetX],
 /// [offsetY] for easier access to common properties.
-mixin LayoutBox {
+mixin LayoutBox implements RelativePositioning {
   /// The size of this layout box.
   Size get size;
 
@@ -434,11 +233,11 @@ class LayoutBoxBuilder extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         assert(
-          constraints is LayoutBox,
+          constraints is BoxConstraintsWithData<LayoutBox>,
           'LayoutBoxBuilder can only be used inside a LayoutBox, '
           'but got ${constraints.runtimeType}.',
         );
-        final box = constraints as LayoutBox;
+        final box = (constraints as BoxConstraintsWithData<LayoutBox>).data;
         return builder(context, box);
       },
     );

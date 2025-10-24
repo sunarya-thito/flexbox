@@ -2,6 +2,45 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/basic.dart';
 
+class ParentEdge {
+  static const ParentEdge zero = ParentEdge(
+    left: 0.0,
+    top: 0.0,
+    right: 0.0,
+    bottom: 0.0,
+  );
+  final double left;
+  final double top;
+  final double right;
+  final double bottom;
+
+  const ParentEdge({
+    required this.left,
+    required this.top,
+    required this.right,
+    required this.bottom,
+  });
+}
+
+class ParentRect extends LayoutRect {
+  final ParentEdge edges;
+  const ParentRect.fromLTWH(
+    super.left,
+    super.top,
+    super.width,
+    super.height,
+    this.edges,
+  ) : super.fromLTWH();
+
+  static const ParentRect zero = ParentRect.fromLTWH(
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    ParentEdge(left: 0.0, top: 0.0, right: 0.0, bottom: 0.0),
+  );
+}
+
 /// Data structure containing all layout properties for a child element.
 ///
 /// LayoutData encapsulates sizing constraints, positioning information,
@@ -14,6 +53,8 @@ final class LayoutData {
   static const LayoutData empty = LayoutData();
 
   final Object? key;
+
+  final PositionType position;
 
   /// The layout behavior for this child (normal flow or absolute positioning).
   ///
@@ -132,6 +173,7 @@ final class LayoutData {
   /// ```
   const LayoutData({
     this.key,
+    this.position = PositionType.relative,
     this.behavior = LayoutBehavior.none,
     this.flexGrow = 0.0,
     this.flexShrink = 0.0,
@@ -189,11 +231,15 @@ final class LayoutData {
 enum LayoutBehavior {
   /// Normal flow layout - the child participates in the layout algorithm
   /// and is positioned according to the container's layout rules.
-  none,
+  none, // a.k.a. static, but 'static' is a reserved word
+  // although it can be used, it's better to avoid it for clarity
 
   /// Absolute positioning - the child is removed from the normal flow
   /// and positioned using explicit coordinates relative to its parent.
   absolute,
+
+  /// Same as absolute, but children
+  relative,
 }
 
 /// Represents the axis along which layout occurs.
@@ -224,6 +270,33 @@ class LayoutSize {
 
   /// Creates a size with the specified width and height.
   const LayoutSize(this.width, this.height);
+
+  LayoutSize copyWith({
+    double? width,
+    double? height,
+  }) {
+    return LayoutSize(
+      width ?? this.width,
+      height ?? this.height,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'LayoutSize($width, $height)';
+  }
+
+  @override
+  int get hashCode => Object.hash(width, height);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    return other is LayoutSize &&
+        other.width == width &&
+        other.height == height;
+  }
 }
 
 /// Represents a two-dimensional offset with x and y coordinates.
@@ -248,6 +321,21 @@ class LayoutOffset {
   /// and extends by the given size.
   LayoutRect operator &(LayoutSize size) {
     return LayoutRect.fromLTWH(dx, dy, size.width, size.height);
+  }
+
+  @override
+  String toString() {
+    return 'LayoutOffset($dx, $dy)';
+  }
+
+  @override
+  int get hashCode => Object.hash(dx, dy);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    return other is LayoutOffset && other.dx == dx && other.dy == dy;
   }
 }
 
@@ -277,6 +365,21 @@ class LayoutRange {
       min(start, other.start),
       max(end, other.end),
     );
+  }
+
+  @override
+  String toString() {
+    return 'LayoutRange($start, $end)';
+  }
+
+  @override
+  int get hashCode => Object.hash(start, end);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    return other is LayoutRange && other.start == start && other.end == end;
   }
 }
 
@@ -322,6 +425,8 @@ class LayoutRect {
   LayoutRange get horizontalRange => LayoutRange(left, right);
   LayoutRange get verticalRange => LayoutRange(top, bottom);
 
+  LayoutSize get size => LayoutSize(width, height);
+
   /// Expands this rectangle to include the bounds of another rectangle.
   ///
   /// Returns a new rectangle that encompasses both this rectangle
@@ -348,6 +453,20 @@ class LayoutRect {
       return false;
     }
     return true;
+  }
+
+  @override
+  int get hashCode => Object.hash(left, top, width, height);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    return other is LayoutRect &&
+        other.left == left &&
+        other.top == top &&
+        other.width == width &&
+        other.height == height;
   }
 }
 
@@ -492,6 +611,7 @@ mixin ChildLayout {
   /// the provided constraints and the child's layout data. After calling this,
   /// the child's [size] and [offset] properties will be valid.
   void layout(
+    ParentRect relativeRect,
     LayoutOffset offset,
     LayoutSize size,
     OverflowBounds overflowBounds, {
@@ -712,6 +832,7 @@ class ChildLayoutDryDelegate with ChildLayout {
   /// Dry delegates only perform measurements, not actual layout.
   @override
   void layout(
+    LayoutRect parentOffset,
     LayoutOffset offset,
     LayoutSize size,
     OverflowBounds overflowBounds, {
@@ -850,7 +971,10 @@ abstract class LayoutHandle<T extends Layout> {
   ///
   /// Returns the total size needed for the layout. When [dry] is true,
   /// performs measurement without modifying child positions or sizes.
-  LayoutSize performLayout(LayoutConstraints constraints, [bool dry = false]);
+  LayoutSize performLayout(
+    LayoutConstraints constraints, [
+    bool dry = false,
+  ]);
 
   /// Calculates the positioning rectangle for the content within the viewport.
   ///
@@ -859,6 +983,7 @@ abstract class LayoutHandle<T extends Layout> {
   LayoutRect performPositioning(
     LayoutSize viewportSize,
     LayoutSize contentSize,
+    ParentRect relativeRect,
   );
 
   /// Computes the minimum intrinsic width at the given height.

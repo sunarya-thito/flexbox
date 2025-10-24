@@ -13,6 +13,7 @@ import 'package:demo/cases/case_flex_wrap_reverse_row_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_row_reverse.dart';
 import 'package:demo/cases/case_index_finder.dart';
 import 'package:demo/cases/case_items_start.dart';
+import 'package:demo/cases/case_position_type.dart';
 import 'package:demo/cases/case_rotated.dart';
 import 'package:demo/cases/case_row_reverse.dart';
 import 'package:demo/cases/case_rtl_column.dart';
@@ -109,6 +110,8 @@ import 'package:demo/cases/case_rtl_wrap_reverse_unconstrained.dart';
 import 'package:demo/cases/case_rtl_wrap_unconstrained.dart';
 
 final testCases = [
+  CasePositionType(),
+
   // Row Examples
   CaseSimple(), // Row example
   CaseRowReverse(),

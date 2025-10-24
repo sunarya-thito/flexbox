@@ -19,6 +19,13 @@ class Box extends StatefulWidget {
 class _BoxState extends State<Box> {
   Size? _lastSize;
   bool showSize = false;
+
+  static Color _darken(Color color, [double amount = .1]) {
+    final hsl = HSLColor.fromColor(color);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -46,6 +53,15 @@ class _BoxState extends State<Box> {
               decoration: BoxDecoration(
                 color: _randomPastelColor(widget.number),
                 borderRadius: BorderRadius.circular(8),
+                // this broke the tests
+                // the final RenderBox size seems does not include the border
+                // border: Border.all(
+                //   color: _darken(
+                //     _randomPastelColor(widget.number),
+                //     0.25,
+                //   ),
+                //   width: 4,
+                // ),
               ),
               child: DefaultTextStyle(
                 style: const TextStyle(

@@ -40,3 +40,6 @@ jobs:
     - name: Run tests
       run: flutter test
       working-directory: demo
+
+    - name: Run eval tests
+      run: flutter test test/eval/
