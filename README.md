@@ -248,6 +248,70 @@ SizedBox(
 )
 ```
 
+### Scrollbars
+
+The `Scrollbars` widget provides scrollbar UI for scrollable FlexBox containers.
+It automatically shows/hides scrollbars based on content overflow and supports
+both vertical and horizontal scrolling.
+
+#### Basic Usage
+
+```dart
+SizedBox(
+  width: 400,
+  height: 300,
+  child: Scrollbars(
+    child: FlexBox(
+      direction: FlexDirection.column,
+      children: [
+        for (int i = 0; i < 20; i++)
+          FlexItem(
+            height: 80.size,
+            child: Container(
+              margin: EdgeInsets.all(8),
+              color: Colors.primaries[i % Colors.primaries.length],
+              child: Center(child: Text('Item $i')),
+            ),
+          ),
+      ],
+    ),
+  ),
+)
+```
+
+#### Customizing Scrollbar Appearance
+
+You can customize the scrollbar appearance using `DefaultScrollbar`:
+
+````dart
+Scrollbars(
+  verticalScrollbar: DefaultScrollbar(
+    thumbDecoration: BoxDecoration(
+      color: Colors.blue.withOpacity(0.5),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    thumbActiveDecoration: BoxDecoration(
+      color: Colors.blue,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    minThumbLength: 48.0,
+    margin: EdgeInsets.all(2),
+  ),
+  horizontalScrollbar: DefaultScrollbar(
+    thumbDecoration: BoxDecoration(
+      color: Colors.green.withOpacity(0.5),
+      borderRadius: BorderRadius.circular(4),
+    ),
+  ),
+  verticalScrollbarThickness: 12,
+  horizontalScrollbarThickness: 12,
+  child: FlexBox(
+    children: [
+      // Your content here
+    ],
+  ),
+)
+
 ### Convenience Widgets
 
 #### RowBox
@@ -265,7 +329,7 @@ RowBox(
     FlexItem(child: Text('Right')),
   ],
 )
-```
+````
 
 #### ColumnBox
 

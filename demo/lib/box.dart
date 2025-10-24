@@ -20,11 +20,11 @@ class _BoxState extends State<Box> {
   Size? _lastSize;
   bool showSize = false;
 
-  static Color _darken(Color color, [double amount = .1]) {
-    final hsl = HSLColor.fromColor(color);
-    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
-    return hslDark.toColor();
-  }
+  // static Color _darken(Color color, [double amount = .1]) {
+  //   final hsl = HSLColor.fromColor(color);
+  //   final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+  //   return hslDark.toColor();
+  // }
 
   @override
   Widget build(BuildContext context) {
