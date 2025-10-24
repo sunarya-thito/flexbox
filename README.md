@@ -283,7 +283,7 @@ SizedBox(
 
 You can customize the scrollbar appearance using `DefaultScrollbar`:
 
-````dart
+```dart
 Scrollbars(
   verticalScrollbar: DefaultScrollbar(
     thumbDecoration: BoxDecoration(
@@ -311,6 +311,7 @@ Scrollbars(
     ],
   ),
 )
+```
 
 ### Convenience Widgets
 
@@ -329,7 +330,7 @@ RowBox(
     FlexItem(child: Text('Right')),
   ],
 )
-````
+```
 
 #### ColumnBox
 
