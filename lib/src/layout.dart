@@ -515,6 +515,10 @@ class LayoutRect {
     return 'LayoutRect($left, $top, $right, $bottom)';
   }
 
+  /// Checks if this rectangle overlaps with another rectangle.
+  ///
+  /// Returns true if the two rectangles have any area in common.
+  /// Returns false if they are separated horizontally or vertically.
   bool overlaps(LayoutRect other) {
     if (right <= other.left || other.right <= left) {
       return false;
@@ -641,6 +645,11 @@ class LayoutConstraints {
     return LayoutSize(width, height);
   }
 
+  /// Whether these constraints specify an exact size.
+  ///
+  /// Returns true if the minimum and maximum width are equal AND
+  /// the minimum and maximum height are equal, meaning there is
+  /// only one size that satisfies these constraints.
   bool get isTight => minWidth == maxWidth && minHeight == maxHeight;
 }
 
@@ -660,6 +669,10 @@ abstract class ChildLayoutCache {
   /// Stores the result of measuring the child according to its auto-sizing rules.
   LayoutSize? cachedAutoSize;
 
+  /// The index of this child in its parent's child list.
+  ///
+  /// Used for ordering and tracking children during layout operations.
+  /// A value of -1 typically indicates the child is not yet positioned.
   int index = -1;
 }
 
@@ -990,6 +1003,10 @@ mixin ParentLayout {
   /// for performing measurement-only layout operations.
   ChildLayout? getLastDryLayout(LayoutHandle layoutHandle);
 
+  /// Finds a child element by its unique key.
+  ///
+  /// Searches through children to find one with a matching debug key.
+  /// Returns null if no child with the specified key is found.
   ChildLayout? findChildByKey(Object key);
 }
 
@@ -1002,8 +1019,15 @@ abstract class Layout {
   /// Creates a layout algorithm instance.
   const Layout();
 
+  /// The primary axis along which this layout arranges children.
+  ///
+  /// Returns [LayoutAxis.horizontal] for row-based layouts or
+  /// [LayoutAxis.vertical] for column-based layouts.
   LayoutAxis get mainAxis;
 
+  /// The padding applied to the edges of this layout container.
+  ///
+  /// Defines the space between the container's edges and its content.
   EdgeSpacing get padding;
 
   /// Creates a layout handle for performing layout operations.

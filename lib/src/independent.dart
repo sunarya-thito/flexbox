@@ -597,6 +597,11 @@ class Box with ParentLayout {
     return layoutHandle.computeMaxIntrinsicWidth(height);
   }
 
+  /// Calculates the distance from the top of the box to its baseline.
+  ///
+  /// Returns the offset to the specified text baseline, or null if this box
+  /// doesn't have a baseline. The calculation considers the layout's main axis
+  /// to determine which baseline computation method to use.
   double? getDistanceToBaseline(LayoutTextBaseline baseline) {
     return switch (boxLayout.mainAxis) {
       LayoutAxis.horizontal => defaultComputeDistanceToHighestActualBaseline(
@@ -608,6 +613,13 @@ class Box with ParentLayout {
     };
   }
 
+  /// Computes the distance to the highest baseline among all children.
+  ///
+  /// Iterates through all children to find the one with the highest baseline
+  /// position (closest to the top). This is used for horizontal layouts
+  /// where all items should align to the same baseline.
+  ///
+  /// Returns null if no child has a baseline.
   double? defaultComputeDistanceToHighestActualBaseline(
     LayoutTextBaseline baseline,
   ) {
@@ -624,6 +636,13 @@ class Box with ParentLayout {
     return minBaseline.offset;
   }
 
+  /// Computes the distance to the first child's baseline.
+  ///
+  /// Returns the baseline offset of the first child that has a baseline.
+  /// This is used for vertical layouts where the baseline of the container
+  /// is defined by its first child.
+  ///
+  /// Returns null if no child has a baseline.
   double? defaultComputeDistanceToFirstActualBaseline(
     LayoutTextBaseline baseline,
   ) {
@@ -660,10 +679,19 @@ class Box with ParentLayout {
 /// layout process to ensure all constraints are properly resolved.
 class LayoutPipelineOwner {
   final List<Box> _nodesNeedingLayout = [];
+  /// Callback invoked when the layout system needs a visual update.
+  ///
+  /// This callback should trigger a repaint or redraw of the UI when layout
+  /// changes occur that affect visual appearance.
   final void Function()? onNeedVisualUpdate;
 
+  /// Creates a layout pipeline owner with an optional update callback.
   LayoutPipelineOwner({this.onNeedVisualUpdate});
 
+  /// Requests a visual update from the rendering system.
+  ///
+  /// Invokes the [onNeedVisualUpdate] callback if provided, signaling
+  /// that the layout has changed and the UI needs to be redrawn.
   void requestVisualUpdate() {
     onNeedVisualUpdate?.call();
   }
@@ -676,7 +704,10 @@ class LayoutPipelineOwner {
 /// It provides the bridge between the box-based layout system and the
 /// generic layout algorithm interface.
 class BoxChildLayout with ChildLayout {
+  /// The box object this layout adapter wraps.
   final Box box;
+  
+  /// Creates a child layout adapter for the given box.
   BoxChildLayout(this.box);
 
   @override
@@ -764,14 +795,31 @@ class BoxChildLayout with ChildLayout {
   LayoutSize get size => box.size;
 }
 
+/// Represents a baseline offset value with optional null state.
+///
+/// [LayoutBaselineOffset] wraps a nullable double to represent baseline positions.
+/// The null value ([noBaseline]) indicates that no baseline is available.
+/// This extension type provides convenience methods for baseline calculations
+/// like adding offsets and finding minimum values.
 extension type const LayoutBaselineOffset(double? offset) {
+  /// Constant representing the absence of a baseline.
   static const LayoutBaselineOffset noBaseline = LayoutBaselineOffset(null);
 
+  /// Adds an offset to this baseline position.
+  ///
+  /// If this baseline is null ([noBaseline]), returns null.
+  /// Otherwise, adds the offset to the baseline position.
   LayoutBaselineOffset operator +(double offset) {
     final double? value = this.offset;
     return LayoutBaselineOffset(value == null ? null : value + offset);
   }
 
+  /// Returns the minimum baseline offset between this and another.
+  ///
+  /// When comparing two baselines:
+  /// - If both have values, returns the one with the smaller offset
+  /// - If one is null, returns the non-null one
+  /// - If both are null, returns null
   LayoutBaselineOffset minOf(LayoutBaselineOffset other) {
     return switch ((this, other)) {
       (final double lhs?, final double rhs?) => lhs >= rhs ? other : this,

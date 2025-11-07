@@ -515,6 +515,15 @@ class _DelegateScrollbarHandler extends ScrollbarHandler {
   }
 }
 
+/// Function signature for building scrollbar widgets.
+///
+/// This typedef defines the signature for a builder function that creates
+/// a scrollbar widget. The builder receives:
+/// - [context]: The build context
+/// - [constraints]: The layout constraints for the scrollbar
+/// - [scrollbarHandler]: Handler for scrollbar interactions and state
+///
+/// Returns a widget that represents the scrollbar UI.
 typedef ScrollbarWidgetBuilder =
     Widget Function(
       BuildContext context,

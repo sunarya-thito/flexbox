@@ -556,6 +556,11 @@ class StringTokenizer {
     return null;
   }
 
+  /// Tokenizes the source string into a list of tokens.
+  ///
+  /// Parses the input source and breaks it down into individual tokens
+  /// (operators, numbers, identifiers, etc.) for further processing.
+  /// Returns a list of [Token] objects representing the parsed input.
   List<Token> tokenize() {
     final tokens = <Token>[];
     while (index < endIndex) {

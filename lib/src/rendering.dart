@@ -275,6 +275,10 @@ class RenderLayoutBox extends RenderBox
     return _contentSize!;
   }
 
+  /// The bounds of the content area in local coordinates.
+  ///
+  /// Returns a [Rect] representing the content area after layout,
+  /// including any overflow or scrolling. Must be called after layout.
   Rect get contentBounds {
     assert(
       _contentBounds != null,
@@ -381,6 +385,11 @@ class RenderLayoutBox extends RenderBox
     );
   }
 
+  /// The actual bounds used for clipping content during painting.
+  ///
+  /// Returns the rectangle that defines the clipping region based on
+  /// overflow settings. Returns null if no clipping should occur.
+  /// This takes into account both horizontal and vertical overflow settings.
   Rect? get actualPaintBounds {
     bool clipHorizontal = horizontalOverflow.clipContent;
     bool clipVertical = verticalOverflow.clipContent;
@@ -440,6 +449,13 @@ class RenderLayoutBox extends RenderBox
     super.showOnScreen(rect: newRect, duration: duration, curve: curve);
   }
 
+  /// Shows a descendant in the viewport by scrolling if necessary.
+  ///
+  /// Calculates the necessary scroll adjustments to make a descendant visible
+  /// within the viewport. Handles both horizontal and vertical scrolling and
+  /// supports animated scrolling with specified duration and curve.
+  ///
+  /// Returns the target rectangle that will be visible, or null if no scrolling is needed.
   static Rect? showInViewport({
     RenderObject? descendant,
     Rect? rect,
@@ -541,6 +557,10 @@ class RenderLayoutBox extends RenderBox
     return targetOffset.rect;
   }
 
+  /// Updates the vertical scroll offset controller.
+  ///
+  /// Replaces the current vertical offset with a new one, properly managing
+  /// listeners to ensure scroll changes trigger updates.
   void updateVerticalOffset(ViewportOffset offset) {
     if (vertical != offset) {
       vertical.removeListener(_onScrollOffsetChanged);
@@ -551,6 +571,10 @@ class RenderLayoutBox extends RenderBox
     }
   }
 
+  /// Updates the horizontal scroll offset controller.
+  ///
+  /// Replaces the current horizontal offset with a new one, properly managing
+  /// listeners to ensure scroll changes trigger updates.
   void updateHorizontalOffset(ViewportOffset offset) {
     if (horizontal != offset) {
       horizontal.removeListener(_onScrollOffsetChanged);
@@ -561,6 +585,10 @@ class RenderLayoutBox extends RenderBox
     }
   }
 
+  /// The combined viewport scroll offset.
+  ///
+  /// Returns an [Offset] representing the current scroll position,
+  /// combining both horizontal and vertical scroll values.
   Offset get viewportOffset {
     return Offset(horizontal.pixels, vertical.pixels);
   }
@@ -568,20 +596,35 @@ class RenderLayoutBox extends RenderBox
   RenderBox? _firstSortedChild;
   RenderBox? _lastSortedChild;
 
+  /// The first child to paint, considering paint order and reversal.
+  ///
+  /// Returns the appropriate first child based on [reversePaint] setting.
+  /// If children are sorted, uses the sorted order; otherwise uses natural order.
   RenderBox? get sortedFirstPaintChild {
     return reversePaint
         ? (_lastSortedChild ?? lastChild)
         : (_firstSortedChild ?? firstChild);
   }
 
+  /// The last child to paint, considering paint order and reversal.
+  ///
+  /// Returns the appropriate last child based on [reversePaint] setting.
+  /// If children are sorted, uses the sorted order; otherwise uses natural order.
   RenderBox? get sortedLastPaintChild {
     return reversePaint
         ? (_firstSortedChild ?? firstChild)
         : (_lastSortedChild ?? lastChild);
   }
 
+  /// Whether children have been sorted for custom paint ordering.
+  ///
+  /// Returns true if child sorting has been performed and sort pointers are valid.
   bool get isSorted => _firstSortedChild != null && _lastSortedChild != null;
 
+  /// Gets the next sibling to paint after the given child.
+  ///
+  /// Considers both paint reversal and custom sorting to determine
+  /// the correct next child in paint order.
   RenderBox? sortedNextPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
     if (isSorted) {
@@ -594,6 +637,10 @@ class RenderLayoutBox extends RenderBox
         : childParentData.nextSibling;
   }
 
+  /// Gets the previous sibling to paint before the given child.
+  ///
+  /// Considers both paint reversal and custom sorting to determine
+  /// the correct previous child in paint order.
   RenderBox? sortedPreviousPaintSibling(RenderBox child) {
     final childParentData = child.parentData as LayoutBoxParentData;
     if (isSorted) {
@@ -776,10 +823,18 @@ class RenderLayoutBox extends RenderBox
     }
   }
 
+  /// The visible content bounds with border radius applied.
+  ///
+  /// Returns an [RRect] representing the visible content area
+  /// with the container's border radius applied for painting.
   RRect get visibleContentBounds {
     return borderRadius.toRRect(actualPaintBounds ?? paintBounds);
   }
 
+  /// Prints debug information about sorted children order.
+  ///
+  /// Outputs the debug keys of children in their sorted paint order.
+  /// Used for debugging paint order and child sorting issues.
   void printDebugSortedChildren() {
     // print out like this: [debugKey, debugKey, ...]
     List<String> keys = [];
@@ -1152,9 +1207,13 @@ class RenderLayoutBox extends RenderBox
 /// flexbox layout algorithm, handling layout calculations, caching, and
 /// positioning for individual render box children.
 class RenderBoxChildLayout with ChildLayout {
+  /// The parent render box that owns this child.
   final RenderLayoutBox parent;
+  
+  /// The render box that this layout adapter wraps.
   final RenderBox renderBox;
 
+  /// Creates a child layout adapter for the given render box and parent.
   RenderBoxChildLayout(this.renderBox, this.parent);
 
   @override
@@ -1308,22 +1367,37 @@ class RenderBoxChildLayout with ChildLayout {
       (renderBox.parentData as LayoutBoxParentData).layoutData;
 }
 
+/// Converts a Flutter [Size] to a [LayoutSize].
+///
+/// Creates a layout size from the width and height of a Flutter Size object.
 LayoutSize layoutSizeFromSize(Size size) {
   return LayoutSize(size.width, size.height);
 }
 
+/// Converts a [LayoutSize] to a Flutter [Size].
+///
+/// Creates a Flutter Size from the width and height of a LayoutSize.
 Size sizeFromLayoutSize(LayoutSize size) {
   return Size(size.width, size.height);
 }
 
+/// Converts a Flutter [Offset] to a [LayoutOffset].
+///
+/// Creates a layout offset from the dx and dy coordinates of a Flutter Offset.
 LayoutOffset layoutOffsetFromOffset(Offset offset) {
   return LayoutOffset(offset.dx, offset.dy);
 }
 
+/// Converts a [LayoutOffset] to a Flutter [Offset].
+///
+/// Creates a Flutter Offset from the dx and dy coordinates of a LayoutOffset.
 Offset offsetFromLayoutOffset(LayoutOffset offset) {
   return Offset(offset.dx, offset.dy);
 }
 
+/// Converts a Flutter [Rect] to a [LayoutRect].
+///
+/// Creates a layout rectangle from the bounds of a Flutter Rect.
 LayoutRect layoutRectFromRect(Rect rect) {
   return LayoutRect.fromLTRB(
     rect.left,
@@ -1333,6 +1407,9 @@ LayoutRect layoutRectFromRect(Rect rect) {
   );
 }
 
+/// Converts a [LayoutRect] to a Flutter [Rect].
+///
+/// Creates a Flutter Rect from the bounds of a LayoutRect.
 Rect rectFromLayoutRect(LayoutRect rect) {
   return Rect.fromLTRB(
     rect.left,
@@ -1342,6 +1419,9 @@ Rect rectFromLayoutRect(LayoutRect rect) {
   );
 }
 
+/// Converts a Flutter [TextBaseline] to a [LayoutTextBaseline].
+///
+/// Maps Flutter's text baseline enum to the layout system's baseline enum.
 LayoutTextBaseline layoutTextBaselineFromTextBaseline(TextBaseline baseline) {
   return switch (baseline) {
     TextBaseline.alphabetic => LayoutTextBaseline.alphabetic,
@@ -1349,6 +1429,9 @@ LayoutTextBaseline layoutTextBaselineFromTextBaseline(TextBaseline baseline) {
   };
 }
 
+/// Converts a [LayoutTextBaseline] to a Flutter [TextBaseline].
+///
+/// Maps the layout system's baseline enum to Flutter's text baseline enum.
 TextBaseline textBaselineFromLayoutTextBaseline(
   LayoutTextBaseline baseline,
 ) {
@@ -1358,6 +1441,9 @@ TextBaseline textBaselineFromLayoutTextBaseline(
   };
 }
 
+/// Converts a Flutter [TextDirection] to a [LayoutTextDirection].
+///
+/// Maps Flutter's text direction enum to the layout system's direction enum.
 LayoutTextDirection layoutTextDirectionFromTextDirection(
   TextDirection direction,
 ) {
@@ -1367,6 +1453,9 @@ LayoutTextDirection layoutTextDirectionFromTextDirection(
   };
 }
 
+/// Converts a [LayoutTextDirection] to a Flutter [TextDirection].
+///
+/// Maps the layout system's direction enum to Flutter's text direction enum.
 TextDirection textDirectionFromLayoutTextDirection(
   LayoutTextDirection direction,
 ) {
@@ -1376,6 +1465,9 @@ TextDirection textDirectionFromLayoutTextDirection(
   };
 }
 
+/// Converts Flutter [BoxConstraints] to [LayoutConstraints].
+///
+/// Maps Flutter's box constraints to the layout system's constraint format.
 LayoutConstraints layoutConstraintsFromBoxConstraints(
   BoxConstraints constraints,
 ) {
@@ -1387,6 +1479,9 @@ LayoutConstraints layoutConstraintsFromBoxConstraints(
   );
 }
 
+/// Converts [LayoutConstraints] to Flutter [BoxConstraints].
+///
+/// Maps the layout system's constraints to Flutter's box constraint format.
 BoxConstraints boxConstraintsFromLayoutConstraints(
   LayoutConstraints constraints,
 ) {
@@ -1398,6 +1493,9 @@ BoxConstraints boxConstraintsFromLayoutConstraints(
   );
 }
 
+/// Converts a Flutter [Axis] to a [LayoutAxis].
+///
+/// Maps Flutter's axis enum to the layout system's axis enum.
 LayoutAxis layoutAxisFromAxis(Axis axis) {
   return switch (axis) {
     Axis.horizontal => LayoutAxis.horizontal,
@@ -1405,6 +1503,9 @@ LayoutAxis layoutAxisFromAxis(Axis axis) {
   };
 }
 
+/// Converts a [LayoutAxis] to a Flutter [Axis].
+///
+/// Maps the layout system's axis enum to Flutter's axis enum.
 Axis axisFromLayoutAxis(LayoutAxis axis) {
   return switch (axis) {
     LayoutAxis.horizontal => Axis.horizontal,
