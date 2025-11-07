@@ -319,6 +319,9 @@ class LayoutSize {
   /// Creates a size with the specified width and height.
   const LayoutSize(this.width, this.height);
 
+  /// Creates a copy of this size with optionally different width or height.
+  ///
+  /// If [width] or [height] is not provided, the current value is retained.
   LayoutSize copyWith({
     double? width,
     double? height,

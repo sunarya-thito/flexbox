@@ -469,10 +469,16 @@ class StringTokenizer {
     return (startIndex: startIndex, endIndex: index);
   }
 
+  /// Attempts to consume the exact [string] from the current position.
+  ///
+  /// Returns true if the string was found and consumed, false otherwise.
   bool eatString(String string) {
     return eat((char, index) => char == string[index], string.length) != null;
   }
 
+  /// Attempts to consume a single [char] from the current position.
+  ///
+  /// Returns true if the character was found and consumed, false otherwise.
   bool eatCharacter(String char) {
     return eat((c, _) => c == char, 1) != null;
   }
@@ -485,6 +491,10 @@ class StringTokenizer {
     return value;
   }
 
+  /// Attempts to parse and consume a number (integer or decimal) from the current position.
+  ///
+  /// Supports optional negative sign and decimal points. Returns null if no valid
+  /// number is found at the current position. The index is restored on failure.
   double? eatNumber() {
     int startIndex = index;
     bool isNegative = eatCharacter('-');
@@ -526,10 +536,17 @@ class StringTokenizer {
     return isNegative ? -integerPart.toDouble() : integerPart.toDouble();
   }
 
+  /// Consumes any whitespace characters from the current position.
+  ///
+  /// Returns true if any whitespace was consumed, false otherwise.
   bool eatWhitespace() {
     return eat((char, _) => char.trim().isEmpty, null) != null;
   }
 
+  /// Attempts to parse and consume a boolean value ('true' or 'false').
+  ///
+  /// Returns true if 'true' is found, false if 'false' is found, or null
+  /// if neither is found at the current position.
   bool? eatBoolean() {
     if (eatString('true')) {
       return true;

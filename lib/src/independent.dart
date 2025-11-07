@@ -151,16 +151,28 @@ class Box with ParentLayout {
     markNeedsLayout();
   }
 
+  /// Adds a single child to this parent box.
+  ///
+  /// The child is appended to the end of the children list and the layout
+  /// is marked as needing an update.
   void addChild(Box child) {
     _attachChildren([..._children, child]);
     markNeedsLayout();
   }
 
+  /// Adds multiple children to this parent box.
+  ///
+  /// All children are appended to the end of the children list and the layout
+  /// is marked as needing an update.
   void addChildren(List<Box> children) {
     _attachChildren([..._children, ...children]);
     markNeedsLayout();
   }
 
+  /// Attaches this box and all its children to the given layout pipeline owner.
+  ///
+  /// This establishes the connection to the layout system for this subtree.
+  /// Any existing attachment is detached first.
   void attach(LayoutPipelineOwner owner) {
     detach();
     assert(_owner == null);
@@ -170,6 +182,9 @@ class Box with ParentLayout {
     }
   }
 
+  /// Detaches this box and all its children from the layout pipeline.
+  ///
+  /// This breaks the connection to the layout system for this subtree.
   void detach() {
     assert(_owner != null);
     _owner = null;
@@ -178,6 +193,10 @@ class Box with ParentLayout {
     }
   }
 
+  /// Removes a specific child from this parent box.
+  ///
+  /// If the child is not found, this method does nothing. Otherwise, the child
+  /// is removed, its parent references are cleared, and layout is marked for update.
   void removeChild(Box child) {
     final index = _children.indexOf(child);
     if (index == -1) return;
@@ -196,22 +215,42 @@ class Box with ParentLayout {
   int _childCount = 0;
   LayoutConstraints? _constraints;
 
+  /// The first child in the natural children list.
   Box? get firstChild => _firstChild;
+  
+  /// The last child in the natural children list.
   Box? get lastChild => _lastChild;
+  
+  /// The first child in the sorted children list, or the first natural child if no sorting.
   Box? get firstSortedChild => _firstSortedChild ?? _firstChild;
+  
+  /// The last child in the sorted children list, or the last natural child if no sorting.
   Box? get lastSortedChild => _lastSortedChild ?? _lastChild;
+  
+  /// The total number of children in this parent box.
   int get childCount => _childCount;
+  
+  /// The layout constraints applied to this box.
   LayoutConstraints get constraints => _constraints!;
 
+  /// Parent data for this box, storing sibling relationships.
   BoxParentData parentData = BoxParentData();
 
+  /// The computed size of this box.
   LayoutSize get size => _viewportSize!;
+  
+  /// Sets the size of this box.
   set size(LayoutSize size) {
     _viewportSize = size;
   }
 
+  /// Returns true if this box has been sized.
   bool get hasSize => _viewportSize != null;
 
+  /// Performs the layout calculation for this box and its children.
+  ///
+  /// This method computes the positions and sizes of all children based on
+  /// the layout algorithm and constraints.
   void performLayout() {
     bool needsSorting = false;
     LayoutHandle layoutHandle = boxLayout.createLayoutHandle(this);
@@ -260,6 +299,9 @@ class Box with ParentLayout {
     return !childRect.overlaps(actualPaintBounds);
   }
 
+  /// The actual paint bounds considering clipping from overflow settings.
+  ///
+  /// This may be smaller than [paintBounds] if overflow clipping is enabled.
   LayoutRect get actualPaintBounds {
     bool clipHorizontal = horizontalOverflow.clipContent;
     bool clipVertical = verticalOverflow.clipContent;
@@ -272,6 +314,7 @@ class Box with ParentLayout {
     );
   }
 
+  /// The paint bounds of this box from its origin to its size.
   LayoutRect get paintBounds => LayoutOffset.zero & size;
 
   void _sortChildren() {
@@ -454,15 +497,26 @@ class Box with ParentLayout {
   @override
   LayoutSize get viewportSize => _viewportSize!;
 
+  /// The parent box of this box, or null if this is the root.
   Box? get parent => _parent;
 
   LayoutPipelineOwner? _owner;
+  
+  /// The layout pipeline owner managing this box's layout lifecycle.
   LayoutPipelineOwner? get owner => _owner;
 
   bool? _isRelayoutBoundary;
+  
+  /// Whether this box determines its own size without input from children.
+  ///
+  /// When true, this box is sized before laying out children.
   bool sizedByParent = false;
+  
   bool _needsLayout = true;
 
+  /// Marks this box as needing layout.
+  ///
+  /// This propagates up the tree until reaching a relayout boundary or the root.
   void markNeedsLayout() {
     if (_needsLayout) {
       return;
@@ -477,6 +531,10 @@ class Box with ParentLayout {
     }
   }
 
+  /// Lays out this box with the given constraints.
+  ///
+  /// The [parentUsesSize] parameter indicates whether the parent's layout depends
+  /// on this box's size. This affects relayout boundary determination.
   void layout(LayoutConstraints constraints, {bool parentUsesSize = false}) {
     _isRelayoutBoundary =
         !parentUsesSize ||
@@ -494,28 +552,46 @@ class Box with ParentLayout {
     _needsLayout = false;
   }
 
+  /// Computes the size of this box based on its constraints.
+  ///
+  /// This is called only when [sizedByParent] is true, before [performLayout].
   void performResize() {}
 
+  /// Computes the size this box would have under the given constraints without performing actual layout.
+  ///
+  /// This is used for intrinsic sizing calculations.
   LayoutSize getDryLayout(covariant LayoutConstraints constraints) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.performLayout(constraints, true);
   }
 
+  /// Computes the minimum height this box could have for the given width.
+  ///
+  /// Used for intrinsic sizing calculations.
   double getMinIntrinsicHeight(double width) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMinIntrinsicHeight(width);
   }
 
+  /// Computes the maximum height this box could have for the given width.
+  ///
+  /// Used for intrinsic sizing calculations.
   double getMaxIntrinsicHeight(double width) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMaxIntrinsicHeight(width);
   }
 
+  /// Computes the minimum width this box could have for the given height.
+  ///
+  /// Used for intrinsic sizing calculations.
   double getMinIntrinsicWidth(double height) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMinIntrinsicWidth(height);
   }
 
+  /// Computes the maximum width this box could have for the given height.
+  ///
+  /// Used for intrinsic sizing calculations.
   double getMaxIntrinsicWidth(double height) {
     final layoutHandle = boxLayout.createLayoutHandle(this);
     return layoutHandle.computeMaxIntrinsicWidth(height);
