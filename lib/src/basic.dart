@@ -857,6 +857,10 @@ abstract class PositionUnit {
   const factory PositionUnit.fixed(double value) = PositionFixed;
 
   /// Creates a position unit that uses the cross-axis value of another position unit.
+  ///
+  /// The cross-axis is perpendicular to the current axis: if positioning on the
+  /// horizontal axis, this evaluates the position on the vertical axis, and vice versa.
+  /// This allows coordinating positions across both dimensions.
   const factory PositionUnit.cross(PositionUnit position) = PositionCross;
 
   /// Creates a position unit based on a child element's size.
@@ -1897,17 +1901,15 @@ abstract class SpacingUnit {
   /// Computes the actual spacing value.
   ///
   /// Spacing units are computed during layout to determine margins, padding,
-  /// or gaps between elements. The calculation considers available space,
-  /// maximum allowed space, and the number of affected elements.
+  /// or gaps between elements. The calculation considers the parent layout context,
+  /// the axis direction, and the available viewport size.
   ///
   /// Parameters:
-  /// - [parent]: The parent layout context
-  /// - [axis]: The axis along which spacing is calculated
-  /// - [maxSpace]: The maximum allowed spacing
-  /// - [availableSpace]: The total available space for distribution
-  /// - [affectedCount]: Number of elements affected by this spacing
+  /// - [parent]: The parent layout providing context
+  /// - [axis]: The axis along which spacing is calculated (horizontal or vertical)
+  /// - [viewportSize]: The size of the viewport along the specified axis
   ///
-  /// Returns the computed spacing value.
+  /// Returns the computed spacing value in pixels.
   double computeSpacing({
     required ParentLayout parent,
     required LayoutAxis axis,
