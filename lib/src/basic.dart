@@ -15,7 +15,7 @@ enum PositionType {
   /// The element's position is determined by explicit position properties
   /// rather than by its place in the flex layout sequence.
   none,
-  
+
   /// Element participates in normal layout flow (default).
   ///
   /// The element is positioned according to flex layout rules and its

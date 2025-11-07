@@ -32,7 +32,7 @@ class RelativePositioning {
 class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
   /// Optional debug key for identifying this child during debugging.
   Key? debugKey;
-  
+
   /// Cached layout information from previous layout passes.
   ///
   /// Used to optimize relayout by reusing calculations when constraints haven't changed.
@@ -100,53 +100,53 @@ class RenderLayoutBox extends RenderBox
   @override
   LayoutTextDirection get textDirection =>
       layoutTextDirectionFromTextDirection(layoutTextDirection);
-  
+
   /// Whether to reverse the painting order of children.
   ///
   /// When true, children are painted in reverse order (last child painted first).
   bool reversePaint;
-  
+
   /// The primary scroll direction (horizontal or vertical).
   Axis mainScrollDirection;
-  
+
   /// Viewport offset controller for horizontal scrolling.
   ViewportOffset horizontal;
-  
+
   /// Viewport offset controller for vertical scrolling.
   ViewportOffset vertical;
-  
+
   /// Direction of horizontal axis (left-to-right or right-to-left).
   AxisDirection horizontalAxisDirection;
-  
+
   /// Direction of vertical axis (top-to-bottom or bottom-to-top).
   AxisDirection verticalAxisDirection;
-  
+
   /// How content should be handled when it overflows horizontally.
   LayoutOverflow horizontalOverflow;
-  
+
   /// How content should be handled when it overflows vertically.
   LayoutOverflow verticalOverflow;
-  
+
   /// The layout algorithm used to position children.
   Layout boxLayout;
-  
+
   @override
   LayoutTextBaseline? get textBaseline => layoutTextBaseline == null
       ? null
       : layoutTextBaselineFromTextBaseline(layoutTextBaseline!);
-  
+
   /// Border radius for clipping rounded corners.
   BorderRadius borderRadius;
-  
+
   /// How to clip content that extends beyond the container bounds.
   Clip clipBehavior;
-  
+
   /// The text direction for this layout (LTR or RTL).
   TextDirection layoutTextDirection;
-  
+
   /// The text baseline type for baseline alignment.
   TextBaseline? layoutTextBaseline;
-  
+
   /// Creates a render layout box with the specified configuration.
   ///
   /// All layout behavior parameters are required to define how this render

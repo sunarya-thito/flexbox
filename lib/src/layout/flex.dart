@@ -221,19 +221,19 @@ class FlexLayoutCache {
   /// This value is in logical pixels and represents spacing inside the container's
   /// top edge, before the first line of flex items.
   double paddingTop = 0.0;
-  
+
   /// Padding applied to the bottom edge of the flex container.
   ///
   /// This value is in logical pixels and represents spacing inside the container's
   /// bottom edge, after the last line of flex items.
   double paddingBottom = 0.0;
-  
+
   /// Padding applied to the left edge of the flex container.
   ///
   /// This value is in logical pixels and represents spacing inside the container's
   /// left edge. Note that this is absolute left, not start/end relative to text direction.
   double paddingLeft = 0.0;
-  
+
   /// Padding applied to the right edge of the flex container.
   ///
   /// This value is in logical pixels and represents spacing inside the container's

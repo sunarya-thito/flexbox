@@ -17,16 +17,16 @@ class ParentEdge {
     right: 0.0,
     bottom: 0.0,
   );
-  
+
   /// The distance from the left edge.
   final double left;
-  
+
   /// The distance from the top edge.
   final double top;
-  
+
   /// The distance from the right edge.
   final double right;
-  
+
   /// The distance from the bottom edge.
   final double bottom;
 
@@ -52,7 +52,7 @@ class ParentEdge {
 class ParentRect extends LayoutRect {
   /// The edge distances from the parent container's bounds.
   final ParentEdge edges;
-  
+
   /// Creates a [ParentRect] from left, top, width, height, and edges.
   ///
   /// This is the most convenient constructor for creating rectangles with

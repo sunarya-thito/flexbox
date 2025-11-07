@@ -17,7 +17,7 @@ class BoxParentData {
 
   /// Reference to the next sibling box in document order.
   Box? nextSibling;
-  
+
   /// Reference to the previous sibling box in document order.
   Box? previousSibling;
 
@@ -36,7 +36,7 @@ class BoxParentData {
 
   /// Returns the next sibling in paint order, or document order if not sorted.
   Box? get nextSortedSibling => _nextSortedSibling ?? nextSibling;
-  
+
   /// Returns the previous sibling in paint order, or document order if not sorted.
   Box? get previousSortedSibling => _previousSortedSibling ?? previousSibling;
 }
@@ -51,24 +51,24 @@ class BoxParentData {
 class Box with ParentLayout {
   @override
   LayoutTextDirection textDirection;
-  
+
   /// How content should be handled when it overflows horizontally.
   ///
   /// Determines whether horizontal overflow should be visible, hidden,
   /// clipped, or scrollable.
   LayoutOverflow horizontalOverflow;
-  
+
   /// How content should be handled when it overflows vertically.
   ///
   /// Determines whether vertical overflow should be visible, hidden,
   /// clipped, or scrollable.
   LayoutOverflow verticalOverflow;
-  
+
   /// The layout algorithm used to position children of this box.
   ///
   /// Defines how child boxes are arranged (e.g., flex layout, absolute positioning).
   Layout boxLayout;
-  
+
   @override
   LayoutTextBaseline? textBaseline;
   @override

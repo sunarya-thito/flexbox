@@ -16,10 +16,10 @@ import 'package:flutter/widgets.dart';
 class ScrollTrackGesture extends StatelessWidget {
   /// Optional child widget to wrap with gesture detection.
   final Widget? child;
-  
+
   /// Duration for the animated scroll jump when the track is tapped.
   final Duration jumpDuration;
-  
+
   /// Animation curve for the scroll jump.
   final Curve jumpCurve;
 
@@ -61,7 +61,7 @@ class ScrollTrackGesture extends StatelessWidget {
 class ScrollThumbGesture extends StatelessWidget {
   /// The child widget representing the visible scrollbar thumb.
   final Widget child;
-  
+
   /// Callback invoked when dragging state changes.
   ///
   /// Called with `true` when dragging starts and `false` when it ends.
@@ -110,13 +110,13 @@ class ScrollThumbGesture extends StatelessWidget {
 class ScrollTrack extends StatelessWidget {
   /// The child widget representing the scrollbar track and thumb.
   final Widget child;
-  
+
   /// Duration for animated scroll jumps when the track is tapped.
   final Duration jumpDuration;
-  
+
   /// Animation curve for scroll jumps.
   final Curve jumpCurve;
-  
+
   /// Callback invoked when dragging state changes.
   ///
   /// Called with `true` when thumb dragging starts and `false` when it ends.
@@ -221,35 +221,35 @@ class DefaultScrollbar extends StatefulWidget {
   ///
   /// Ensures the thumb remains grabbable even for very long content.
   final double minThumbLength;
-  
+
   /// Decoration for the scrollbar thumb in its default state.
   final Decoration thumbDecoration;
-  
+
   /// Decoration for the scrollbar track in its default state.
   final Decoration trackDecoration;
-  
+
   /// Decoration for the scrollbar thumb when active (hovered or dragged).
   final Decoration thumbActiveDecoration;
-  
+
   /// Decoration for the scrollbar track when active (hovered).
   final Decoration trackActiveDecoration;
-  
+
   /// Margin around the entire scrollbar widget.
   ///
   /// Creates space between the scrollbar and its container edges.
   final EdgeInsetsGeometry margin;
-  
+
   /// Padding inside the scrollbar track.
   ///
   /// Creates space between the track edges and the thumb.
   final EdgeInsetsGeometry padding;
-  
+
   /// Duration for fade in/out animations when showing/hiding the scrollbar.
   final Duration fadeDuration;
-  
+
   /// Duration for animated scroll jumps when the track is tapped.
   final Duration jumpDuration;
-  
+
   /// Animation curve for scroll jumps.
   final Curve jumpCurve;
 
@@ -538,36 +538,36 @@ class Scrollbars extends StatefulWidget {
   ///
   /// Typically a [DefaultScrollbar] or custom implementation.
   final Widget verticalScrollbar;
-  
+
   /// The scrollbar widget to use for horizontal scrolling.
   ///
   /// Typically a [DefaultScrollbar] or custom implementation.
   final Widget horizontalScrollbar;
-  
+
   /// Widget to display in the corner where scrollbars meet.
   ///
   /// Only visible when both scrollbars are showing. Typically empty
   /// or a decorative element matching the scrollbar design.
   final Widget corner;
-  
+
   /// The scrollable content widget.
   final Widget child;
-  
+
   /// Whether the vertical scrollbar should push content inward.
   ///
   /// When true, content is padded by [verticalScrollbarThickness] to make
   /// room for the scrollbar. When false, the scrollbar overlays the content.
   final bool verticalScrollbarPadsContent;
-  
+
   /// Whether the horizontal scrollbar should push content inward.
   ///
   /// When true, content is padded by [horizontalScrollbarThickness] to make
   /// room for the scrollbar. When false, the scrollbar overlays the content.
   final bool horizontalScrollbarPadsContent;
-  
+
   /// Width of the vertical scrollbar in pixels.
   final double verticalScrollbarThickness;
-  
+
   /// Height of the horizontal scrollbar in pixels.
   final double horizontalScrollbarThickness;
 

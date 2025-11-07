@@ -92,7 +92,7 @@ Token parseToken(String input) {
 class Parser {
   /// The list of tokens to parse.
   final List<Token> tokens;
-  
+
   /// The current position in the token list.
   int index = 0;
 
@@ -103,10 +103,10 @@ class Parser {
 
   /// Returns the current token without advancing the parser.
   Token peek() => tokens[index];
-  
+
   /// Returns the current token and advances to the next token.
   Token advance() => tokens[index++];
-  
+
   /// Checks if the parser has reached the end of input.
   ///
   /// Returns true if the current token is [TokenType.eof].
@@ -405,10 +405,10 @@ class Parser {
 class StringTokenizer {
   /// The source string being tokenized.
   final String source;
-  
+
   /// The current position in the source string.
   int index = 0;
-  
+
   /// The end index (exclusive) for tokenization.
   ///
   /// This is typically the length of the source string but can be set to
@@ -419,7 +419,7 @@ class StringTokenizer {
   ///
   /// The tokenizer will process from index 0 to the end of [source].
   StringTokenizer(this.source) : endIndex = source.length;
-  
+
   /// Creates a tokenizer for a range within the source string.
   ///
   /// Tokenizes only the substring from [index] to [endIndex] (exclusive).

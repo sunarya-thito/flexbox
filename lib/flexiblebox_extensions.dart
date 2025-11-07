@@ -9,7 +9,7 @@ extension DoubleExtension on double {
   /// This extension method provides a convenient way to create fixed size units
   /// directly from double values, enhancing code readability and reducing boilerplate.
   SizeUnit get size => SizeUnit.fixed(this);
-  
+
   /// Converts a [double] value to a viewport-relative [SizeUnit].
   ///
   /// Creates a size unit that is proportional to the viewport size. For example,
@@ -17,7 +17,7 @@ extension DoubleExtension on double {
   ///
   /// This is equivalent to `SizeUnit.viewportSize * this.size`.
   SizeUnit get relativeSize => SizeUnit.viewportSize * size;
-  
+
   /// Converts a [double] value to a percentage (0.0 to 1.0).
   ///
   /// Divides the value by 100 to convert from percentage notation to a decimal.
@@ -25,13 +25,13 @@ extension DoubleExtension on double {
   ///
   /// Useful for calculations requiring percentage values in decimal form.
   double get percent => this / 100;
-  
+
   /// Converts a [double] value to a fixed [PositionUnit].
   ///
   /// Creates a position unit with an absolute pixel value. This is useful for
   /// positioning elements at fixed offsets from container edges.
   PositionUnit get position => PositionUnit.fixed(this);
-  
+
   /// Converts a [double] value to a viewport-relative [PositionUnit].
   ///
   /// Creates a position unit that is proportional to the viewport size. For example,
@@ -39,7 +39,7 @@ extension DoubleExtension on double {
   ///
   /// This is equivalent to `PositionUnit.viewportSize * this.position`.
   PositionUnit get relativePosition => PositionUnit.viewportSize * position;
-  
+
   // PositionUnit get relativeChildPosition => PositionUnit.childSize() * position;
   /// Converts a [double] value to a child-size-relative [PositionUnit].
   ///
@@ -53,7 +53,7 @@ extension DoubleExtension on double {
   /// This is equivalent to `PositionUnit.childSize(key) * this.position`.
   PositionUnit relativeChildPosition([Key? key]) =>
       PositionUnit.childSize(key) * position;
-  
+
   /// Converts a [double] value to a content-size-relative [PositionUnit].
   ///
   /// Creates a position unit that is proportional to the total content size.
@@ -63,13 +63,13 @@ extension DoubleExtension on double {
   /// This is equivalent to `PositionUnit.contentSize * this.position`.
   PositionUnit get relativeContentPosition =>
       PositionUnit.contentSize * position;
-  
+
   /// Converts a [double] value to a fixed [SpacingUnit].
   ///
   /// Creates a spacing unit with an absolute pixel value. This is useful for
   /// defining gaps and padding with fixed sizes.
   SpacingUnit get spacing => SpacingUnit.fixed(this);
-  
+
   /// Converts a [double] value to a viewport-relative [SpacingUnit].
   ///
   /// Creates a spacing unit that is proportional to the viewport size. For example,
@@ -85,7 +85,7 @@ extension IntExtension on int {
   /// This extension method provides a convenient way to create fixed size units
   /// directly from integer values, enhancing code readability and reducing boilerplate.
   SizeUnit get size => SizeUnit.fixed(toDouble());
-  
+
   /// Converts an [int] value to a viewport-relative [SizeUnit].
   ///
   /// Creates a size unit that is proportional to the viewport size. For example,
@@ -93,7 +93,7 @@ extension IntExtension on int {
   ///
   /// This is equivalent to `SizeUnit.viewportSize * this.size`.
   SizeUnit get relativeSize => SizeUnit.viewportSize * size;
-  
+
   /// Converts an [int] value to a percentage (0.0 to 1.0).
   ///
   /// Divides the value by 100 to convert from percentage notation to a decimal.
@@ -101,13 +101,13 @@ extension IntExtension on int {
   ///
   /// Useful for calculations requiring percentage values in decimal form.
   double get percent => toDouble() / 100;
-  
+
   /// Converts an [int] value to a fixed [PositionUnit].
   ///
   /// Creates a position unit with an absolute pixel value. This is useful for
   /// positioning elements at fixed offsets from container edges.
   PositionUnit get position => PositionUnit.fixed(toDouble());
-  
+
   /// Converts an [int] value to a viewport-relative [PositionUnit].
   ///
   /// Creates a position unit that is proportional to the viewport size. For example,
@@ -115,7 +115,7 @@ extension IntExtension on int {
   ///
   /// This is equivalent to `PositionUnit.viewportSize * this.position`.
   PositionUnit get relativePosition => PositionUnit.viewportSize * position;
-  
+
   /// Converts an [int] value to a child-size-relative [PositionUnit].
   ///
   /// Creates a position unit that is proportional to a child element's size.
@@ -128,7 +128,7 @@ extension IntExtension on int {
   /// This is equivalent to `PositionUnit.childSize(key) * this.position`.
   PositionUnit relativeChildPosition([Key? key]) =>
       PositionUnit.childSize(key) * position;
-  
+
   /// Converts an [int] value to a content-size-relative [PositionUnit].
   ///
   /// Creates a position unit that is proportional to the total content size.
@@ -138,13 +138,13 @@ extension IntExtension on int {
   /// This is equivalent to `PositionUnit.contentSize * this.position`.
   PositionUnit get relativeContentPosition =>
       PositionUnit.contentSize * position;
-  
+
   /// Converts an [int] value to a fixed [SpacingUnit].
   ///
   /// Creates a spacing unit with an absolute pixel value. This is useful for
   /// defining gaps and padding with fixed sizes.
   SpacingUnit get spacing => SpacingUnit.fixed(toDouble());
-  
+
   /// Converts an [int] value to a viewport-relative [SpacingUnit].
   ///
   /// Creates a spacing unit that is proportional to the viewport size. For example,

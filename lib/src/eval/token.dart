@@ -8,40 +8,40 @@ part of 'eval.dart';
 enum TokenType {
   /// A numeric literal token (e.g., "123", "45.67").
   number,
-  
+
   /// A string literal token enclosed in quotes.
   string,
-  
+
   /// A symbolic operator or punctuation mark.
   symbol,
-  
+
   /// An identifier token representing a variable or function name.
   identifier,
-  
+
   /// The addition operator (+).
   plus,
-  
+
   /// The subtraction operator (-) or unary negation.
   minus,
-  
+
   /// The multiplication operator (*).
   multiply,
-  
+
   /// The division operator (/).
   divide,
-  
+
   /// The left parenthesis token "(".
   lparen,
-  
+
   /// The right parenthesis token ")".
   rparen,
-  
+
   /// The percent sign token "%".
   percent,
-  
+
   /// The comma separator token ",".
   comma,
-  
+
   /// End-of-file token indicating the end of input.
   eof,
 }
@@ -56,13 +56,13 @@ enum TokenType {
 class Token {
   /// The type of this token (number, operator, identifier, etc.).
   final TokenType type;
-  
+
   /// The complete source string from which this token was extracted.
   final String source;
-  
+
   /// The starting index of this token in the source string.
   final int start;
-  
+
   /// The ending index (exclusive) of this token in the source string.
   final int end;
 

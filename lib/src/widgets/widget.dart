@@ -863,7 +863,7 @@ class LayoutBoxWidget extends StatefulWidget {
   ///
   /// Defaults to false for standard left-to-right scrolling.
   final bool reverseHorizontalScroll;
-  
+
   /// Whether to reverse the vertical scroll direction.
   ///
   /// When true, vertical scrolling is reversed: scrolling down moves content
