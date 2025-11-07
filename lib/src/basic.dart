@@ -733,6 +733,9 @@ abstract class SizeUnit {
   /// Sizes to match the viewport size.
   static const SizeUnit viewportSize = SizeViewport();
 
+  /// Creates a const size unit.
+  ///
+  /// This is the base constructor for all size unit implementations.
   const SizeUnit();
 
   /// Computes the actual size value for this unit.
@@ -763,35 +766,77 @@ abstract class SizeUnit {
 }
 
 abstract class PositionUnit {
+  /// Creates a calculated position unit combining two position units with an operation.
+  ///
+  /// This factory allows creating position units that perform calculations
+  /// (addition, subtraction, multiplication, division) between two position units.
   const factory PositionUnit.calc(
     PositionUnit a,
     PositionUnit b,
     CalculationOperation operation,
   ) = PositionCalculated;
+
+  /// Linearly interpolates between two position units.
+  ///
+  /// Returns [a] when [t] is 0.0, [b] when [t] is 1.0, and a blend of both
+  /// for values between 0.0 and 1.0.
   static PositionUnit lerp(PositionUnit a, PositionUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
     return a * PositionFixed(1.0 - t) + b * PositionFixed(t);
   }
 
+  /// A position unit with value zero.
   static const PositionUnit zero = PositionFixed(0);
+
+  /// A position unit representing the full viewport size along the axis.
   static const PositionUnit viewportSize = PositionViewportSize();
+
+  /// A position unit representing the total content size along the axis.
   static const PositionUnit contentSize = PositionContentSize();
+
+  /// A position unit representing the element's natural position offset.
   static const PositionUnit boxOffset = PositionOffset();
+
+  /// A position unit representing the current scroll offset.
   static const PositionUnit scrollOffset = PositionScroll();
+
+  /// A position unit representing the amount content overflows the viewport.
   static const PositionUnit contentOverflow = PositionOverflow();
+
+  /// A position unit representing the amount content underflows the viewport.
   static const PositionUnit contentUnderflow = PositionUnderflow();
+
+  /// A position unit representing the start boundary of the viewport.
   static const PositionUnit viewportStartBound = PositionScroll();
+
+  /// A position unit representing the end boundary of the viewport.
   static const PositionUnit viewportEndBound = PositionViewportEndBound();
+
+  /// Creates a fixed position unit with the specified pixel value.
   const factory PositionUnit.fixed(double value) = PositionFixed;
+
+  /// Creates a position unit that uses the cross-axis value of another position unit.
   const factory PositionUnit.cross(PositionUnit position) = PositionCross;
+
+  /// Creates a position unit based on a child element's size.
+  ///
+  /// The optional [key] parameter can reference a specific child element.
   const factory PositionUnit.childSize([Object? key]) = PositionChildSize;
+
+  /// Creates a constrained position unit that clamps values between min and max.
+  ///
+  /// The [position] is evaluated and then constrained to be within the optional
+  /// [min] and [max] bounds.
   const factory PositionUnit.constrained({
     required PositionUnit position,
     PositionUnit min,
     PositionUnit max,
   }) = PositionConstraint;
 
+  /// Creates a const position unit.
+  ///
+  /// This is the base constructor for all position unit implementations.
   const PositionUnit();
 
   /// Computes the actual position value for this unit.
@@ -971,7 +1016,13 @@ class PositionFixed implements PositionUnit {
   }
 }
 
+/// A position unit that represents the full viewport size along an axis.
+///
+/// This position unit returns the width of the viewport for horizontal positioning
+/// and the height for vertical positioning. It's useful for positioning elements
+/// relative to viewport dimensions.
 class PositionViewportSize implements PositionUnit {
+  /// Creates a viewport size position unit.
   const PositionViewportSize();
 
   @override
@@ -994,7 +1045,13 @@ class PositionViewportSize implements PositionUnit {
   }
 }
 
+/// A position unit that represents the total content size along an axis.
+///
+/// This position unit returns the width of the content for horizontal positioning
+/// and the height for vertical positioning. It's useful for positioning elements
+/// relative to the total size of scrollable content.
 class PositionContentSize implements PositionUnit {
+  /// Creates a content size position unit.
   const PositionContentSize();
 
   @override
@@ -1017,9 +1074,20 @@ class PositionContentSize implements PositionUnit {
   }
 }
 
+/// A position unit that represents the size of a child element.
+///
+/// This position unit returns the size of a child element along the specified axis.
+/// If a [key] is provided, it references a specific child; otherwise, it uses
+/// the current child being positioned. This is useful for positioning elements
+/// relative to the size of other elements in the layout.
 class PositionChildSize implements PositionUnit {
+  /// Optional key to reference a specific child element.
   final Object? key;
 
+  /// Creates a child size position unit.
+  ///
+  /// If [key] is null, uses the size of the current child being positioned.
+  /// If [key] is provided, looks up the child with that key.
   const PositionChildSize([this.key]);
 
   @override
@@ -1056,7 +1124,13 @@ class PositionChildSize implements PositionUnit {
   }
 }
 
+/// A position unit that represents the element's natural position offset.
+///
+/// This position unit returns the scroll offset along the specified axis,
+/// which is useful for creating sticky positioning effects or scroll-aware
+/// positioning.
 class PositionOffset implements PositionUnit {
+  /// Creates a position offset unit.
   const PositionOffset();
 
   @override
@@ -1079,7 +1153,14 @@ class PositionOffset implements PositionUnit {
   }
 }
 
+/// A position unit that represents the current scroll offset.
+///
+/// This position unit returns the scroll offset along the specified axis.
+/// For horizontal scrolling, it returns the X scroll offset; for vertical
+/// scrolling, it returns the Y scroll offset. This is useful for creating
+/// scroll-based animations or positioning.
 class PositionScroll implements PositionUnit {
+  /// Creates a scroll offset position unit.
   const PositionScroll();
 
   @override
@@ -1102,7 +1183,13 @@ class PositionScroll implements PositionUnit {
   }
 }
 
+/// A position unit that represents the amount content overflows the viewport.
+///
+/// This position unit returns the positive difference between content size
+/// and viewport size. It returns 0 if the content fits within the viewport.
+/// This is useful for scroll indicators or overflow-aware positioning.
 class PositionOverflow implements PositionUnit {
+  /// Creates a content overflow position unit.
   const PositionOverflow();
 
   @override
@@ -1130,7 +1217,13 @@ class PositionOverflow implements PositionUnit {
   }
 }
 
+/// A position unit that represents the amount of empty space when content is smaller than viewport.
+///
+/// This position unit returns the positive difference between viewport size
+/// and content size. It returns 0 if the content exceeds or matches the viewport.
+/// This is useful for centering content or positioning elements when there's extra space.
 class PositionUnderflow implements PositionUnit {
+  /// Creates a content underflow position unit.
   const PositionUnderflow();
 
   @override
@@ -1158,7 +1251,13 @@ class PositionUnderflow implements PositionUnit {
   }
 }
 
+/// A position unit that represents the end boundary of the viewport.
+///
+/// This position unit calculates where the viewport ends in the content coordinate
+/// space by adding the content size and scroll offset. It's useful for positioning
+/// elements relative to the visible end of scrollable content.
 class PositionViewportEndBound implements PositionUnit {
+  /// Creates a viewport end bound position unit.
   const PositionViewportEndBound();
 
   @override
@@ -1181,10 +1280,17 @@ class PositionViewportEndBound implements PositionUnit {
   }
 }
 
+/// A position unit that evaluates another position unit on the cross axis.
+///
+/// This position unit takes a position unit and evaluates it on the perpendicular
+/// axis. For example, if used in horizontal positioning, it evaluates the wrapped
+/// unit in the vertical direction, and vice versa. This is useful for coordinating
+/// positions across both axes.
 class PositionCross implements PositionUnit {
   /// The position unit to evaluate on the cross axis.
   final PositionUnit position;
 
+  /// Creates a cross-axis position unit.
   const PositionCross(this.position);
 
   @override
@@ -1212,6 +1318,11 @@ class PositionCross implements PositionUnit {
   }
 }
 
+/// A position unit that constrains another position unit between minimum and maximum bounds.
+///
+/// This position unit evaluates a base position and then clamps the result to be
+/// within specified min and max bounds. This is useful for ensuring positions
+/// stay within valid ranges or creating bounded positioning behaviors.
 class PositionConstraint implements PositionUnit {
   /// The base position to constrain.
   final PositionUnit position;
@@ -1222,6 +1333,10 @@ class PositionConstraint implements PositionUnit {
   /// The maximum allowed position value.
   final PositionUnit max;
 
+  /// Creates a constrained position unit.
+  ///
+  /// The [position] is required. If [min] or [max] are not provided, they default
+  /// to negative and positive infinity respectively, effectively having no constraint.
   const PositionConstraint({
     required this.position,
     this.min = const PositionFixed(double.negativeInfinity),
@@ -1268,6 +1383,11 @@ class PositionConstraint implements PositionUnit {
   }
 }
 
+/// A size unit that constrains another size unit between minimum and maximum bounds.
+///
+/// This size unit evaluates a base size and then clamps the result to be
+/// within specified min and max bounds. This is useful for ensuring sizes
+/// stay within valid ranges or creating bounded sizing behaviors.
 class SizeConstraint extends SizeUnit {
   /// The base size to constrain.
   final SizeUnit size;
@@ -1278,6 +1398,10 @@ class SizeConstraint extends SizeUnit {
   /// The maximum allowed size.
   final SizeUnit max;
 
+  /// Creates a constrained size unit.
+  ///
+  /// The [size] is required. If [min] or [max] are not provided, they default
+  /// to 0 and infinity respectively.
   const SizeConstraint({
     required this.size,
     this.min = const SizeFixed(0),
@@ -1392,7 +1516,14 @@ class SizeViewport extends SizeUnit {
   }
 }
 
+/// A size unit that sizes to the minimum intrinsic size of the content.
+///
+/// This size unit evaluates the minimum width or height that the child needs
+/// based on its content, without allowing it to shrink smaller than necessary.
+/// It's useful for creating content-driven layouts where elements should be
+/// as small as possible while still displaying their content properly.
 class SizeMinContent extends SizeUnit {
+  /// Creates a min-content size unit.
   const SizeMinContent();
 
   @override
@@ -1418,7 +1549,14 @@ class SizeMinContent extends SizeUnit {
   }
 }
 
+/// A size unit that sizes to the maximum intrinsic size of the content.
+///
+/// This size unit evaluates the maximum width or height that the child needs
+/// based on its content, allowing it to expand as much as needed. It's useful
+/// for creating content-driven layouts where elements should be as large as
+/// their content requires.
 class SizeMaxContent extends SizeUnit {
+  /// Creates a max-content size unit.
   const SizeMaxContent();
 
   @override
@@ -1444,7 +1582,14 @@ class SizeMaxContent extends SizeUnit {
   }
 }
 
+/// A size unit that fits the content within the available space.
+///
+/// This size unit calculates a size that fits the content optimally within
+/// the available space, balancing between min-content and max-content behavior.
+/// It's useful for responsive sizing where elements should adapt to both their
+/// content and available space.
 class SizeFitContent extends SizeUnit {
+  /// Creates a fit-content size unit.
   const SizeFitContent();
 
   @override
