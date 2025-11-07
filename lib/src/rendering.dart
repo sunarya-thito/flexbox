@@ -1209,7 +1209,7 @@ class RenderLayoutBox extends RenderBox
 class RenderBoxChildLayout with ChildLayout {
   /// The parent render box that owns this child.
   final RenderLayoutBox parent;
-  
+
   /// The render box that this layout adapter wraps.
   final RenderBox renderBox;
 

@@ -706,7 +706,7 @@ class LayoutPipelineOwner {
 class BoxChildLayout with ChildLayout {
   /// The box object this layout adapter wraps.
   final Box box;
-  
+
   /// Creates a child layout adapter for the given box.
   BoxChildLayout(this.box);
 
