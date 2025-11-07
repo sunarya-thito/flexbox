@@ -1124,13 +1124,13 @@ class PositionChildSize implements PositionUnit {
   }
 }
 
-/// A position unit that represents the element's natural position offset.
+/// A position unit that represents the box offset position.
 ///
-/// This position unit returns the scroll offset along the specified axis,
-/// which is useful for creating sticky positioning effects or scroll-aware
-/// positioning.
+/// This position unit returns the scroll offset along the specified axis.
+/// It's named 'boxOffset' in expressions but functionally equivalent to
+/// scroll offset. Used for positioning elements relative to scroll position.
 class PositionOffset implements PositionUnit {
-  /// Creates a position offset unit.
+  /// Creates a box offset position unit.
   const PositionOffset();
 
   @override
