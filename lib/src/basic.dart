@@ -1769,6 +1769,10 @@ class EdgeSpacingDirectional extends EdgeSpacingGeometry {
 }
 
 abstract class SpacingUnit {
+  /// Creates a calculated spacing unit combining two spacing units with an operation.
+  ///
+  /// This factory allows creating spacing units that perform calculations
+  /// (addition, subtraction, multiplication, division) between two spacing units.
   const factory SpacingUnit.calc(
     SpacingUnit a,
     SpacingUnit b,
@@ -1801,8 +1805,14 @@ abstract class SpacingUnit {
     SpacingUnit max,
   }) = SpacingConstraint;
 
+  /// Creates a spacing unit based on a child element's size.
+  ///
+  /// The optional [key] parameter can reference a specific child element.
   const factory SpacingUnit.childSize([Object? key]) = SpacingChildSize;
 
+  /// Creates a const spacing unit.
+  ///
+  /// This is the base constructor for all spacing unit implementations.
   const SpacingUnit();
 
   /// Computes the actual spacing value.
