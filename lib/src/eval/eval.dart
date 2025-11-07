@@ -2,6 +2,19 @@ import 'package:flexiblebox/flexiblebox_dart.dart';
 
 part 'token.dart';
 
+/// Evaluates a string expression and returns a [SizeUnit].
+///
+/// Parses mathematical expressions involving size units (e.g., "100px + 50%")
+/// and returns the resulting [SizeUnit] object. Supports arithmetic operations
+/// (+, -, *, /) and various size unit types.
+///
+/// Example:
+/// ```dart
+/// final size = evaluateSizeUnit("100 + 50"); // SizeUnit representing 150
+/// final relative = evaluateSizeUnit("50%");   // SizeUnit representing 50% of viewport
+/// ```
+///
+/// Throws an exception if the expression cannot be parsed.
 SizeUnit evaluateSizeUnit(String input) {
   final tokenizer = StringTokenizer(input);
   final tokens = tokenizer.tokenize();
@@ -9,6 +22,19 @@ SizeUnit evaluateSizeUnit(String input) {
   return parser.parseSizeUnit();
 }
 
+/// Evaluates a string expression and returns a [SpacingUnit].
+///
+/// Parses mathematical expressions involving spacing units and returns the
+/// resulting [SpacingUnit] object. Supports arithmetic operations and various
+/// spacing unit types (fixed, relative, viewport-based).
+///
+/// Example:
+/// ```dart
+/// final spacing = evaluateSpacingUnit("16"); // SpacingUnit representing 16 pixels
+/// final calc = evaluateSpacingUnit("8 * 2"); // SpacingUnit representing 16
+/// ```
+///
+/// Throws an exception if the expression cannot be parsed.
 SpacingUnit evaluateSpacingUnit(String input) {
   final tokenizer = StringTokenizer(input);
   final tokens = tokenizer.tokenize();
@@ -16,6 +42,19 @@ SpacingUnit evaluateSpacingUnit(String input) {
   return parser.parseSpacingUnit();
 }
 
+/// Evaluates a string expression and returns a [PositionUnit].
+///
+/// Parses mathematical expressions involving position units and returns the
+/// resulting [PositionUnit] object. Supports arithmetic operations and various
+/// position unit types (fixed, relative, viewport-based, content-based, etc.).
+///
+/// Example:
+/// ```dart
+/// final pos = evaluatePositionUnit("100");      // PositionUnit representing 100 pixels
+/// final center = evaluatePositionUnit("50% - 25"); // Center calculation
+/// ```
+///
+/// Throws an exception if the expression cannot be parsed.
 PositionUnit evaluatePositionUnit(String input) {
   final tokenizer = StringTokenizer(input);
   final tokens = tokenizer.tokenize();
@@ -23,29 +62,76 @@ PositionUnit evaluatePositionUnit(String input) {
   return parser.parsePositionUnit();
 }
 
+/// Parses a single token from the input string.
+///
+/// Tokenizes the input and returns the first token found. This is useful
+/// for testing or when you only need to identify the first element of
+/// an expression without full parsing.
+///
+/// Example:
+/// ```dart
+/// final token = parseToken("123"); // Token with type: number, text: "123"
+/// ```
 Token parseToken(String input) {
   final tokenizer = StringTokenizer(input);
   return tokenizer.tokenize().first;
 }
 
+/// A parser for mathematical expressions involving size, spacing, and position units.
+///
+/// [Parser] implements a recursive descent parser that processes tokenized
+/// input and constructs the appropriate unit objects ([SizeUnit], [SpacingUnit],
+/// [PositionUnit]). It handles operator precedence, parentheses, and various
+/// unit types.
+///
+/// The parser supports:
+/// - Arithmetic operators: +, -, *, /
+/// - Parentheses for grouping
+/// - Multiple unit types (pixels, percentages, viewport units, etc.)
+/// - Unit-specific identifiers (vh, vw, etc.)
 class Parser {
+  /// The list of tokens to parse.
   final List<Token> tokens;
+  
+  /// The current position in the token list.
   int index = 0;
 
+  /// Creates a parser for the given list of tokens.
+  ///
+  /// The tokens should be produced by [StringTokenizer.tokenize()].
   Parser(this.tokens);
 
+  /// Returns the current token without advancing the parser.
   Token peek() => tokens[index];
+  
+  /// Returns the current token and advances to the next token.
   Token advance() => tokens[index++];
+  
+  /// Checks if the parser has reached the end of input.
+  ///
+  /// Returns true if the current token is [TokenType.eof].
   bool isAtEnd() => peek().type == TokenType.eof;
 
+  /// Parses the token stream as a [SizeUnit] expression.
+  ///
+  /// Entry point for parsing size unit expressions. Processes the entire
+  /// expression and returns the resulting [SizeUnit].
   SizeUnit parseSizeUnit() {
     return _parseSizeExpression();
   }
 
+  /// Parses the token stream as a [SpacingUnit] expression.
+  ///
+  /// Entry point for parsing spacing unit expressions. Processes the entire
+  /// expression and returns the resulting [SpacingUnit].
   SpacingUnit parseSpacingUnit() {
     return _parseSpacingExpression();
   }
 
+  /// Parses the token stream as a [PositionUnit] expression.
+  ///
+  /// Entry point for parsing position unit expressions. Processes the entire
+  /// expression and returns the resulting [PositionUnit].
   PositionUnit parsePositionUnit() {
     return _parsePositionExpression();
   }
@@ -308,14 +394,56 @@ class Parser {
   }
 }
 
+/// A tokenizer that breaks strings into lexical tokens for parsing.
+///
+/// [StringTokenizer] implements a lexer that scans source text and identifies
+/// tokens such as numbers, identifiers, operators, and punctuation. It maintains
+/// a current position and provides methods for consuming characters and patterns.
+///
+/// This is used by [Parser] to convert string expressions into parseable tokens
+/// before building unit objects.
 class StringTokenizer {
+  /// The source string being tokenized.
   final String source;
+  
+  /// The current position in the source string.
   int index = 0;
+  
+  /// The end index (exclusive) for tokenization.
+  ///
+  /// This is typically the length of the source string but can be set to
+  /// a shorter range when tokenizing substrings.
   final int endIndex;
 
+  /// Creates a tokenizer for the entire source string.
+  ///
+  /// The tokenizer will process from index 0 to the end of [source].
   StringTokenizer(this.source) : endIndex = source.length;
+  
+  /// Creates a tokenizer for a range within the source string.
+  ///
+  /// Tokenizes only the substring from [index] to [endIndex] (exclusive).
+  /// Useful for parsing nested expressions or substrings without copying.
   StringTokenizer.fromRange(this.source, this.index, this.endIndex);
 
+  /// Consumes characters that match a test function and returns their range.
+  ///
+  /// If [length] is null, consumes characters while [test] returns true,
+  /// stopping at the first failing character or end of input. The test function
+  /// receives each character and its 0-based index from the match start.
+  ///
+  /// If [length] is specified, consumes exactly that many characters if they
+  /// all pass the test. If any character fails, returns null and resets position.
+  ///
+  /// Returns a record with (startIndex, endIndex) of consumed characters,
+  /// or null if no characters matched.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Consume all digits
+  /// final range = eat((char, _) => char.codeUnitAt(0) >= '0'.codeUnitAt(0) &&
+  ///                                   char.codeUnitAt(0) <= '9'.codeUnitAt(0), null);
+  /// ```
   ({int startIndex, int endIndex})? eat(
     bool Function(String char, int index) test,
     int? length,
