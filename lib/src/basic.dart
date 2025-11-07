@@ -1906,7 +1906,7 @@ abstract class SpacingUnit {
   ///
   /// Parameters:
   /// - [parent]: The parent layout providing context
-  /// - [axis]: The axis along which spacing is calculated (horizontal or vertical)
+  /// - [axis]: The axis along which spacing is calculated ([LayoutAxis.horizontal] or [LayoutAxis.vertical])
   /// - [viewportSize]: The size of the viewport along the specified axis
   ///
   /// Returns the computed spacing value in pixels.
