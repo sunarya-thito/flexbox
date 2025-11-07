@@ -332,17 +332,42 @@ class _DefaultScrollbarState extends State<DefaultScrollbar> {
   }
 }
 
+/// Abstract interface for handling scrollbar interactions and state.
+///
+/// Defines the contract for scrollbar behavior including scroll position tracking,
+/// thumb metrics calculation, and user interaction handling (pan, tap).
 abstract class ScrollbarHandler implements Listenable {
+  /// The scroll direction (horizontal or vertical).
   Axis get scrollDirection;
+  
+  /// The scroll progress as a value between 0.0 and 1.0.
   double get scrollProgress;
+  
+  /// The current scroll offset in pixels.
   double get scroll;
+  
+  /// Sets the scroll progress (0.0 to 1.0) instantly.
   set scrollProgress(double value);
+  
+  /// Animates the scroll progress to [value] over [duration] with the given [curve].
   void setScrollProgress(double value, Duration duration, Curve curve);
+  
+  /// The maximum scroll offset in pixels.
   double get maxScroll;
+  
+  /// The total size of the scrollable content.
   double get contentSize;
+  
+  /// The size of the visible viewport.
   double get viewportSize;
+  
+  /// Whether the scrollbar should be visible (true if content exceeds viewport).
   bool get shouldShowScrollbar => contentSize > viewportSize;
 
+  /// Computes the thumb length and offset for the scrollbar.
+  ///
+  /// Returns a record with [thumbLength] (the size of the scrollbar thumb) and
+  /// [thumbOffset] (its position in the scrollbar track).
   ({double thumbLength, double thumbOffset}) computeThumbMetrics(
     double viewportSize,
     double minThumbLength,
@@ -356,6 +381,9 @@ abstract class ScrollbarHandler implements Listenable {
     return (thumbLength: thumbLength, thumbOffset: thumbOffset);
   }
 
+  /// Handles pan/drag updates on the scrollbar.
+  ///
+  /// Updates the scroll position based on the drag delta.
   void handlePanUpdate(DragUpdateDetails details) {
     final delta = scrollDirection == Axis.vertical
         ? details.delta.dy
@@ -372,6 +400,9 @@ abstract class ScrollbarHandler implements Listenable {
     scrollProgress = newScroll / maxScroll;
   }
 
+  /// Handles tap events on the scrollbar track.
+  ///
+  /// Jumps to the tapped position with animation over [jumpDuration] using [curve].
   void handleTapDown(
     BuildContext context,
     TapDownDetails details,
@@ -389,6 +420,9 @@ abstract class ScrollbarHandler implements Listenable {
     setScrollProgress(thumbOffset / boxSize, jumpDuration, curve);
   }
 
+  /// Retrieves the [ScrollbarHandler] from the widget tree.
+  ///
+  /// Uses [Data.of] to find the nearest [ScrollbarHandler] ancestor.
   static ScrollbarHandler of(BuildContext context) {
     return Data.of(context);
   }

@@ -2,24 +2,31 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/layout.dart';
 
-/// Defines how an element is positioned within its layout container.
+/// Defines how an element establishes a positioning context for its absolutely positioned children.
 ///
-/// This enum controls whether an element participates in normal layout flow
-/// or is positioned independently (absolutely positioned).
+/// This enum controls whether an element acts as a reference point for positioning
+/// its absolutely positioned descendants. Similar to CSS positioning contexts, this
+/// determines which parent an absolutely positioned child will be positioned relative to.
 ///
-/// Used in conjunction with position properties (top, left, right, bottom)
-/// to determine final element placement.
+/// Used in conjunction with [LayoutBehavior.absolute] and position properties 
+/// (top, left, right, bottom) to establish the positioning hierarchy.
 enum PositionType {
-  /// Element is positioned absolutely, removed from normal layout flow.
+  /// Does not establish a positioning context (default).
   ///
-  /// The element's position is determined by explicit position properties
-  /// rather than by its place in the flex layout sequence.
+  /// Absolutely positioned children will skip this element and position themselves
+  /// relative to the nearest ancestor with [PositionType.relative].
+  ///
+  /// This is similar to CSS `position: static` where the element does not create
+  /// a containing block for absolute positioning.
   none,
 
-  /// Element participates in normal layout flow (default).
+  /// Establishes a positioning context for absolutely positioned children.
   ///
-  /// The element is positioned according to flex layout rules and its
-  /// flex properties (grow, shrink, basis, alignment, etc.).
+  /// Absolutely positioned children will position themselves relative to this
+  /// element's top-left corner (or edges based on their position properties).
+  ///
+  /// This is similar to CSS `position: relative` where the element creates a
+  /// containing block for absolutely positioned descendants.
   relative,
 }
 
@@ -102,6 +109,9 @@ enum FlexWrap {
 /// - [BoxAlignmentContentStretch] for stretching items to fill space
 /// - [BoxAlignmentGeometryBaseline] for baseline-based alignment
 abstract class BoxAlignmentGeometry {
+  /// Creates a constant box alignment geometry.
+  ///
+  /// This is the base constructor for all alignment geometry types.
   const BoxAlignmentGeometry();
 
   /// Creates a directional alignment with the specified value.
@@ -230,6 +240,9 @@ abstract class BoxAlignmentBase extends BoxAlignmentContent {
     double endRatio,
   ) = BoxAlignmentSpacing;
 
+  /// Creates a constant box alignment base.
+  ///
+  /// This is the base constructor for box alignment implementations.
   const BoxAlignmentBase();
 
   /// Creates a directional alignment with a custom value.
@@ -301,6 +314,9 @@ abstract class BoxAlignmentContent extends BoxAlignmentGeometry {
   /// Creates an absolute alignment with a custom value.
   const factory BoxAlignmentContent.absolute(double value) = BoxAlignment;
 
+  /// Creates a constant box alignment content.
+  ///
+  /// This is the base constructor for content alignment implementations.
   const BoxAlignmentContent();
 
   /// Adjusts spacing between items when distributing space.
@@ -370,10 +386,11 @@ class BoxAlignmentContentStretch extends BoxAlignmentContent {
     return false;
   }
 
-  /// Stretches the content to fill the entire viewport size.
+  /// Adjusts the size to the maximum of child size and content size.
   ///
-  /// This method returns the viewport size as the adjusted content size,
-  /// effectively stretching the item to fill all available space along the axis.
+  /// This ensures content stretching alignment fills available space.
+  /// Returns the viewport size as the adjusted content size, effectively
+  /// stretching the item to fill all available space along the axis.
   @override
   double? adjustSize({
     required ParentLayout parent,
@@ -998,6 +1015,10 @@ class PositionCalculated implements PositionUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
+  /// Creates a calculated position unit from two operands and an operation.
+  ///
+  /// The [first] and [second] position units are evaluated, then combined
+  /// using the specified [operation].
   const PositionCalculated(this.first, this.second, this.operation);
 
   @override
@@ -1044,6 +1065,7 @@ class PositionFixed implements PositionUnit {
   /// The fixed position value.
   final double value;
 
+  /// Creates a fixed position unit with the specified [value].
   const PositionFixed(this.value);
 
   @override
@@ -1512,6 +1534,7 @@ class SizeFixed extends SizeUnit {
   /// The fixed size value.
   final double value;
 
+  /// Creates a fixed size unit with the specified [value].
   const SizeFixed(this.value);
 
   @override
@@ -1536,6 +1559,7 @@ class SizeFixed extends SizeUnit {
 /// Returns the viewport width for horizontal axis, viewport height for vertical axis.
 /// If the viewport size is infinite (during intrinsic sizing), returns 0.0.
 class SizeViewport extends SizeUnit {
+  /// Creates a viewport-sized size unit.
   const SizeViewport();
 
   @override
@@ -1665,6 +1689,10 @@ class SizeFitContent extends SizeUnit {
   }
 }
 
+/// Abstract base class for edge spacing geometry with directional awareness.
+///
+/// Defines spacing for the edges of an element that can be resolved to
+/// absolute values based on text direction (LTR/RTL).
 abstract class EdgeSpacingGeometry {
   /// The spacing from the top edge.
   final SpacingUnit top;
@@ -1672,6 +1700,9 @@ abstract class EdgeSpacingGeometry {
   /// The spacing from the bottom edge.
   final SpacingUnit bottom;
 
+  /// Creates an edge spacing geometry with optional top and bottom spacing.
+  ///
+  /// Defaults to zero spacing if not specified.
   const EdgeSpacingGeometry({
     this.top = SpacingUnit.zero,
     this.bottom = SpacingUnit.zero,
@@ -1916,6 +1947,7 @@ abstract class SpacingUnit {
     required double viewportSize,
   });
 
+  /// Returns a code string representation of this spacing unit.
   String toCodeString();
 }
 
@@ -1927,6 +1959,7 @@ class SpacingFixed implements SpacingUnit {
   /// The fixed spacing value.
   final double value;
 
+  /// Creates a fixed spacing unit with the specified [value].
   const SpacingFixed(this.value);
 
   @override
@@ -1947,6 +1980,7 @@ class SpacingFixed implements SpacingUnit {
 ///
 /// Returns the viewport width for horizontal axis, viewport height for vertical axis.
 class SpacingViewport implements SpacingUnit {
+  /// Creates a viewport-sized spacing unit.
   const SpacingViewport();
 
   @override
@@ -1978,6 +2012,10 @@ class SpacingCalculated implements SpacingUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
+  /// Creates a calculated spacing unit from two operands and an operation.
+  ///
+  /// The [first] and [second] spacing units are evaluated, then combined
+  /// using the specified [operation].
   const SpacingCalculated(this.first, this.second, this.operation);
 
   @override
@@ -2030,6 +2068,10 @@ class SpacingConstraint implements SpacingUnit {
   /// The maximum allowed spacing.
   final SpacingUnit max;
 
+  /// Creates a constrained spacing unit with optional min and max bounds.
+  ///
+  /// The computed [spacing] value will be clamped between [min] and [max].
+  /// Defaults to no minimum (0) and no maximum (infinity).
   const SpacingConstraint({
     required this.spacing,
     this.min = const SpacingFixed(0),
@@ -2076,9 +2118,18 @@ class SpacingConstraint implements SpacingUnit {
   }
 }
 
+/// A spacing unit that references the size of a child element.
+///
+/// This allows spacing to be based on the dimensions of another child
+/// in the layout, identified by an optional key.
 class SpacingChildSize implements SpacingUnit {
+  /// Optional key to identify which child to reference.
   final Object? key;
 
+  /// Creates a child-size-based spacing unit.
+  ///
+  /// If [key] is provided, references a specific child element.
+  /// If [key] is null, references the default child.
   const SpacingChildSize([this.key]);
 
   @override
@@ -2187,6 +2238,10 @@ extension PositionUnitExtension on PositionUnit {
   }
 }
 
+/// Extension methods on [SizeUnit] to provide arithmetic operations.
+///
+/// These operators allow combining size units using mathematical operations,
+/// creating calculated size units that evaluate dynamically.
 extension SizeUnitExtension on SizeUnit {
   /// Adds two size units together.
   SizeUnit operator +(SizeUnit other) {
@@ -2256,6 +2311,10 @@ extension SizeUnitExtension on SizeUnit {
   }
 }
 
+/// Extension methods on [SpacingUnit] to provide arithmetic operations.
+///
+/// These operators allow combining spacing units using mathematical operations,
+/// creating calculated spacing units that evaluate dynamically.
 extension SpacingUnitExtension on SpacingUnit {
   /// Adds two spacing units together.
   SpacingUnit operator +(SpacingUnit other) {

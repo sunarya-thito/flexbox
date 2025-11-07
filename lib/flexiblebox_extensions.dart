@@ -3,6 +3,18 @@ library;
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flutter/widgets.dart';
 
+/// Extension methods on [double] for convenient conversion to flexbox units.
+///
+/// This extension provides convenient getters to convert double values into
+/// various flexbox unit types such as [SizeUnit], [PositionUnit], and [SpacingUnit].
+/// It also provides utilities for percentage calculations and relative sizing.
+///
+/// Example:
+/// ```dart
+/// final size = 100.0.size;  // Creates SizeUnit.fixed(100.0)
+/// final position = 50.0.position;  // Creates PositionUnit.fixed(50.0)
+/// final spacing = 10.0.spacing;  // Creates SpacingUnit.fixed(10.0)
+/// ```
 extension DoubleExtension on double {
   /// Converts a [double] value to a [SizeUnit.fixed] instance.
   ///
@@ -79,6 +91,18 @@ extension DoubleExtension on double {
   SpacingUnit get relativeSpacing => SpacingUnit.viewportSize * spacing;
 }
 
+/// Extension methods on [int] for convenient conversion to flexbox units.
+///
+/// This extension provides convenient getters to convert integer values into
+/// various flexbox unit types such as [SizeUnit], [PositionUnit], and [SpacingUnit].
+/// It also provides utilities for percentage calculations and relative sizing.
+///
+/// Example:
+/// ```dart
+/// final size = 100.size;  // Creates SizeUnit.fixed(100.0)
+/// final position = 50.position;  // Creates PositionUnit.fixed(50.0)
+/// final spacing = 10.spacing;  // Creates SpacingUnit.fixed(10.0)
+/// ```
 extension IntExtension on int {
   /// Converts an [int] value to a [SizeUnit.fixed] instance.
   ///

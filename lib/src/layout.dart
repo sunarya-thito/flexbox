@@ -319,6 +319,9 @@ class LayoutSize {
   /// Creates a size with the specified width and height.
   const LayoutSize(this.width, this.height);
 
+  /// Creates a copy of this size with optionally different width or height.
+  ///
+  /// If [width] or [height] is not provided, the current value is retained.
   LayoutSize copyWith({
     double? width,
     double? height,
@@ -387,12 +390,21 @@ class LayoutOffset {
   }
 }
 
+/// Represents a one-dimensional range with start and end points.
+///
+/// Used for representing ranges along a single axis in layout calculations.
+/// Supports operations like overlap detection, containment checks, and expansion.
 class LayoutRange {
+  /// The start point of the range.
   final double start;
+  
+  /// The end point of the range.
   final double end;
 
+  /// Creates a layout range from [start] to [end].
   const LayoutRange(this.start, this.end);
 
+  /// Returns true if this range overlaps with [other].
   bool overlaps(LayoutRange other) {
     if (end <= other.start || other.end <= start) {
       return false;
@@ -400,14 +412,17 @@ class LayoutRange {
     return true;
   }
 
+  /// Returns true if this range contains the given [value].
   bool contains(double value) {
     return value >= start && value <= end;
   }
 
+  /// Returns true if this range completely contains [other].
   bool containsRange(LayoutRange other) {
     return other.start >= start && other.end <= end;
   }
 
+  /// Creates a new range that encompasses both this range and [other].
   LayoutRange expandToInclude(LayoutRange other) {
     return LayoutRange(
       min(start, other.start),
@@ -467,12 +482,19 @@ class LayoutRect {
   /// The bottom edge coordinate (calculated as top + height).
   double get bottom => top + height;
 
+  /// The x-coordinate of the horizontal center of this rectangle.
   double get horizontalCenter => left + width / 2;
+  
+  /// The y-coordinate of the vertical center of this rectangle.
   double get verticalCenter => top + height / 2;
 
+  /// The horizontal range (left to right) of this rectangle.
   LayoutRange get horizontalRange => LayoutRange(left, right);
+  
+  /// The vertical range (top to bottom) of this rectangle.
   LayoutRange get verticalRange => LayoutRange(top, bottom);
 
+  /// The size (width and height) of this rectangle.
   LayoutSize get size => LayoutSize(width, height);
 
   /// Expands this rectangle to include the bounds of another rectangle.
