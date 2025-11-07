@@ -40,6 +40,25 @@ class LayoutBoxImpl with LayoutBox implements RelativePositioning {
   @override
   final ParentRect relativeRect;
 
+  /// Creates a layout box implementation with all required layout information.
+  ///
+  /// This constructor initializes a complete layout context including size,
+  /// position, scroll state, and viewport information. All parameters are
+  /// required as they represent the complete state of a layout box.
+  ///
+  /// Parameters:
+  /// * [size] - The size of the layout box
+  /// * [offset] - The position offset of the box
+  /// * [scrollX] - Current horizontal scroll position
+  /// * [scrollY] - Current vertical scroll position
+  /// * [maxScrollX] - Maximum horizontal scroll extent
+  /// * [maxScrollY] - Maximum vertical scroll extent
+  /// * [contentSize] - Total size of scrollable content
+  /// * [viewportSize] - Size of the visible viewport
+  /// * [horizontalUserScrollDirection] - Direction of horizontal scrolling
+  /// * [verticalUserScrollDirection] - Direction of vertical scrolling
+  /// * [overflowBounds] - Bounds information for overflow calculations
+  /// * [relativeRect] - Parent-relative positioning information
   LayoutBoxImpl({
     required this.size,
     required this.offset,
@@ -193,6 +212,23 @@ mixin LayoutBox implements RelativePositioning {
   OverflowBounds get overflowBounds;
 }
 
+/// A callback function type that builds a widget using layout box information.
+///
+/// This typedef defines the signature for builder functions that receive
+/// a [BuildContext] and [LayoutBox] and return a widget. The [LayoutBox]
+/// provides access to layout information such as viewport size, scroll position,
+/// and content bounds, enabling widgets to adapt their rendering based on
+/// the current layout state.
+///
+/// Used by [LayoutBoxBuilder] and similar builder widgets to construct
+/// child widgets that need access to layout context.
+///
+/// Example:
+/// ```dart
+/// LayoutBoxWidgetBuilder builder = (context, box) {
+///   return Text('Viewport: ${box.viewportSize}');
+/// };
+/// ```
 typedef LayoutBoxWidgetBuilder =
     Widget Function(
       BuildContext context,
