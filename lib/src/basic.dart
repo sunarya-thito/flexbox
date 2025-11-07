@@ -2,8 +2,24 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/layout.dart';
 
+/// Defines how an element is positioned within its layout container.
+///
+/// This enum controls whether an element participates in normal layout flow
+/// or is positioned independently (absolutely positioned).
+///
+/// Used in conjunction with position properties (top, left, right, bottom)
+/// to determine final element placement.
 enum PositionType {
+  /// Element is positioned absolutely, removed from normal layout flow.
+  ///
+  /// The element's position is determined by explicit position properties
+  /// rather than by its place in the flex layout sequence.
   none,
+  
+  /// Element participates in normal layout flow (default).
+  ///
+  /// The element is positioned according to flex layout rules and its
+  /// flex properties (grow, shrink, basis, alignment, etc.).
   relative,
 }
 
@@ -321,7 +337,17 @@ abstract class BoxAlignmentContent extends BoxAlignmentGeometry {
   }) => null;
 }
 
+/// Stretch alignment that makes items fill available space.
+///
+/// [BoxAlignmentContentStretch] implements the "stretch" alignment behavior
+/// where flex items expand to fill the cross-axis dimension of their container.
+/// This is commonly used to make all items in a row have equal height, or
+/// all items in a column have equal width.
+///
+/// Items are positioned at offset 0, and the stretching is handled by
+/// adjusting their size rather than their position.
 class BoxAlignmentContentStretch extends BoxAlignmentContent {
+  /// Creates a stretch alignment instance.
   const BoxAlignmentContentStretch();
 
   /// For stretch alignment, items are positioned at the start (offset 0).
@@ -401,7 +427,16 @@ class BoxAlignment extends BoxAlignmentBase {
   }
 }
 
+/// Baseline alignment for text-containing elements.
+///
+/// [BoxAlignmentGeometryBaseline] aligns items based on their text baseline,
+/// which is essential for aligning text elements so that the text sits on the
+/// same line regardless of font size or other styling differences.
+///
+/// This alignment type is commonly used in flex layouts containing text or
+/// elements with text children to ensure visual alignment of the text baseline.
 class BoxAlignmentGeometryBaseline extends BoxAlignmentGeometry {
+  /// Creates a baseline alignment instance.
   const BoxAlignmentGeometryBaseline();
 
   /// Aligns the child so its baseline matches the maximum baseline.
