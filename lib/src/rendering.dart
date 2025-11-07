@@ -8,9 +8,16 @@ import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+/// Provides relative positioning information for layout calculations.
+///
+/// [RelativePositioning] holds a [ParentRect] that defines the relationship
+/// between an element and its parent container's bounds. This is used when
+/// calculating position units that depend on parent layout information.
 class RelativePositioning {
+  /// The rectangle defining position relative to the parent container.
   final ParentRect relativeRect;
 
+  /// Creates a relative positioning context with the specified rectangle.
   const RelativePositioning({
     required this.relativeRect,
   });
@@ -23,18 +30,35 @@ class RelativePositioning {
 /// It stores layout data, caching information, and paint ordering
 /// for each child in a layout container.
 class LayoutBoxParentData extends ContainerBoxParentData<RenderBox> {
+  /// Optional debug key for identifying this child during debugging.
   Key? debugKey;
+
+  /// Cached layout information from previous layout passes.
+  ///
+  /// Used to optimize relayout by reusing calculations when constraints haven't changed.
   ChildLayoutCache? cache;
 
+  /// Layout-specific data defining how this child should be laid out.
+  ///
+  /// Includes flex properties, sizing constraints, alignment, and positioning information.
   LayoutData layoutData = LayoutData.empty;
 
+  /// Whether this child needs access to layout box information.
+  ///
+  /// When true, the child receives a [LayoutBox] with layout context during build.
   bool needLayoutBox = false;
 
+  /// The paint order of this child relative to siblings.
+  ///
+  /// Lower values are painted first (behind), higher values painted last (on top).
   int? get paintOrder => layoutData.paintOrder;
 
   RenderBox? _nextSortedSibling;
   RenderBox? _previousSortedSibling;
 
+  /// Offset to reveal this child in the viewport when scrolling.
+  ///
+  /// Used by scrolling mechanisms to bring specific children into view.
   Offset? revealOffset;
 }
 
@@ -76,23 +100,57 @@ class RenderLayoutBox extends RenderBox
   @override
   LayoutTextDirection get textDirection =>
       layoutTextDirectionFromTextDirection(layoutTextDirection);
+
+  /// Whether to reverse the painting order of children.
+  ///
+  /// When true, children are painted in reverse order (last child painted first).
   bool reversePaint;
+
+  /// The primary scroll direction (horizontal or vertical).
   Axis mainScrollDirection;
+
+  /// Viewport offset controller for horizontal scrolling.
   ViewportOffset horizontal;
+
+  /// Viewport offset controller for vertical scrolling.
   ViewportOffset vertical;
+
+  /// Direction of horizontal axis (left-to-right or right-to-left).
   AxisDirection horizontalAxisDirection;
+
+  /// Direction of vertical axis (top-to-bottom or bottom-to-top).
   AxisDirection verticalAxisDirection;
+
+  /// How content should be handled when it overflows horizontally.
   LayoutOverflow horizontalOverflow;
+
+  /// How content should be handled when it overflows vertically.
   LayoutOverflow verticalOverflow;
+
+  /// The layout algorithm used to position children.
   Layout boxLayout;
+
   @override
   LayoutTextBaseline? get textBaseline => layoutTextBaseline == null
       ? null
       : layoutTextBaselineFromTextBaseline(layoutTextBaseline!);
+
+  /// Border radius for clipping rounded corners.
   BorderRadius borderRadius;
+
+  /// How to clip content that extends beyond the container bounds.
   Clip clipBehavior;
+
+  /// The text direction for this layout (LTR or RTL).
   TextDirection layoutTextDirection;
+
+  /// The text baseline type for baseline alignment.
   TextBaseline? layoutTextBaseline;
+
+  /// Creates a render layout box with the specified configuration.
+  ///
+  /// All layout behavior parameters are required to define how this render
+  /// object should handle its children and layout algorithm.
   RenderLayoutBox({
     required this.boxLayout,
     required this.layoutTextDirection,

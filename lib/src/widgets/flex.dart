@@ -178,11 +178,31 @@ abstract interface class FlexItem implements LayoutItem {
   /// not shrink.
   double get flexShrink;
 
+  /// The positioning type for this flex item.
+  ///
+  /// Determines how this item participates in the layout:
+  /// - [PositionType.none] - Item is positioned absolutely (removed from flex flow)
+  /// - [PositionType.relative] - Item participates in normal flex layout (default)
+  /// - null - Uses default flex layout behavior
   PositionType? get position;
 
+  /// The cross-axis alignment for this specific flex item.
+  ///
+  /// Overrides the parent's [FlexBox.alignItems] property for this individual item.
+  /// When null, the item uses the alignment specified by its parent flex container.
+  ///
+  /// See [BoxAlignmentGeometry] for available alignment options.
   BoxAlignmentGeometry? get alignSelf;
 }
 
+/// A flex item that directly wraps a widget with flex properties.
+///
+/// [DirectFlexItem] is the primary way to add children to a [FlexBox] container.
+/// It defines how the child widget should behave within the flex layout, including
+/// sizing, spacing, alignment, and stacking order.
+///
+/// Unlike [BuilderFlexItem], this widget doesn't rebuild based on layout changes.
+/// Use [BuilderFlexItem] when you need access to layout information during build.
 class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
     implements FlexItem {
   /// The order in which this item should be painted relative to its siblings.
@@ -271,8 +291,21 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
   @override
   final BoxAlignmentGeometry? alignSelf;
 
+  /// Whether this flex item needs access to layout box information.
+  ///
+  /// When true, provides the child with a [LayoutBox] containing layout context
+  /// such as viewport size, scroll position, and content bounds. This is used
+  /// internally to enable position units that depend on layout information.
+  ///
+  /// Generally set automatically based on whether position/size units require
+  /// layout context. Users typically don't need to set this directly.
   final bool needLayoutBox;
 
+  /// Optional key for identifying this item's layout data.
+  ///
+  /// Used to reference this specific flex item when calculating relative positions
+  /// or sizes based on child dimensions. Useful when multiple flex items need to
+  /// coordinate their layout based on each other's sizes.
   final Key? layoutKey;
 
   /// Creates a DirectFlexItem with the specified properties.
@@ -401,6 +434,19 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
 /// )
 /// ```
 class BuilderFlexItem extends StatelessWidget implements FlexItem {
+  /// Builder function that creates the child widget with layout information.
+  ///
+  /// Called during build with the current [BuildContext] and a [LayoutBox]
+  /// containing layout information such as viewport size, scroll offsets,
+  /// and content dimensions. The builder should return a widget based on
+  /// this layout context.
+  ///
+  /// Example:
+  /// ```dart
+  /// builder: (context, box) {
+  ///   return Text('Viewport: ${box.viewportSize.width}x${box.viewportSize.height}');
+  /// }
+  /// ```
   final Widget Function(BuildContext context, LayoutBox box) builder;
   @override
   final int? paintOrder;

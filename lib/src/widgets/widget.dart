@@ -855,7 +855,22 @@ class LayoutBoxWidget extends StatefulWidget {
   /// the best performance but may show sharp edges.
   final Clip clipBehavior;
 
+  /// Whether to reverse the horizontal scroll direction.
+  ///
+  /// When true, horizontal scrolling is reversed: scrolling right moves content
+  /// left, and vice versa. This can be useful for right-to-left layouts or
+  /// when implementing custom scroll behaviors.
+  ///
+  /// Defaults to false for standard left-to-right scrolling.
   final bool reverseHorizontalScroll;
+
+  /// Whether to reverse the vertical scroll direction.
+  ///
+  /// When true, vertical scrolling is reversed: scrolling down moves content
+  /// up, and vice versa. This can be useful for implementing custom scroll
+  /// behaviors or inverted lists.
+  ///
+  /// Defaults to false for standard top-to-bottom scrolling.
   final bool reverseVerticalScroll;
 
   /// Creates a layout container with the specified properties.

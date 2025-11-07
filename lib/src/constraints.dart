@@ -3,9 +3,46 @@ import 'dart:ui';
 
 import 'package:flutter/rendering.dart';
 
+/// A [BoxConstraints] wrapper that carries additional typed data.
+///
+/// This class extends the standard Flutter [BoxConstraints] by adding a generic
+/// data payload of type [T]. This allows constraints to carry context-specific
+/// information (such as layout metadata, scroll state, or viewport information)
+/// along with the standard size constraints.
+///
+/// The data is immutable and is passed through constraint operations, making it
+/// available to child widgets during layout. This is useful for communicating
+/// layout-specific information down the widget tree without using InheritedWidgets.
+///
+/// Example:
+/// ```dart
+/// final constraints = BoxConstraintsWithData(
+///   data: LayoutInfo(viewport: size, scroll: offset),
+///   minWidth: 0,
+///   maxWidth: 400,
+///   minHeight: 0,
+///   maxHeight: 600,
+/// );
+/// ```
 class BoxConstraintsWithData<T> implements BoxConstraints {
+  /// The additional data payload attached to these constraints.
+  ///
+  /// This data is preserved through constraint operations and can be accessed
+  /// by widgets during layout. The type [T] can be any data structure needed
+  /// to communicate layout context.
   final T data;
 
+  /// Creates box constraints with data and optional size bounds.
+  ///
+  /// All parameters except [data] have defaults that create maximally permissive
+  /// constraints (0 to infinity for both width and height).
+  ///
+  /// Parameters:
+  /// * [data] - The required data payload to attach
+  /// * [minWidth] - Minimum width (default: 0.0)
+  /// * [maxWidth] - Maximum width (default: double.infinity)
+  /// * [minHeight] - Minimum height (default: 0.0)
+  /// * [maxHeight] - Maximum height (default: double.infinity)
   const BoxConstraintsWithData({
     required this.data,
     this.minWidth = 0.0,
@@ -14,12 +51,25 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
     this.maxHeight = double.infinity,
   });
 
+  /// Creates tight constraints for the given [size] with attached [data].
+  ///
+  /// Tight constraints force the child to be exactly the specified size.
+  /// Both minimum and maximum constraints are set to the size's dimensions.
+  ///
+  /// This is equivalent to `BoxConstraints.tight(size)` but with data attached.
   BoxConstraintsWithData.tight(Size size, {required this.data})
     : minWidth = size.width,
       maxWidth = size.width,
       minHeight = size.height,
       maxHeight = size.height;
 
+  /// Creates tight constraints for specified dimensions with attached [data].
+  ///
+  /// If width or height is not specified, that dimension remains unconstrained
+  /// (0 to infinity). When specified, both min and max are set to the same value,
+  /// creating tight constraints for that dimension.
+  ///
+  /// This is equivalent to `BoxConstraints.tightFor()` but with data attached.
   const BoxConstraintsWithData.tightFor({
     double? width,
     double? height,
@@ -29,6 +79,15 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
        minHeight = height ?? 0.0,
        maxHeight = height ?? double.infinity;
 
+  /// Creates tight constraints for finite dimensions with attached [data].
+  ///
+  /// If width or height is finite (not double.infinity), creates tight constraints
+  /// for that dimension. If infinite, that dimension remains unconstrained.
+  ///
+  /// This is useful when you want tight constraints only for dimensions that
+  /// have been explicitly sized, while leaving others flexible.
+  ///
+  /// This is equivalent to `BoxConstraints.tightForFinite()` but with data attached.
   const BoxConstraintsWithData.tightForFinite({
     double width = double.infinity,
     double height = double.infinity,
@@ -38,12 +97,26 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
        minHeight = height != double.infinity ? height : 0.0,
        maxHeight = height != double.infinity ? height : double.infinity;
 
+  /// Creates loose constraints for the given [size] with attached [data].
+  ///
+  /// Loose constraints set minimum width and height to 0 while constraining
+  /// maximum dimensions to the provided size. This allows children to be
+  /// any size from zero up to the specified maximum.
+  ///
+  /// This is equivalent to `BoxConstraints.loose(size)` but with data attached.
   BoxConstraintsWithData.loose(Size size, {required this.data})
     : minWidth = 0.0,
       maxWidth = size.width,
       minHeight = 0.0,
       maxHeight = size.height;
 
+  /// Creates expanding constraints with optional dimension limits and attached [data].
+  ///
+  /// Expanding constraints force the child to fill the available space. Both
+  /// minimum and maximum constraints are set to infinity (or the specified
+  /// dimensions if provided), causing the child to be as large as possible.
+  ///
+  /// This is equivalent to `BoxConstraints.expand()` but with data attached.
   const BoxConstraintsWithData.expand({
     double? width,
     double? height,
@@ -53,6 +126,14 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
        minHeight = height ?? double.infinity,
        maxHeight = height ?? double.infinity;
 
+  /// Creates box constraints from view constraints with attached [data].
+  ///
+  /// Converts Flutter's [ViewConstraints] (used in platform views) to
+  /// [BoxConstraintsWithData], preserving all size bounds while attaching
+  /// the specified data payload.
+  ///
+  /// This is useful for bridging platform view constraints with the flexbox
+  /// layout system's data-carrying constraints.
   BoxConstraintsWithData.fromViewConstraints(
     ViewConstraints constraints, {
     required this.data,
@@ -332,6 +413,21 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
     );
   }
 
+  /// Linearly interpolates between two [BoxConstraintsWithData] objects.
+  ///
+  /// Returns a new constraints object with values interpolated between [a] and [b]
+  /// based on the interpolation factor [t]. When [t] is 0.0, returns [a]; when [t]
+  /// is 1.0, returns [b]; values between 0.0 and 1.0 produce proportional blends.
+  ///
+  /// This method handles null values gracefully:
+  /// - If both are null, returns null
+  /// - If [a] is null, treats it as zero constraints scaled by [t]
+  /// - If [b] is null, treats it as zero constraints scaled by (1-t)
+  /// - If identical, returns [a] directly
+  ///
+  /// The data payload is taken from the non-null constraints or [b] if both exist.
+  ///
+  /// This is equivalent to `BoxConstraints.lerp()` but preserves the data payload.
   static BoxConstraintsWithData? lerp(
     BoxConstraintsWithData? a,
     BoxConstraintsWithData? b,
@@ -565,6 +661,23 @@ class BoxConstraintsWithData<T> implements BoxConstraints {
     return 'BoxConstraintsWithData($width, $height$annotation)';
   }
 
+  /// Creates box constraints from standard [BoxConstraints] with attached [data].
+  ///
+  /// This constructor wraps existing Flutter [BoxConstraints] with a data payload,
+  /// converting standard constraints into data-carrying constraints. All size bounds
+  /// (minWidth, maxWidth, minHeight, maxHeight) are copied from the provided constraints.
+  ///
+  /// This is useful for adapting standard Flutter constraints to work with the
+  /// flexbox layout system that requires additional context data.
+  ///
+  /// Example:
+  /// ```dart
+  /// final flutterConstraints = BoxConstraints.tight(Size(100, 50));
+  /// final dataConstraints = BoxConstraintsWithData.fromConstraints(
+  ///   flutterConstraints,
+  ///   data: myLayoutData,
+  /// );
+  /// ```
   BoxConstraintsWithData.fromConstraints(
     BoxConstraints constraints, {
     required this.data,

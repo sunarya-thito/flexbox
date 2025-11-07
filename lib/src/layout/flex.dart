@@ -216,9 +216,28 @@ class FlexLayoutCache {
   /// The total number of lines in the layout.
   int lineCount = 0;
 
+  /// Padding applied to the top edge of the flex container.
+  ///
+  /// This value is in logical pixels and represents spacing inside the container's
+  /// top edge, before the first line of flex items.
   double paddingTop = 0.0;
+
+  /// Padding applied to the bottom edge of the flex container.
+  ///
+  /// This value is in logical pixels and represents spacing inside the container's
+  /// bottom edge, after the last line of flex items.
   double paddingBottom = 0.0;
+
+  /// Padding applied to the left edge of the flex container.
+  ///
+  /// This value is in logical pixels and represents spacing inside the container's
+  /// left edge. Note that this is absolute left, not start/end relative to text direction.
   double paddingLeft = 0.0;
+
+  /// Padding applied to the right edge of the flex container.
+  ///
+  /// This value is in logical pixels and represents spacing inside the container's
+  /// right edge. Note that this is absolute right, not start/end relative to text direction.
   double paddingRight = 0.0;
 
   /// Allocates and returns a new flex line cache.
@@ -487,6 +506,17 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
   /// Contains cached values for lines, spacing, and sizing calculations.
   FlexLayoutCache? _cache;
 
+  /// Accessor for the flex layout cache.
+  ///
+  /// Provides access to cached layout information including line data, spacing,
+  /// and size calculations from the most recent layout pass. This cache is used
+  /// to optimize subsequent layout operations and provide consistent layout data.
+  ///
+  /// The cache is only available after a full layout pass has completed.
+  /// Attempting to access it before layout or during dry layout will trigger
+  /// an assertion error in debug mode.
+  ///
+  /// Throws an [AssertionError] if accessed before layout is complete.
   FlexLayoutCache get cache {
     assert(
       _cache != null,

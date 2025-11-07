@@ -2,18 +2,37 @@ import 'dart:math';
 
 import 'package:flexiblebox/src/basic.dart';
 
+/// Represents the edge insets of a parent container's padding or bounds.
+///
+/// [ParentEdge] stores the distances from each edge (left, top, right, bottom)
+/// of a parent container. This is used to define padding or safe areas within
+/// a layout container that affect how child elements are positioned.
+///
+/// All values are in logical pixels.
 class ParentEdge {
+  /// A [ParentEdge] with all edges set to zero.
   static const ParentEdge zero = ParentEdge(
     left: 0.0,
     top: 0.0,
     right: 0.0,
     bottom: 0.0,
   );
+
+  /// The distance from the left edge.
   final double left;
+
+  /// The distance from the top edge.
   final double top;
+
+  /// The distance from the right edge.
   final double right;
+
+  /// The distance from the bottom edge.
   final double bottom;
 
+  /// Creates parent edge insets with the specified distances.
+  ///
+  /// All parameters are required and specify distances in logical pixels.
   const ParentEdge({
     required this.left,
     required this.top,
@@ -22,8 +41,22 @@ class ParentEdge {
   });
 }
 
+/// A rectangle that includes information about parent edge insets.
+///
+/// [ParentRect] extends [LayoutRect] to include edge information from the
+/// parent container. This is useful for calculating positions relative to
+/// parent padding or bounds while maintaining the rectangle's position and size.
+///
+/// Combines both absolute positioning (left, top, width, height) with
+/// relative edge distances from the parent container's bounds.
 class ParentRect extends LayoutRect {
+  /// The edge distances from the parent container's bounds.
   final ParentEdge edges;
+
+  /// Creates a [ParentRect] from left, top, width, height, and edges.
+  ///
+  /// This is the most convenient constructor for creating rectangles with
+  /// parent-relative positioning information.
   const ParentRect.fromLTWH(
     super.left,
     super.top,
@@ -32,6 +65,9 @@ class ParentRect extends LayoutRect {
     this.edges,
   ) : super.fromLTWH();
 
+  /// A [ParentRect] with all dimensions and edges set to zero.
+  ///
+  /// Useful as a default or placeholder value when no layout has occurred yet.
   static const ParentRect zero = ParentRect.fromLTWH(
     0.0,
     0.0,
@@ -50,10 +86,22 @@ class ParentRect extends LayoutRect {
 /// This class is immutable and used throughout the layout system to
 /// communicate layout requirements between widgets and layout algorithms.
 final class LayoutData {
+  /// An empty [LayoutData] with all default values.
+  ///
+  /// This represents a child with no special layout requirements - it will
+  /// use default sizing, positioning, and flex behavior.
   static const LayoutData empty = LayoutData();
 
+  /// Optional key for identifying this layout data or element.
+  ///
+  /// Can be used to reference specific children when calculating relative
+  /// positions or sizes based on other elements in the layout.
   final Object? key;
 
+  /// The positioning mode for this element.
+  ///
+  /// Determines whether the element uses normal flow ([PositionType.relative])
+  /// or is removed from flow ([PositionType.none] for absolute positioning).
   final PositionType position;
 
   /// The layout behavior for this child (normal flow or absolute positioning).

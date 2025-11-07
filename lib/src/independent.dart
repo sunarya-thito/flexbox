@@ -7,21 +7,37 @@ import 'package:flexiblebox/src/layout.dart';
 /// the independent box layout system. It maintains positioning, caching,
 /// and sibling relationships needed for layout calculations.
 class BoxParentData {
+  /// The position offset of this child relative to its parent.
   LayoutOffset offset = LayoutOffset.zero;
 
+  /// Cached layout information from previous layout passes.
+  ///
+  /// Used to optimize relayout by reusing calculations when constraints haven't changed.
   ChildLayoutCache? cache;
 
+  /// Reference to the next sibling box in document order.
   Box? nextSibling;
+
+  /// Reference to the previous sibling box in document order.
   Box? previousSibling;
 
+  /// Layout-specific data defining how this child should be laid out.
+  ///
+  /// Includes flex properties, sizing constraints, alignment, and positioning information.
   LayoutData? layoutData;
 
+  /// The paint order of this child relative to siblings.
+  ///
+  /// Lower values are painted first (behind), higher values painted last (on top).
   int? get paintOrder => layoutData!.paintOrder;
 
   Box? _nextSortedSibling;
   Box? _previousSortedSibling;
 
+  /// Returns the next sibling in paint order, or document order if not sorted.
   Box? get nextSortedSibling => _nextSortedSibling ?? nextSibling;
+
+  /// Returns the previous sibling in paint order, or document order if not sorted.
   Box? get previousSortedSibling => _previousSortedSibling ?? previousSibling;
 }
 
@@ -35,9 +51,24 @@ class BoxParentData {
 class Box with ParentLayout {
   @override
   LayoutTextDirection textDirection;
+
+  /// How content should be handled when it overflows horizontally.
+  ///
+  /// Determines whether horizontal overflow should be visible, hidden,
+  /// clipped, or scrollable.
   LayoutOverflow horizontalOverflow;
+
+  /// How content should be handled when it overflows vertically.
+  ///
+  /// Determines whether vertical overflow should be visible, hidden,
+  /// clipped, or scrollable.
   LayoutOverflow verticalOverflow;
+
+  /// The layout algorithm used to position children of this box.
+  ///
+  /// Defines how child boxes are arranged (e.g., flex layout, absolute positioning).
   Layout boxLayout;
+
   @override
   LayoutTextBaseline? textBaseline;
   @override
@@ -48,12 +79,19 @@ class Box with ParentLayout {
   late List<Box> _children;
   Box? _parent;
 
+  /// Optional debug key for identifying this box during debugging.
+  ///
+  /// Useful for tracking specific boxes through layout calculations
+  /// and troubleshooting layout issues.
   Object? debugKey;
 
   LayoutSize? _contentSize;
   LayoutRect? _contentBounds;
   LayoutSize? _viewportSize; // a.k.a Box#size
 
+  /// Creates a box with the specified layout configuration.
+  ///
+  /// All parameters are required to define the box's initial state and behavior.
   Box({
     required this.textDirection,
     required this.horizontalOverflow,
