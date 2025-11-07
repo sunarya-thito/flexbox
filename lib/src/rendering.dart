@@ -201,7 +201,7 @@ class RenderLayoutBox extends RenderBox
 
   /// Sets the vertical scroll progress (0.0 to 1.0) instantly.
   set scrollProgressY(double value) {
-    final scrollMax = max(0.0, contentSize.height - viewportSize.width);
+    final scrollMax = max(0.0, contentSize.height - viewportSize.height);
     vertical.jumpTo(value * scrollMax);
   }
 
