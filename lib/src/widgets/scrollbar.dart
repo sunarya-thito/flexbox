@@ -7,11 +7,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+/// A widget that handles gestures on the scrollbar track.
+///
+/// [ScrollTrackGesture] detects tap-down events on the scrollbar track and
+/// animates the scroll position to the tapped location. This allows users
+/// to quickly jump to different parts of the scrollable content by tapping
+/// anywhere on the scrollbar track.
 class ScrollTrackGesture extends StatelessWidget {
+  /// Optional child widget to wrap with gesture detection.
   final Widget? child;
+  
+  /// Duration for the animated scroll jump when the track is tapped.
   final Duration jumpDuration;
+  
+  /// Animation curve for the scroll jump.
   final Curve jumpCurve;
 
+  /// Creates a scroll track gesture handler.
+  ///
+  /// The [jumpDuration] and [jumpCurve] parameters control the animation
+  /// when jumping to a tapped position on the track.
   const ScrollTrackGesture({
     super.key,
     required this.jumpDuration,
@@ -36,10 +51,27 @@ class ScrollTrackGesture extends StatelessWidget {
   }
 }
 
+/// A widget that handles drag gestures on the scrollbar thumb.
+///
+/// [ScrollThumbGesture] detects pan gestures on the scrollbar thumb and
+/// updates the scroll position accordingly. It also absorbs taps to prevent
+/// them from propagating to the track below.
+///
+/// Optionally notifies when dragging starts or stops via [isDraggingChanged].
 class ScrollThumbGesture extends StatelessWidget {
+  /// The child widget representing the visible scrollbar thumb.
   final Widget child;
+  
+  /// Callback invoked when dragging state changes.
+  ///
+  /// Called with `true` when dragging starts and `false` when it ends.
+  /// Useful for showing visual feedback during dragging.
   final ValueChanged<bool>? isDraggingChanged;
 
+  /// Creates a scroll thumb gesture handler.
+  ///
+  /// The [child] parameter is required and represents the scrollbar thumb widget.
+  /// Optionally provide [isDraggingChanged] to respond to drag state changes.
   const ScrollThumbGesture({
     super.key,
     required this.child,
@@ -67,12 +99,33 @@ class ScrollThumbGesture extends StatelessWidget {
   }
 }
 
+/// A widget that combines scrollbar track and thumb gesture handling.
+///
+/// [ScrollTrack] provides a complete scrollbar track with both track-tap
+/// jumping and thumb dragging capabilities. It automatically sizes and
+/// positions the scrollbar thumb based on the scrollable content's state.
+///
+/// This widget combines [ScrollTrackGesture] and [ScrollThumbGesture]
+/// functionality into a single convenient widget.
 class ScrollTrack extends StatelessWidget {
+  /// The child widget representing the scrollbar track and thumb.
   final Widget child;
+  
+  /// Duration for animated scroll jumps when the track is tapped.
   final Duration jumpDuration;
+  
+  /// Animation curve for scroll jumps.
   final Curve jumpCurve;
+  
+  /// Callback invoked when dragging state changes.
+  ///
+  /// Called with `true` when thumb dragging starts and `false` when it ends.
   final ValueChanged<bool>? isDraggingChanged;
 
+  /// Creates a scrollbar track with gesture handling.
+  ///
+  /// The [child] parameter is required. The [jumpDuration] and [jumpCurve]
+  /// control the animation when jumping to a tapped position.
   const ScrollTrack({
     super.key,
     this.jumpDuration = const Duration(milliseconds: 200),
@@ -144,18 +197,66 @@ class ScrollTrack extends StatelessWidget {
   }
 }
 
+/// A default implementation of a scrollbar with customizable appearance.
+///
+/// [DefaultScrollbar] provides a pre-configured scrollbar widget with reasonable
+/// defaults for thumb and track appearance. It supports hover states, drag interactions,
+/// and smooth animations for showing/hiding and jumping to positions.
+///
+/// The scrollbar automatically shows/hides based on content overflow and user interaction.
+/// It can be customized via decoration properties to match any design system.
+///
+/// Example:
+/// ```dart
+/// DefaultScrollbar(
+///   thumbDecoration: BoxDecoration(
+///     color: Colors.blue.withOpacity(0.5),
+///     borderRadius: BorderRadius.circular(8),
+///   ),
+///   minThumbLength: 60.0,
+/// )
+/// ```
 class DefaultScrollbar extends StatefulWidget {
+  /// Minimum length of the scrollbar thumb in pixels.
+  ///
+  /// Ensures the thumb remains grabbable even for very long content.
   final double minThumbLength;
+  
+  /// Decoration for the scrollbar thumb in its default state.
   final Decoration thumbDecoration;
+  
+  /// Decoration for the scrollbar track in its default state.
   final Decoration trackDecoration;
+  
+  /// Decoration for the scrollbar thumb when active (hovered or dragged).
   final Decoration thumbActiveDecoration;
+  
+  /// Decoration for the scrollbar track when active (hovered).
   final Decoration trackActiveDecoration;
+  
+  /// Margin around the entire scrollbar widget.
+  ///
+  /// Creates space between the scrollbar and its container edges.
   final EdgeInsetsGeometry margin;
+  
+  /// Padding inside the scrollbar track.
+  ///
+  /// Creates space between the track edges and the thumb.
   final EdgeInsetsGeometry padding;
+  
+  /// Duration for fade in/out animations when showing/hiding the scrollbar.
   final Duration fadeDuration;
+  
+  /// Duration for animated scroll jumps when the track is tapped.
   final Duration jumpDuration;
+  
+  /// Animation curve for scroll jumps.
   final Curve jumpCurve;
 
+  /// Creates a default scrollbar with customizable appearance.
+  ///
+  /// All parameters have sensible defaults. The scrollbar will automatically
+  /// style itself with semi-transparent decorations that work well in most contexts.
   const DefaultScrollbar({
     super.key,
     this.minThumbLength = 48.0,
@@ -410,16 +511,70 @@ class _ScrollbarHandlerBuilder extends StatelessWidget {
   }
 }
 
+/// A widget that provides scrollbars for a scrollable child.
+///
+/// [Scrollbars] wraps a scrollable widget and adds vertical and/or horizontal
+/// scrollbars as needed. The scrollbars automatically show/hide based on content
+/// overflow and provide both track-tapping and thumb-dragging interactions.
+///
+/// The scrollbars can be customized independently, and you can control whether
+/// they pad the content (pushing it inward) or overlay it.
+///
+/// Example:
+/// ```dart
+/// Scrollbars(
+///   verticalScrollbar: DefaultScrollbar(
+///     thumbDecoration: BoxDecoration(color: Colors.blue),
+///   ),
+///   verticalScrollbarThickness: 16.0,
+///   verticalScrollbarPadsContent: true,
+///   child: FlexBox(
+///     // Scrollable content here
+///   ),
+/// )
+/// ```
 class Scrollbars extends StatefulWidget {
+  /// The scrollbar widget to use for vertical scrolling.
+  ///
+  /// Typically a [DefaultScrollbar] or custom implementation.
   final Widget verticalScrollbar;
+  
+  /// The scrollbar widget to use for horizontal scrolling.
+  ///
+  /// Typically a [DefaultScrollbar] or custom implementation.
   final Widget horizontalScrollbar;
+  
+  /// Widget to display in the corner where scrollbars meet.
+  ///
+  /// Only visible when both scrollbars are showing. Typically empty
+  /// or a decorative element matching the scrollbar design.
   final Widget corner;
+  
+  /// The scrollable content widget.
   final Widget child;
+  
+  /// Whether the vertical scrollbar should push content inward.
+  ///
+  /// When true, content is padded by [verticalScrollbarThickness] to make
+  /// room for the scrollbar. When false, the scrollbar overlays the content.
   final bool verticalScrollbarPadsContent;
+  
+  /// Whether the horizontal scrollbar should push content inward.
+  ///
+  /// When true, content is padded by [horizontalScrollbarThickness] to make
+  /// room for the scrollbar. When false, the scrollbar overlays the content.
   final bool horizontalScrollbarPadsContent;
+  
+  /// Width of the vertical scrollbar in pixels.
   final double verticalScrollbarThickness;
+  
+  /// Height of the horizontal scrollbar in pixels.
   final double horizontalScrollbarThickness;
 
+  /// Creates a widget with scrollbars for the given child.
+  ///
+  /// The [child] parameter is required. All other parameters have sensible
+  /// defaults that provide a basic scrollbar experience.
   const Scrollbars({
     super.key,
     required this.child,
