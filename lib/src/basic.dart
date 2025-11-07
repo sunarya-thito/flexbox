@@ -765,6 +765,36 @@ abstract class SizeUnit {
   String toCodeString();
 }
 
+/// Abstract base class for position units used in element positioning.
+///
+/// [PositionUnit] defines units that calculate position offsets for elements
+/// within a layout container. Unlike size units which determine dimensions,
+/// position units specify where elements should be placed along an axis.
+///
+/// Position units can reference various layout properties:
+/// - Fixed pixel offsets
+/// - Viewport and content dimensions
+/// - Scroll positions and overflow amounts
+/// - Child element sizes
+/// - Cross-axis positions
+///
+/// Position units support mathematical operations and can be combined to create
+/// complex positioning expressions similar to CSS calc().
+///
+/// Common uses include:
+/// - Absolute positioning of elements
+/// - Sticky positioning relative to scroll
+/// - Centering based on element or viewport size
+/// - Scroll-aware animations
+///
+/// Example:
+/// ```dart
+/// // Center an element: 50% viewport - 50% child size
+/// final centered = PositionUnit.viewportSize * 0.5 - PositionUnit.childSize() * 0.5;
+///
+/// // Position 20px from viewport end
+/// final offset = PositionUnit.viewportSize - PositionUnit.fixed(20);
+/// ```
 abstract class PositionUnit {
   /// Creates a calculated position unit combining two position units with an operation.
   ///
@@ -795,7 +825,10 @@ abstract class PositionUnit {
   /// A position unit representing the total content size along the axis.
   static const PositionUnit contentSize = PositionContentSize();
 
-  /// A position unit representing the element's natural position offset.
+  /// A position unit representing the scroll offset (also called boxOffset).
+  ///
+  /// Returns the current scroll position along the axis. This is an alias
+  /// that can be referenced as 'boxOffset' in expressions.
   static const PositionUnit boxOffset = PositionOffset();
 
   /// A position unit representing the current scroll offset.
@@ -807,10 +840,17 @@ abstract class PositionUnit {
   /// A position unit representing the amount content underflows the viewport.
   static const PositionUnit contentUnderflow = PositionUnderflow();
 
-  /// A position unit representing the start boundary of the viewport.
+  /// A position unit representing where the viewport starts in content coordinates.
+  ///
+  /// This is equal to the scroll offset - it represents the position where the
+  /// visible viewport begins relative to the total content. For example, if
+  /// scrolled 100px down, the viewport start bound is 100.
   static const PositionUnit viewportStartBound = PositionScroll();
 
-  /// A position unit representing the end boundary of the viewport.
+  /// A position unit representing where the viewport ends in content coordinates.
+  ///
+  /// This is calculated as contentSize + scrollOffset, representing the position
+  /// where the visible viewport ends relative to the total content.
   static const PositionUnit viewportEndBound = PositionViewportEndBound();
 
   /// Creates a fixed position unit with the specified pixel value.
@@ -1124,11 +1164,11 @@ class PositionChildSize implements PositionUnit {
   }
 }
 
-/// A position unit that represents the box offset position.
+/// A position unit representing the scroll offset position (named 'boxOffset' in expressions).
 ///
-/// This position unit returns the scroll offset along the specified axis.
-/// It's named 'boxOffset' in expressions but functionally equivalent to
-/// scroll offset. Used for positioning elements relative to scroll position.
+/// This position unit returns the current scroll offset along the specified axis.
+/// It's functionally identical to [PositionScroll] but named 'boxOffset' when
+/// serialized to code strings. Used for positioning elements relative to scroll position.
 class PositionOffset implements PositionUnit {
   /// Creates a box offset position unit.
   const PositionOffset();
