@@ -14,7 +14,7 @@ class CaseSpacing extends TestCase {
     return Box.parent(
       child: FlexBox(
         key: key0,
-        padding: DirectionalEdgeSpacing.only(
+        padding: EdgeSpacingDirectional.only(
           top: SpacingUnit.fixed(20),
           start: SpacingUnit.fixed(60),
           end: SpacingUnit.fixed(40),

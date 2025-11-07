@@ -82,32 +82,32 @@ enum FlexWrap {
 ///
 /// Subclasses implement specific alignment behaviors:
 /// - [BoxAlignment] for absolute positioning
-/// - [DirectionalBoxAlignment] for directional (LTR/RTL aware) positioning
-/// - [_StretchBoxAlignment] for stretching items to fill space
-/// - [_BaselineBoxAlignment] for baseline-based alignment
+/// - [BoxAlignmentDirectional] for directional (LTR/RTL aware) positioning
+/// - [BoxAlignmentContentStretch] for stretching items to fill space
+/// - [BoxAlignmentGeometryBaseline] for baseline-based alignment
 abstract class BoxAlignmentGeometry {
   const BoxAlignmentGeometry();
 
   /// Creates a directional alignment with the specified value.
   /// Values typically range from -1.0 (start) to 1.0 (end), with 0.0 being center.
-  static const BoxAlignmentGeometry stretch = _StretchBoxAlignment();
+  static const BoxAlignmentGeometry stretch = BoxAlignmentContentStretch();
 
   /// Aligns items to the start of the container (left for horizontal, top for vertical).
-  static const BoxAlignmentGeometry start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentGeometry start = BoxAlignmentDirectional.start;
 
   /// Centers items within the container.
-  static const BoxAlignmentGeometry center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentGeometry center = BoxAlignmentDirectional.center;
 
   /// Aligns items to the end of the container (right for horizontal, bottom for vertical).
-  static const BoxAlignmentGeometry end = DirectionalBoxAlignment.end;
+  static const BoxAlignmentGeometry end = BoxAlignmentDirectional.end;
 
   /// Aligns items based on their baseline (typically for text alignment).
-  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  static const BoxAlignmentGeometry baseline = BoxAlignmentGeometryBaseline();
 
   /// Creates a directional alignment with a custom value.
   /// The value represents the position along the alignment axis.
   const factory BoxAlignmentGeometry.directional(double value) =
-      DirectionalBoxAlignment;
+      BoxAlignmentDirectional;
 
   /// Creates an absolute alignment with a custom value.
   /// The value represents the absolute position regardless of text direction.
@@ -187,38 +187,38 @@ abstract class BoxAlignmentGeometry {
 /// baseline considerations or size stretching.
 abstract class BoxAlignmentBase extends BoxAlignmentContent {
   /// Aligns items to the start of the main axis.
-  static const BoxAlignmentBase start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentBase start = BoxAlignmentDirectional.start;
 
   /// Centers items along the main axis.
-  static const BoxAlignmentBase center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentBase center = BoxAlignmentDirectional.center;
 
   /// Aligns items to the end of the main axis.
-  static const BoxAlignmentBase end = DirectionalBoxAlignment.end;
+  static const BoxAlignmentBase end = BoxAlignmentDirectional.end;
 
   /// Distributes items with equal space between them, no space at the edges.
-  static const BoxAlignmentBase spaceBetween = _EvenSpacingAlignment.between();
+  static const BoxAlignmentBase spaceBetween = BoxAlignmentSpacing.between();
 
   /// Distributes items with equal space between and around them.
-  static const BoxAlignmentBase spaceEvenly = _EvenSpacingAlignment.even();
+  static const BoxAlignmentBase spaceEvenly = BoxAlignmentSpacing.even();
 
   /// Distributes items with equal space around each item.
-  static const BoxAlignmentBase spaceAround = _EvenSpacingAlignment.around();
+  static const BoxAlignmentBase spaceAround = BoxAlignmentSpacing.around();
 
   /// Creates symmetric spacing around items with a custom ratio.
   const factory BoxAlignmentBase.spaceAroundSymmetric(double ratio) =
-      _EvenSpacingAlignment.aroundSymmetric;
+      BoxAlignmentSpacing.aroundSymmetric;
 
   /// Creates custom spacing ratios for start and end.
   const factory BoxAlignmentBase.spaceAroundRatio(
     double startRatio,
     double endRatio,
-  ) = _EvenSpacingAlignment;
+  ) = BoxAlignmentSpacing;
 
   const BoxAlignmentBase();
 
   /// Creates a directional alignment with a custom value.
   const factory BoxAlignmentBase.directional(double value) =
-      DirectionalBoxAlignment;
+      BoxAlignmentDirectional;
 
   /// Creates an absolute alignment with a custom value.
   const factory BoxAlignmentBase.absolute(double value) = BoxAlignment;
@@ -248,40 +248,39 @@ abstract class BoxAlignmentBase extends BoxAlignmentContent {
 /// Spacing alignments distribute space between and around items.
 abstract class BoxAlignmentContent extends BoxAlignmentGeometry {
   /// Stretches items to fill the available cross-axis space.
-  static const BoxAlignmentContent stretch = _StretchBoxAlignment();
+  static const BoxAlignmentContent stretch = BoxAlignmentContentStretch();
 
   /// Aligns items to the start of the cross-axis.
-  static const BoxAlignmentContent start = DirectionalBoxAlignment.start;
+  static const BoxAlignmentContent start = BoxAlignmentDirectional.start;
 
   /// Centers items along the cross-axis.
-  static const BoxAlignmentContent center = DirectionalBoxAlignment.center;
+  static const BoxAlignmentContent center = BoxAlignmentDirectional.center;
 
   /// Aligns items to the end of the cross-axis.
-  static const BoxAlignmentContent end = DirectionalBoxAlignment.end;
+  static const BoxAlignmentContent end = BoxAlignmentDirectional.end;
 
   /// Distributes items with equal space between them, no space at the edges.
-  static const BoxAlignmentContent spaceBetween =
-      _EvenSpacingAlignment.between();
+  static const BoxAlignmentContent spaceBetween = BoxAlignmentSpacing.between();
 
   /// Distributes items with equal space between and around them.
-  static const BoxAlignmentContent spaceEvenly = _EvenSpacingAlignment.even();
+  static const BoxAlignmentContent spaceEvenly = BoxAlignmentSpacing.even();
 
   /// Distributes items with equal space around each item.
-  static const BoxAlignmentContent spaceAround = _EvenSpacingAlignment.around();
+  static const BoxAlignmentContent spaceAround = BoxAlignmentSpacing.around();
 
   /// Creates symmetric spacing around items with a custom ratio.
   const factory BoxAlignmentContent.spaceAroundSymmetric(double ratio) =
-      _EvenSpacingAlignment.aroundSymmetric;
+      BoxAlignmentSpacing.aroundSymmetric;
 
   /// Creates custom spacing ratios for start and end.
   const factory BoxAlignmentContent.spaceAroundRatio(
     double startRatio,
     double endRatio,
-  ) = _EvenSpacingAlignment;
+  ) = BoxAlignmentSpacing;
 
   /// Creates a directional alignment with a custom value.
   const factory BoxAlignmentContent.directional(double value) =
-      DirectionalBoxAlignment;
+      BoxAlignmentDirectional;
 
   /// Creates an absolute alignment with a custom value.
   const factory BoxAlignmentContent.absolute(double value) = BoxAlignment;
@@ -322,8 +321,8 @@ abstract class BoxAlignmentContent extends BoxAlignmentGeometry {
   }) => null;
 }
 
-class _StretchBoxAlignment extends BoxAlignmentContent {
-  const _StretchBoxAlignment();
+class BoxAlignmentContentStretch extends BoxAlignmentContent {
+  const BoxAlignmentContentStretch();
 
   /// For stretch alignment, items are positioned at the start (offset 0).
   /// The stretching is handled by [adjustSize] rather than position offset.
@@ -372,7 +371,7 @@ class BoxAlignment extends BoxAlignmentBase {
   static const BoxAlignmentBase end = BoxAlignment(1.0);
 
   /// Aligns items based on their text baseline.
-  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  static const BoxAlignmentGeometry baseline = BoxAlignmentGeometryBaseline();
 
   /// The alignment value, where -1.0 is start, 0.0 is center, and 1.0 is end.
   final double value;
@@ -402,8 +401,8 @@ class BoxAlignment extends BoxAlignmentBase {
   }
 }
 
-class _BaselineBoxAlignment extends BoxAlignmentGeometry {
-  const _BaselineBoxAlignment();
+class BoxAlignmentGeometryBaseline extends BoxAlignmentGeometry {
+  const BoxAlignmentGeometryBaseline();
 
   /// Aligns the child so its baseline matches the maximum baseline.
   ///
@@ -428,20 +427,20 @@ class _BaselineBoxAlignment extends BoxAlignmentGeometry {
   }
 }
 
-class DirectionalBoxAlignment extends BoxAlignmentBase {
+class BoxAlignmentDirectional extends BoxAlignmentBase {
   /// Aligns to the start of the container, respecting text direction.
   /// In LTR text, this is left/top; in RTL text, this is right/top.
-  static const BoxAlignmentBase start = DirectionalBoxAlignment(-1.0);
+  static const BoxAlignmentBase start = BoxAlignmentDirectional(-1.0);
 
   /// Centers content within the container.
-  static const BoxAlignmentBase center = DirectionalBoxAlignment(0.0);
+  static const BoxAlignmentBase center = BoxAlignmentDirectional(0.0);
 
   /// Aligns to the end of the container, respecting text direction.
   /// In LTR text, this is right/bottom; in RTL text, this is left/bottom.
-  static const BoxAlignmentBase end = DirectionalBoxAlignment(1.0);
+  static const BoxAlignmentBase end = BoxAlignmentDirectional(1.0);
 
   /// Aligns items based on their text baseline.
-  static const BoxAlignmentGeometry baseline = _BaselineBoxAlignment();
+  static const BoxAlignmentGeometry baseline = BoxAlignmentGeometryBaseline();
 
   /// The alignment value, where -1.0 is start, 0.0 is center, and 1.0 is end.
   final double value;
@@ -450,7 +449,7 @@ class DirectionalBoxAlignment extends BoxAlignmentBase {
   ///
   /// Values typically range from -1.0 (start) to 1.0 (end), with 0.0 being center.
   /// Unlike [BoxAlignment], this considers the text direction of the parent.
-  const DirectionalBoxAlignment(this.value);
+  const BoxAlignmentDirectional(this.value);
 
   /// Calculates the alignment position based on the value and text direction.
   ///
@@ -480,7 +479,7 @@ class DirectionalBoxAlignment extends BoxAlignmentBase {
   }
 }
 
-class _EvenSpacingAlignment extends BoxAlignmentBase {
+class BoxAlignmentSpacing extends BoxAlignmentBase {
   /// The spacing ratio at the start (before first item).
   final double aroundStart;
 
@@ -488,19 +487,19 @@ class _EvenSpacingAlignment extends BoxAlignmentBase {
   final double aroundEnd;
 
   /// Creates an even spacing alignment with custom start and end ratios.
-  const _EvenSpacingAlignment(this.aroundStart, this.aroundEnd);
+  const BoxAlignmentSpacing(this.aroundStart, this.aroundEnd);
 
   /// Creates space-between alignment: equal space between items, no space at edges.
-  const _EvenSpacingAlignment.between() : aroundStart = 0.0, aroundEnd = 0.0;
+  const BoxAlignmentSpacing.between() : aroundStart = 0.0, aroundEnd = 0.0;
 
   /// Creates space-evenly alignment: equal space between and around all items.
-  const _EvenSpacingAlignment.even() : aroundStart = 1.0, aroundEnd = 1.0;
+  const BoxAlignmentSpacing.even() : aroundStart = 1.0, aroundEnd = 1.0;
 
   /// Creates space-around alignment: equal space around each item.
-  const _EvenSpacingAlignment.around() : aroundStart = 0.5, aroundEnd = 0.5;
+  const BoxAlignmentSpacing.around() : aroundStart = 0.5, aroundEnd = 0.5;
 
   /// Creates symmetric space-around with a custom ratio.
-  const _EvenSpacingAlignment.aroundSymmetric(double ratio)
+  const BoxAlignmentSpacing.aroundSymmetric(double ratio)
     : aroundStart = ratio,
       aroundEnd = ratio;
 
@@ -669,7 +668,7 @@ abstract class SizeUnit {
     SizeUnit a,
     SizeUnit b,
     CalculationOperation operation,
-  ) = _CalculatedSize;
+  ) = SizeCalculated;
 
   /// Linearly interpolates between two size units.
   ///
@@ -678,26 +677,26 @@ abstract class SizeUnit {
   static SizeUnit lerp(SizeUnit a, SizeUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * _FixedSize(1.0 - t) + b * _FixedSize(t);
+    return a * SizeFixed(1.0 - t) + b * SizeFixed(t);
   }
 
   /// A size of zero.
-  static const SizeUnit zero = _FixedSize(0);
+  static const SizeUnit zero = SizeFixed(0);
 
   /// Creates a fixed size with the specified value.
-  const factory SizeUnit.fixed(double value) = _FixedSize;
+  const factory SizeUnit.fixed(double value) = SizeFixed;
 
   /// Sizes to the minimum content size (shrink-wrapped).
-  static const SizeUnit minContent = _MinContent();
+  static const SizeUnit minContent = SizeMinContent();
 
   /// Sizes to the maximum content size (expand to fit).
-  static const SizeUnit maxContent = _MaxContent();
+  static const SizeUnit maxContent = SizeMaxContent();
 
   /// Sizes to fit the content with constraints.
-  static const SizeUnit fitContent = _FitContent();
+  static const SizeUnit fitContent = SizeFitContent();
 
   /// Sizes to match the viewport size.
-  static const SizeUnit viewportSize = _SizeViewportSizeReference();
+  static const SizeUnit viewportSize = SizeViewport();
 
   const SizeUnit();
 
@@ -733,30 +732,30 @@ abstract class PositionUnit {
     PositionUnit a,
     PositionUnit b,
     CalculationOperation operation,
-  ) = _CalculatedPosition;
+  ) = PositionCalculated;
   static PositionUnit lerp(PositionUnit a, PositionUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * _FixedPosition(1.0 - t) + b * _FixedPosition(t);
+    return a * PositionFixed(1.0 - t) + b * PositionFixed(t);
   }
 
-  static const PositionUnit zero = _FixedPosition(0);
-  static const PositionUnit viewportSize = _ViewportSizeReference();
-  static const PositionUnit contentSize = _ContentSizeReference();
-  static const PositionUnit boxOffset = _BoxOffset();
-  static const PositionUnit scrollOffset = _ScrollOffset();
-  static const PositionUnit contentOverflow = _ContentOverflow();
-  static const PositionUnit contentUnderflow = _ContentUnderflow();
-  static const PositionUnit viewportStartBound = _ScrollOffset();
-  static const PositionUnit viewportEndBound = _ViewportEndBound();
-  const factory PositionUnit.fixed(double value) = _FixedPosition;
-  const factory PositionUnit.cross(PositionUnit position) = _CrossPosition;
-  const factory PositionUnit.childSize([Object? key]) = _ChildSizeReference;
+  static const PositionUnit zero = PositionFixed(0);
+  static const PositionUnit viewportSize = PositionViewportSize();
+  static const PositionUnit contentSize = PositionContentSize();
+  static const PositionUnit boxOffset = PositionOffset();
+  static const PositionUnit scrollOffset = PositionScroll();
+  static const PositionUnit contentOverflow = PositionOverflow();
+  static const PositionUnit contentUnderflow = PositionUnderflow();
+  static const PositionUnit viewportStartBound = PositionScroll();
+  static const PositionUnit viewportEndBound = PositionViewportEndBound();
+  const factory PositionUnit.fixed(double value) = PositionFixed;
+  const factory PositionUnit.cross(PositionUnit position) = PositionCross;
+  const factory PositionUnit.childSize([Object? key]) = PositionChildSize;
   const factory PositionUnit.constrained({
     required PositionUnit position,
     PositionUnit min,
     PositionUnit max,
-  }) = _ConstrainedPosition;
+  }) = PositionConstraint;
 
   const PositionUnit();
 
@@ -802,7 +801,7 @@ double calculationDivide(double a, double b) => a / b;
 ///
 /// The calculation is performed by first computing both operand sizes,
 /// then applying the operation to get the final result.
-class _CalculatedSize extends SizeUnit {
+class SizeCalculated extends SizeUnit {
   /// The first operand in the calculation.
   final SizeUnit first;
 
@@ -812,7 +811,7 @@ class _CalculatedSize extends SizeUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedSize(this.first, this.second, this.operation);
+  const SizeCalculated(this.first, this.second, this.operation);
 
   @override
   String toCodeString() {
@@ -861,11 +860,11 @@ class _CalculatedSize extends SizeUnit {
 
 /// A position unit that performs calculations between two other position units.
 ///
-/// Similar to [_CalculatedSize], this allows creating complex positioning
+/// Similar to [SizeCalculated], this allows creating complex positioning
 /// expressions by combining different position units with mathematical operations.
 /// For example, you could position an element at the center of the viewport
 /// plus an offset.
-class _CalculatedPosition implements PositionUnit {
+class PositionCalculated implements PositionUnit {
   /// The first operand in the calculation.
   final PositionUnit first;
 
@@ -875,7 +874,7 @@ class _CalculatedPosition implements PositionUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedPosition(this.first, this.second, this.operation);
+  const PositionCalculated(this.first, this.second, this.operation);
 
   @override
   String toCodeString() {
@@ -917,11 +916,11 @@ class _CalculatedPosition implements PositionUnit {
 ///
 /// This is the simplest position unit - it always returns the same value
 /// regardless of layout context, viewport size, or content dimensions.
-class _FixedPosition implements PositionUnit {
+class PositionFixed implements PositionUnit {
   /// The fixed position value.
   final double value;
 
-  const _FixedPosition(this.value);
+  const PositionFixed(this.value);
 
   @override
   String toCodeString() => '${value}px';
@@ -937,8 +936,8 @@ class _FixedPosition implements PositionUnit {
   }
 }
 
-class _ViewportSizeReference implements PositionUnit {
-  const _ViewportSizeReference();
+class PositionViewportSize implements PositionUnit {
+  const PositionViewportSize();
 
   @override
   String toCodeString() => 'viewportSize';
@@ -960,8 +959,8 @@ class _ViewportSizeReference implements PositionUnit {
   }
 }
 
-class _ContentSizeReference implements PositionUnit {
-  const _ContentSizeReference();
+class PositionContentSize implements PositionUnit {
+  const PositionContentSize();
 
   @override
   String toCodeString() => 'contentSize';
@@ -983,10 +982,10 @@ class _ContentSizeReference implements PositionUnit {
   }
 }
 
-class _ChildSizeReference implements PositionUnit {
+class PositionChildSize implements PositionUnit {
   final Object? key;
 
-  const _ChildSizeReference([this.key]);
+  const PositionChildSize([this.key]);
 
   @override
   String toCodeString() {
@@ -1022,8 +1021,8 @@ class _ChildSizeReference implements PositionUnit {
   }
 }
 
-class _BoxOffset implements PositionUnit {
-  const _BoxOffset();
+class PositionOffset implements PositionUnit {
+  const PositionOffset();
 
   @override
   String toCodeString() => 'boxOffset';
@@ -1045,8 +1044,8 @@ class _BoxOffset implements PositionUnit {
   }
 }
 
-class _ScrollOffset implements PositionUnit {
-  const _ScrollOffset();
+class PositionScroll implements PositionUnit {
+  const PositionScroll();
 
   @override
   String toCodeString() => 'scrollOffset';
@@ -1068,8 +1067,8 @@ class _ScrollOffset implements PositionUnit {
   }
 }
 
-class _ContentOverflow implements PositionUnit {
-  const _ContentOverflow();
+class PositionOverflow implements PositionUnit {
+  const PositionOverflow();
 
   @override
   String toCodeString() => 'contentOverflow';
@@ -1096,8 +1095,8 @@ class _ContentOverflow implements PositionUnit {
   }
 }
 
-class _ContentUnderflow implements PositionUnit {
-  const _ContentUnderflow();
+class PositionUnderflow implements PositionUnit {
+  const PositionUnderflow();
 
   @override
   String toCodeString() => 'contentUnderflow';
@@ -1124,8 +1123,8 @@ class _ContentUnderflow implements PositionUnit {
   }
 }
 
-class _ViewportEndBound implements PositionUnit {
-  const _ViewportEndBound();
+class PositionViewportEndBound implements PositionUnit {
+  const PositionViewportEndBound();
 
   @override
   String toCodeString() => 'viewportEndBound';
@@ -1147,11 +1146,11 @@ class _ViewportEndBound implements PositionUnit {
   }
 }
 
-class _CrossPosition implements PositionUnit {
+class PositionCross implements PositionUnit {
   /// The position unit to evaluate on the cross axis.
   final PositionUnit position;
 
-  const _CrossPosition(this.position);
+  const PositionCross(this.position);
 
   @override
   String toCodeString() => 'cross(${position.toCodeString()})';
@@ -1178,7 +1177,7 @@ class _CrossPosition implements PositionUnit {
   }
 }
 
-class _ConstrainedPosition implements PositionUnit {
+class PositionConstraint implements PositionUnit {
   /// The base position to constrain.
   final PositionUnit position;
 
@@ -1188,18 +1187,18 @@ class _ConstrainedPosition implements PositionUnit {
   /// The maximum allowed position value.
   final PositionUnit max;
 
-  const _ConstrainedPosition({
+  const PositionConstraint({
     required this.position,
-    this.min = const _FixedPosition(double.negativeInfinity),
-    this.max = const _FixedPosition(double.infinity),
+    this.min = const PositionFixed(double.negativeInfinity),
+    this.max = const PositionFixed(double.infinity),
   });
 
   @override
   String toCodeString() {
-    if (min is _FixedPosition &&
-        (min as _FixedPosition).value == double.negativeInfinity &&
-        max is _FixedPosition &&
-        (max as _FixedPosition).value == double.infinity) {
+    if (min is PositionFixed &&
+        (min as PositionFixed).value == double.negativeInfinity &&
+        max is PositionFixed &&
+        (max as PositionFixed).value == double.infinity) {
       return position.toCodeString();
     }
     return 'clamp(${position.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
@@ -1234,7 +1233,7 @@ class _ConstrainedPosition implements PositionUnit {
   }
 }
 
-class _ConstrainedSize extends SizeUnit {
+class SizeConstraint extends SizeUnit {
   /// The base size to constrain.
   final SizeUnit size;
 
@@ -1244,18 +1243,18 @@ class _ConstrainedSize extends SizeUnit {
   /// The maximum allowed size.
   final SizeUnit max;
 
-  const _ConstrainedSize({
+  const SizeConstraint({
     required this.size,
-    this.min = const _FixedSize(0),
-    this.max = const _FixedSize(double.infinity),
+    this.min = const SizeFixed(0),
+    this.max = const SizeFixed(double.infinity),
   });
 
   @override
   String toCodeString() {
-    if (min is _FixedSize &&
-        (min as _FixedSize).value == 0 &&
-        max is _FixedSize &&
-        (max as _FixedSize).value == double.infinity) {
+    if (min is SizeFixed &&
+        (min as SizeFixed).value == 0 &&
+        max is SizeFixed &&
+        (max as SizeFixed).value == double.infinity) {
       return size.toCodeString();
     }
     return 'clamp(${size.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
@@ -1306,11 +1305,11 @@ class _ConstrainedSize extends SizeUnit {
 ///
 /// This is the simplest size unit - it always returns the same value
 /// regardless of layout context, content, or viewport dimensions.
-class _FixedSize extends SizeUnit {
+class SizeFixed extends SizeUnit {
   /// The fixed size value.
   final double value;
 
-  const _FixedSize(this.value);
+  const SizeFixed(this.value);
 
   @override
   String toCodeString() => '${value}px';
@@ -1333,8 +1332,8 @@ class _FixedSize extends SizeUnit {
 ///
 /// Returns the viewport width for horizontal axis, viewport height for vertical axis.
 /// If the viewport size is infinite (during intrinsic sizing), returns 0.0.
-class _SizeViewportSizeReference extends SizeUnit {
-  const _SizeViewportSizeReference();
+class SizeViewport extends SizeUnit {
+  const SizeViewport();
 
   @override
   String toCodeString() => 'viewportSize';
@@ -1358,8 +1357,8 @@ class _SizeViewportSizeReference extends SizeUnit {
   }
 }
 
-class _MinContent extends SizeUnit {
-  const _MinContent();
+class SizeMinContent extends SizeUnit {
+  const SizeMinContent();
 
   @override
   String toCodeString() => 'minContent';
@@ -1384,8 +1383,8 @@ class _MinContent extends SizeUnit {
   }
 }
 
-class _MaxContent extends SizeUnit {
-  const _MaxContent();
+class SizeMaxContent extends SizeUnit {
+  const SizeMaxContent();
 
   @override
   String toCodeString() => 'maxContent';
@@ -1410,8 +1409,8 @@ class _MaxContent extends SizeUnit {
   }
 }
 
-class _FitContent extends SizeUnit {
-  const _FitContent();
+class SizeFitContent extends SizeUnit {
+  const SizeFitContent();
 
   @override
   String toCodeString() => 'fitContent';
@@ -1530,7 +1529,7 @@ class EdgeSpacing extends EdgeSpacingGeometry {
 ///
 /// Use this for spacing that should respect text direction, such as margins or padding
 /// that need to align with reading direction.
-class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
+class EdgeSpacingDirectional extends EdgeSpacingGeometry {
   /// The spacing from the start edge (left in LTR, right in RTL).
   final SpacingUnit start;
 
@@ -1538,7 +1537,7 @@ class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
   final SpacingUnit end;
 
   /// Creates a DirectionalEdgeSpacing with individual directional values.
-  const DirectionalEdgeSpacing.only({
+  const EdgeSpacingDirectional.only({
     this.start = SpacingUnit.zero,
     super.top,
     this.end = SpacingUnit.zero,
@@ -1546,7 +1545,7 @@ class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
   }) : super();
 
   /// Creates a DirectionalEdgeSpacing with the same value for all edges.
-  const DirectionalEdgeSpacing.all(SpacingUnit value)
+  const EdgeSpacingDirectional.all(SpacingUnit value)
     : this.only(
         start: value,
         end: value,
@@ -1555,7 +1554,7 @@ class DirectionalEdgeSpacing extends EdgeSpacingGeometry {
       );
 
   /// Creates a DirectionalEdgeSpacing with symmetric horizontal and vertical values.
-  const DirectionalEdgeSpacing.symmetric({
+  const EdgeSpacingDirectional.symmetric({
     SpacingUnit horizontal = SpacingUnit.zero,
     SpacingUnit vertical = SpacingUnit.zero,
   }) : this.only(
@@ -1594,7 +1593,7 @@ abstract class SpacingUnit {
     SpacingUnit a,
     SpacingUnit b,
     CalculationOperation operation,
-  ) = _CalculatedSpacing;
+  ) = SpacingCalculated;
 
   /// Linearly interpolates between two spacing units.
   ///
@@ -1603,26 +1602,26 @@ abstract class SpacingUnit {
   static SpacingUnit lerp(SpacingUnit a, SpacingUnit b, double t) {
     if (t <= 0.0) return a;
     if (t >= 1.0) return b;
-    return a * _FixedSpacing(1.0 - t) + b * _FixedSpacing(t);
+    return a * SpacingFixed(1.0 - t) + b * SpacingFixed(t);
   }
 
   /// Zero spacing.
-  static const SpacingUnit zero = _FixedSpacing(0);
+  static const SpacingUnit zero = SpacingFixed(0);
 
   /// Spacing equal to the viewport size along the axis.
-  static const SpacingUnit viewportSize = _SpacingViewportSizeReference();
+  static const SpacingUnit viewportSize = SpacingViewport();
 
   /// Creates a fixed spacing with the specified value.
-  const factory SpacingUnit.fixed(double value) = _FixedSpacing;
+  const factory SpacingUnit.fixed(double value) = SpacingFixed;
 
   /// Creates a constrained spacing with min/max bounds.
   const factory SpacingUnit.constrained({
     required SpacingUnit spacing,
     SpacingUnit min,
     SpacingUnit max,
-  }) = _ConstrainedSpacing;
+  }) = SpacingConstraint;
 
-  const factory SpacingUnit.childSize([Object? key]) = _ChildSizeSpacing;
+  const factory SpacingUnit.childSize([Object? key]) = SpacingChildSize;
 
   const SpacingUnit();
 
@@ -1653,11 +1652,11 @@ abstract class SpacingUnit {
 ///
 /// This is the simplest spacing unit - it always returns the same value
 /// regardless of layout context or available space.
-class _FixedSpacing implements SpacingUnit {
+class SpacingFixed implements SpacingUnit {
   /// The fixed spacing value.
   final double value;
 
-  const _FixedSpacing(this.value);
+  const SpacingFixed(this.value);
 
   @override
   String toCodeString() => '${value}px';
@@ -1676,8 +1675,8 @@ class _FixedSpacing implements SpacingUnit {
 /// A spacing unit that matches the viewport size along the specified axis.
 ///
 /// Returns the viewport width for horizontal axis, viewport height for vertical axis.
-class _SpacingViewportSizeReference implements SpacingUnit {
-  const _SpacingViewportSizeReference();
+class SpacingViewport implements SpacingUnit {
+  const SpacingViewport();
 
   @override
   String toCodeString() => 'viewportSize';
@@ -1695,10 +1694,10 @@ class _SpacingViewportSizeReference implements SpacingUnit {
 
 /// A spacing unit that performs calculations between two other spacing units.
 ///
-/// Similar to [_CalculatedSize] and [_CalculatedPosition], this allows creating
+/// Similar to [SizeCalculated] and [PositionCalculated], this allows creating
 /// complex spacing expressions by combining different spacing units with
 /// mathematical operations.
-class _CalculatedSpacing implements SpacingUnit {
+class SpacingCalculated implements SpacingUnit {
   /// The first operand in the calculation.
   final SpacingUnit first;
 
@@ -1708,7 +1707,7 @@ class _CalculatedSpacing implements SpacingUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
-  const _CalculatedSpacing(this.first, this.second, this.operation);
+  const SpacingCalculated(this.first, this.second, this.operation);
 
   @override
   String toCodeString() {
@@ -1750,7 +1749,7 @@ class _CalculatedSpacing implements SpacingUnit {
 ///
 /// This allows limiting spacing values to prevent them from becoming too small
 /// or too large, while still allowing dynamic calculation of the base spacing.
-class _ConstrainedSpacing implements SpacingUnit {
+class SpacingConstraint implements SpacingUnit {
   /// The base spacing to constrain.
   final SpacingUnit spacing;
 
@@ -1760,18 +1759,18 @@ class _ConstrainedSpacing implements SpacingUnit {
   /// The maximum allowed spacing.
   final SpacingUnit max;
 
-  const _ConstrainedSpacing({
+  const SpacingConstraint({
     required this.spacing,
-    this.min = const _FixedSpacing(0),
-    this.max = const _FixedSpacing(double.infinity),
+    this.min = const SpacingFixed(0),
+    this.max = const SpacingFixed(double.infinity),
   });
 
   @override
   String toCodeString() {
-    if (min is _FixedSpacing &&
-        (min as _FixedSpacing).value == 0 &&
-        max is _FixedSpacing &&
-        (max as _FixedSpacing).value == double.infinity) {
+    if (min is SpacingFixed &&
+        (min as SpacingFixed).value == 0 &&
+        max is SpacingFixed &&
+        (max as SpacingFixed).value == double.infinity) {
       return spacing.toCodeString();
     }
     return 'clamp(${spacing.toCodeString()}, min: ${min.toCodeString()}, max: ${max.toCodeString()})';
@@ -1806,10 +1805,10 @@ class _ConstrainedSpacing implements SpacingUnit {
   }
 }
 
-class _ChildSizeSpacing implements SpacingUnit {
+class SpacingChildSize implements SpacingUnit {
   final Object? key;
 
-  const _ChildSizeSpacing([this.key]);
+  const SpacingChildSize([this.key]);
 
   @override
   String toCodeString() {
@@ -1842,7 +1841,7 @@ class _ChildSizeSpacing implements SpacingUnit {
 extension PositionUnitExtension on PositionUnit {
   /// Adds two position units together.
   PositionUnit operator +(PositionUnit other) {
-    return _CalculatedPosition(
+    return PositionCalculated(
       this,
       other,
       calculationAdd,
@@ -1851,7 +1850,7 @@ extension PositionUnitExtension on PositionUnit {
 
   /// Subtracts one position unit from another.
   PositionUnit operator -(PositionUnit other) {
-    return _CalculatedPosition(
+    return PositionCalculated(
       this,
       other,
       calculationSubtract,
@@ -1861,14 +1860,14 @@ extension PositionUnitExtension on PositionUnit {
   /// Multiplies two position units.
   PositionUnit operator *(Object other) {
     if (other is PositionUnit) {
-      return _CalculatedPosition(
+      return PositionCalculated(
         this,
         other,
         calculationMultiply,
       );
     }
     if (other is double) {
-      return _CalculatedPosition(
+      return PositionCalculated(
         this,
         PositionUnit.fixed(other),
         calculationMultiply,
@@ -1879,7 +1878,7 @@ extension PositionUnitExtension on PositionUnit {
 
   /// Multiplies a position unit by a scalar.
   PositionUnit times(double other) {
-    return _CalculatedPosition(
+    return PositionCalculated(
       this,
       PositionUnit.fixed(other),
       calculationMultiply,
@@ -1888,7 +1887,7 @@ extension PositionUnitExtension on PositionUnit {
 
   /// Divides one position unit by another.
   PositionUnit operator /(PositionUnit other) {
-    return _CalculatedPosition(
+    return PositionCalculated(
       this,
       other,
       calculationDivide,
@@ -1897,8 +1896,8 @@ extension PositionUnitExtension on PositionUnit {
 
   /// Negates this position unit (equivalent to 0 - this).
   PositionUnit operator -() {
-    return _CalculatedPosition(
-      const _FixedPosition(0),
+    return PositionCalculated(
+      const PositionFixed(0),
       this,
       calculationSubtract,
     );
@@ -1906,10 +1905,10 @@ extension PositionUnitExtension on PositionUnit {
 
   /// Constrains this position unit within the specified min and max bounds.
   PositionUnit clamp({
-    PositionUnit min = const _FixedPosition(double.negativeInfinity),
-    PositionUnit max = const _FixedPosition(double.infinity),
+    PositionUnit min = const PositionFixed(double.negativeInfinity),
+    PositionUnit max = const PositionFixed(double.infinity),
   }) {
-    return _ConstrainedPosition(
+    return PositionConstraint(
       position: this,
       min: min,
       max: max,
@@ -1920,7 +1919,7 @@ extension PositionUnitExtension on PositionUnit {
 extension SizeUnitExtension on SizeUnit {
   /// Adds two size units together.
   SizeUnit operator +(SizeUnit other) {
-    return _CalculatedSize(
+    return SizeCalculated(
       this,
       other,
       calculationAdd,
@@ -1929,7 +1928,7 @@ extension SizeUnitExtension on SizeUnit {
 
   /// Subtracts one size unit from another.
   SizeUnit operator -(SizeUnit other) {
-    return _CalculatedSize(
+    return SizeCalculated(
       this,
       other,
       calculationSubtract,
@@ -1939,14 +1938,14 @@ extension SizeUnitExtension on SizeUnit {
   /// Multiplies two size units.
   SizeUnit operator *(Object other) {
     if (other is SizeUnit) {
-      return _CalculatedSize(
+      return SizeCalculated(
         this,
         other,
         calculationMultiply,
       );
     }
     if (other is double) {
-      return _CalculatedSize(
+      return SizeCalculated(
         this,
         SizeUnit.fixed(other),
         calculationMultiply,
@@ -1957,7 +1956,7 @@ extension SizeUnitExtension on SizeUnit {
 
   /// Divides one size unit by another.
   SizeUnit operator /(SizeUnit other) {
-    return _CalculatedSize(
+    return SizeCalculated(
       this,
       other,
       calculationDivide,
@@ -1966,8 +1965,8 @@ extension SizeUnitExtension on SizeUnit {
 
   /// Negates this size unit (equivalent to 0 - this).
   SizeUnit operator -() {
-    return _CalculatedSize(
-      const _FixedSize(0),
+    return SizeCalculated(
+      const SizeFixed(0),
       this,
       calculationSubtract,
     );
@@ -1975,10 +1974,10 @@ extension SizeUnitExtension on SizeUnit {
 
   /// Constrains this size unit within the specified min and max bounds.
   SizeUnit clamp({
-    SizeUnit min = const _FixedSize(0),
-    SizeUnit max = const _FixedSize(double.infinity),
+    SizeUnit min = const SizeFixed(0),
+    SizeUnit max = const SizeFixed(double.infinity),
   }) {
-    return _ConstrainedSize(
+    return SizeConstraint(
       size: this,
       min: min,
       max: max,
@@ -1989,7 +1988,7 @@ extension SizeUnitExtension on SizeUnit {
 extension SpacingUnitExtension on SpacingUnit {
   /// Adds two spacing units together.
   SpacingUnit operator +(SpacingUnit other) {
-    return _CalculatedSpacing(
+    return SpacingCalculated(
       this,
       other,
       calculationAdd,
@@ -1998,7 +1997,7 @@ extension SpacingUnitExtension on SpacingUnit {
 
   /// Subtracts one spacing unit from another.
   SpacingUnit operator -(SpacingUnit other) {
-    return _CalculatedSpacing(
+    return SpacingCalculated(
       this,
       other,
       calculationSubtract,
@@ -2008,14 +2007,14 @@ extension SpacingUnitExtension on SpacingUnit {
   /// Multiplies two spacing units.
   SpacingUnit operator *(Object other) {
     if (other is SpacingUnit) {
-      return _CalculatedSpacing(
+      return SpacingCalculated(
         this,
         other,
         calculationMultiply,
       );
     }
     if (other is double) {
-      return _CalculatedSpacing(
+      return SpacingCalculated(
         this,
         SpacingUnit.fixed(other),
         calculationMultiply,
@@ -2026,7 +2025,7 @@ extension SpacingUnitExtension on SpacingUnit {
 
   /// Divides one spacing unit by another.
   SpacingUnit operator /(SpacingUnit other) {
-    return _CalculatedSpacing(
+    return SpacingCalculated(
       this,
       other,
       calculationDivide,
@@ -2035,8 +2034,8 @@ extension SpacingUnitExtension on SpacingUnit {
 
   /// Negates this spacing unit (equivalent to 0 - this).
   SpacingUnit operator -() {
-    return _CalculatedSpacing(
-      const _FixedSpacing(0),
+    return SpacingCalculated(
+      const SpacingFixed(0),
       this,
       calculationSubtract,
     );
@@ -2044,10 +2043,10 @@ extension SpacingUnitExtension on SpacingUnit {
 
   /// Constrains this spacing unit within the specified min and max bounds.
   SpacingUnit clamp({
-    SpacingUnit min = const _FixedSpacing(0),
-    SpacingUnit max = const _FixedSpacing(double.infinity),
+    SpacingUnit min = const SpacingFixed(0),
+    SpacingUnit max = const SpacingFixed(double.infinity),
   }) {
-    return _ConstrainedSpacing(
+    return SpacingConstraint(
       spacing: this,
       min: min,
       max: max,

@@ -23,7 +23,7 @@ extension EdgeInsetsGeometryExtension on EdgeInsetsGeometry {
       right: SpacingUnit.fixed(edgeInsets.right),
       bottom: SpacingUnit.fixed(edgeInsets.bottom),
     ),
-    EdgeInsetsDirectional edgeInsetsDirectional => DirectionalEdgeSpacing.only(
+    EdgeInsetsDirectional edgeInsetsDirectional => EdgeSpacingDirectional.only(
       start: SpacingUnit.fixed(edgeInsetsDirectional.start),
       top: SpacingUnit.fixed(edgeInsetsDirectional.top),
       end: SpacingUnit.fixed(edgeInsetsDirectional.end),
@@ -35,12 +35,12 @@ extension EdgeInsetsGeometryExtension on EdgeInsetsGeometry {
   };
 }
 
-/// Extension methods for converting Flutter's [EdgeInsetsDirectional] to flexbox [DirectionalEdgeSpacing].
+/// Extension methods for converting Flutter's [EdgeInsetsDirectional] to flexbox [EdgeSpacingDirectional].
 ///
 /// This extension provides a convenient way to convert directional edge insets
 /// to the flexbox library's directional spacing system, preserving text-direction awareness.
 extension EdgeInsetsDirectionalExtension on EdgeInsetsDirectional {
-  DirectionalEdgeSpacing get asEdgeSpacing => DirectionalEdgeSpacing.only(
+  EdgeSpacingDirectional get asEdgeSpacing => EdgeSpacingDirectional.only(
     start: SpacingUnit.fixed(start),
     top: SpacingUnit.fixed(top),
     end: SpacingUnit.fixed(end),
