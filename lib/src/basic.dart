@@ -386,14 +386,12 @@ class BoxAlignmentContentStretch extends BoxAlignmentContent {
     return false;
   }
 
-  /// Stretches the content to fill the entire viewport size.
-  ///
-  /// This method returns the viewport size as the adjusted content size,
-  /// effectively stretching the item to fill all available space along the axis.
-  @override
   /// Adjusts the size to the maximum of child size and content size.
   ///
   /// This ensures content stretching alignment fills available space.
+  /// Returns the viewport size as the adjusted content size, effectively
+  /// stretching the item to fill all available space along the axis.
+  @override
   double? adjustSize({
     required ParentLayout parent,
     required LayoutAxis axis,
