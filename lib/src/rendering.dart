@@ -78,6 +78,10 @@ class RenderLayoutBox extends RenderBox
         RenderBoxContainerDefaultsMixin<RenderBox, LayoutBoxParentData>,
         ParentLayout
     implements RenderAbstractViewport {
+  /// Finds the nearest [RenderLayoutBox] ancestor in the widget tree.
+  ///
+  /// Searches the render tree starting from the [context]'s render object.
+  /// Returns null if no RenderLayoutBox is found.
   static RenderLayoutBox? find(BuildContext context) {
     RenderObject? renderObject = context.findRenderObject();
     return _findInDescendants(renderObject);
@@ -167,6 +171,9 @@ class RenderLayoutBox extends RenderBox
     required this.clipBehavior,
   });
 
+  /// Horizontal scroll progress as a value between 0.0 and 1.0.
+  ///
+  /// Returns 0.0 if there's no horizontal overflow.
   double get scrollProgressX {
     final scrollMax = max(0.0, contentSize.width - viewportSize.width);
     if (scrollMax == 0.0) {
@@ -175,6 +182,9 @@ class RenderLayoutBox extends RenderBox
     return horizontal.pixels / scrollMax;
   }
 
+  /// Vertical scroll progress as a value between 0.0 and 1.0.
+  ///
+  /// Returns 0.0 if there's no vertical overflow.
   double get scrollProgressY {
     final scrollMax = max(0.0, contentSize.height - viewportSize.height);
     if (scrollMax == 0.0) {
@@ -183,30 +193,36 @@ class RenderLayoutBox extends RenderBox
     return vertical.pixels / scrollMax;
   }
 
+  /// Sets the horizontal scroll progress (0.0 to 1.0) instantly.
   set scrollProgressX(double value) {
     final scrollMax = max(0.0, contentSize.width - viewportSize.width);
     horizontal.jumpTo(value * scrollMax);
   }
 
+  /// Sets the vertical scroll progress (0.0 to 1.0) instantly.
   set scrollProgressY(double value) {
-    final scrollMax = max(0.0, contentSize.height - viewportSize.height);
+    final scrollMax = max(0.0, contentSize.height - viewportSize.width);
     vertical.jumpTo(value * scrollMax);
   }
 
+  /// Animates the horizontal scroll progress to the given [value] over [duration].
   void setScrollProgressX(double value, Duration duration, Curve curve) {
     final scrollMax = max(0.0, contentSize.width - viewportSize.width);
     horizontal.moveTo(value * scrollMax, duration: duration, curve: curve);
   }
 
+  /// Animates the vertical scroll progress to the given [value] over [duration].
   void setScrollProgressY(double value, Duration duration, Curve curve) {
     final scrollMax = max(0.0, contentSize.height - viewportSize.height);
     vertical.moveTo(value * scrollMax, duration: duration, curve: curve);
   }
 
+  /// Maximum horizontal scroll offset in pixels.
   double get maxScrollX {
     return max(0.0, contentSize.width - viewportSize.width);
   }
 
+  /// Maximum vertical scroll offset in pixels.
   double get maxScrollY {
     return max(0.0, contentSize.height - viewportSize.height);
   }
@@ -224,6 +240,9 @@ class RenderLayoutBox extends RenderBox
     return null;
   }
 
+  /// Finds the index of the child nearest to the given local [localOffset].
+  ///
+  /// Returns -1 if the layout hasn't been computed yet or no child is found.
   int indexOfNearestChildAtOffset(Offset localOffset) {
     final layoutHandle = _layoutHandle;
     assert(
