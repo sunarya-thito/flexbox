@@ -1808,6 +1808,45 @@ class EdgeSpacingDirectional extends EdgeSpacingGeometry {
   }
 }
 
+/// Abstract base class for spacing units used in margins, padding, and gaps.
+///
+/// [SpacingUnit] defines units that calculate spacing values (margins, padding,
+/// gaps) for elements within a layout container. Spacing units determine the
+/// whitespace around and between elements.
+///
+/// Spacing units can reference various layout properties:
+/// - Fixed pixel values
+/// - Viewport dimensions
+/// - Child element sizes
+/// - Constrained values with min/max bounds
+///
+/// Spacing units support mathematical operations and can be combined to create
+/// dynamic spacing expressions that respond to layout context.
+///
+/// Common uses include:
+/// - Fixed padding/margins (e.g., 8px, 16px)
+/// - Responsive spacing based on viewport size
+/// - Gaps between flex items
+/// - Dynamic padding based on content
+///
+/// Spacing is computed during layout after size constraints are known but
+/// before final positioning, allowing spacing to adapt to available space.
+///
+/// Example:
+/// ```dart
+/// // Fixed spacing
+/// final padding = SpacingUnit.fixed(16.0);
+///
+/// // Responsive spacing: 5% of viewport
+/// final gap = SpacingUnit.viewportSize * 0.05;
+///
+/// // Constrained spacing with min/max
+/// final adaptive = SpacingUnit.constrained(
+///   spacing: SpacingUnit.viewportSize * 0.02,
+///   min: SpacingUnit.fixed(8.0),
+///   max: SpacingUnit.fixed(32.0),
+/// );
+/// ```
 abstract class SpacingUnit {
   /// Creates a calculated spacing unit combining two spacing units with an operation.
   ///
