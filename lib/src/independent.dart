@@ -217,19 +217,19 @@ class Box with ParentLayout {
 
   /// The first child in the natural children list.
   Box? get firstChild => _firstChild;
-  
+
   /// The last child in the natural children list.
   Box? get lastChild => _lastChild;
-  
+
   /// The first child in the sorted children list, or the first natural child if no sorting.
   Box? get firstSortedChild => _firstSortedChild ?? _firstChild;
-  
+
   /// The last child in the sorted children list, or the last natural child if no sorting.
   Box? get lastSortedChild => _lastSortedChild ?? _lastChild;
-  
+
   /// The total number of children in this parent box.
   int get childCount => _childCount;
-  
+
   /// The layout constraints applied to this box.
   LayoutConstraints get constraints => _constraints!;
 
@@ -238,7 +238,7 @@ class Box with ParentLayout {
 
   /// The computed size of this box.
   LayoutSize get size => _viewportSize!;
-  
+
   /// Sets the size of this box.
   set size(LayoutSize size) {
     _viewportSize = size;
@@ -501,17 +501,17 @@ class Box with ParentLayout {
   Box? get parent => _parent;
 
   LayoutPipelineOwner? _owner;
-  
+
   /// The layout pipeline owner managing this box's layout lifecycle.
   LayoutPipelineOwner? get owner => _owner;
 
   bool? _isRelayoutBoundary;
-  
+
   /// Whether this box determines its own size without input from children.
   ///
   /// When true, this box is sized before laying out children.
   bool sizedByParent = false;
-  
+
   bool _needsLayout = true;
 
   /// Marks this box as needing layout.
@@ -679,6 +679,7 @@ class Box with ParentLayout {
 /// layout process to ensure all constraints are properly resolved.
 class LayoutPipelineOwner {
   final List<Box> _nodesNeedingLayout = [];
+
   /// Callback invoked when the layout system needs a visual update.
   ///
   /// This callback should trigger a repaint or redraw of the UI when layout
@@ -721,6 +722,9 @@ class BoxChildLayout with ChildLayout {
     // assert(false, 'Clearing cache on child layout is not supported.');
     box.parentData.cache = null;
   }
+
+  @override
+  LayoutRect get paintBounds => box.actualPaintBounds;
 
   @override
   LayoutSize dryLayout(LayoutConstraints constraints) {

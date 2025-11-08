@@ -397,7 +397,7 @@ class LayoutOffset {
 class LayoutRange {
   /// The start point of the range.
   final double start;
-  
+
   /// The end point of the range.
   final double end;
 
@@ -484,13 +484,13 @@ class LayoutRect {
 
   /// The x-coordinate of the horizontal center of this rectangle.
   double get horizontalCenter => left + width / 2;
-  
+
   /// The y-coordinate of the vertical center of this rectangle.
   double get verticalCenter => top + height / 2;
 
   /// The horizontal range (left to right) of this rectangle.
   LayoutRange get horizontalRange => LayoutRange(left, right);
-  
+
   /// The vertical range (top to bottom) of this rectangle.
   LayoutRange get verticalRange => LayoutRange(top, bottom);
 
@@ -767,6 +767,12 @@ mixin ChildLayout {
   /// Used for traversing the child list during layout calculations.
   ChildLayout? get previousSibling;
 
+  /// The paint bounds of this child after layout.
+  ///
+  /// Only valid after [layout] has been called. Represents the area
+  /// that this child occupies for painting purposes.
+  LayoutRect get paintBounds;
+
   /// Returns the distance from the top of this child to the specified baseline.
   ///
   /// Used for text alignment when children contain text elements.
@@ -943,6 +949,9 @@ class ChildLayoutDryDelegate with ChildLayout {
   LayoutSize get size {
     throw Exception('size is not supported in dry delegate');
   }
+
+  @override
+  LayoutRect get paintBounds => child.paintBounds;
 }
 
 /// Interface for parent elements that manage child layout.

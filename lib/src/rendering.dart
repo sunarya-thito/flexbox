@@ -732,6 +732,9 @@ class RenderLayoutBox extends RenderBox
     }
   }
 
+  @override
+  Rect get paintBounds => actualPaintBounds ?? super.paintBounds;
+
   bool _childOutOfViewport(RenderBox child) {
     if (!child.hasSize) {
       // was being skipped out during layout
@@ -1367,6 +1370,9 @@ class RenderBoxChildLayout with ChildLayout {
   @override
   LayoutData get layoutData =>
       (renderBox.parentData as LayoutBoxParentData).layoutData;
+
+  @override
+  LayoutRect get paintBounds => layoutRectFromRect(renderBox.paintBounds);
 }
 
 /// Converts a Flutter [Size] to a [LayoutSize].
