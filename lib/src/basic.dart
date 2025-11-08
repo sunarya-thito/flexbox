@@ -403,6 +403,19 @@ class BoxAlignmentContentStretch extends BoxAlignmentContent {
   }
 }
 
+/// Fixed-position box alignment that doesn't consider text direction.
+///
+/// [BoxAlignment] provides absolute alignment positioning where values
+/// are interpreted consistently regardless of text direction (LTR/RTL).
+/// For example, -1.0 always means left (horizontal) or top (vertical),
+/// while 1.0 always means right or bottom.
+///
+/// Use this when you need consistent alignment that doesn't change based
+/// on locale. For text-direction-aware alignment, use [BoxAlignmentDirectional].
+///
+/// See also:
+///  * [BoxAlignmentDirectional], for text-direction-aware alignment
+///  * [BoxAlignmentSpacing], for spacing-based alignment
 class BoxAlignment extends BoxAlignmentBase {
   /// Aligns to the start (left/top) of the container.
   static const BoxAlignmentBase start = BoxAlignment(-1.0);
@@ -479,6 +492,19 @@ class BoxAlignmentGeometryBaseline extends BoxAlignmentGeometry {
   }
 }
 
+/// Text-direction-aware box alignment that adapts to locale.
+///
+/// [BoxAlignmentDirectional] provides alignment positioning that respects
+/// the text direction (LTR/RTL) of the current locale. For example, 'start'
+/// means left in LTR languages but right in RTL languages like Arabic or Hebrew.
+///
+/// This is the preferred alignment type when building internationalized UIs
+/// that need to adapt to different reading directions. The alignment values
+/// automatically flip for RTL contexts.
+///
+/// See also:
+///  * [BoxAlignment], for fixed alignment that ignores text direction
+///  * [BoxAlignmentSpacing], for spacing-based alignment
 class BoxAlignmentDirectional extends BoxAlignmentBase {
   /// Aligns to the start of the container, respecting text direction.
   /// In LTR text, this is left/top; in RTL text, this is right/top.
@@ -531,6 +557,19 @@ class BoxAlignmentDirectional extends BoxAlignmentBase {
   }
 }
 
+/// Spacing-based box alignment for distributing items with gaps.
+///
+/// [BoxAlignmentSpacing] controls how items are distributed within a container
+/// by specifying spacing ratios at the start and end. This enables layouts like
+/// space-between, space-around, and space-evenly.
+///
+/// The [aroundStart] and [aroundEnd] values determine how much space is added
+/// before the first item and after the last item relative to the space between items.
+/// For example, space-around uses 0.5 for both, while space-evenly uses 1.0.
+///
+/// See also:
+///  * [BoxAlignment], for fixed position alignment
+///  * [BoxAlignmentDirectional], for text-direction-aware alignment
 class BoxAlignmentSpacing extends BoxAlignmentBase {
   /// The spacing ratio at the start (before first item).
   final double aroundStart;
@@ -622,6 +661,19 @@ class BoxAlignmentSpacing extends BoxAlignmentBase {
   }
 }
 
+/// Controls overflow behavior and scrollability of a layout container.
+///
+/// [LayoutOverflow] defines how a container handles content that exceeds its bounds.
+/// It combines three boolean flags to control visibility, clipping, and scrolling:
+/// - [allowOverflow]: Whether content can overflow without being clipped
+/// - [clipContent]: Whether overflowing content is clipped (hidden)
+/// - [allowScrolling]: Whether the container can scroll to reveal overflowed content
+///
+/// Common patterns:
+/// - [visible]: No clipping, no scrolling (content may overflow visibly)
+/// - [scroll]: Clipped and scrollable (standard scrolling behavior)
+/// - [hidden]: Clipped but not scrollable (content is hidden)
+/// - [scrollX]/[scrollY]: Scrolling in one direction only
 final class LayoutOverflow {
   /// Content does not scroll and is not clipped.
   ///
@@ -716,6 +768,14 @@ final class LayoutOverflow {
 /// - Content-based sizes ([minContent], [maxContent], [fitContent])
 /// - Viewport-relative sizes ([viewportSize])
 abstract class SizeUnit {
+  /// Creates a calculated size unit by combining two size units with an operation.
+  ///
+  /// Performs mathematical operations (addition, subtraction, multiplication, division)
+  /// on two size units to create a composite sizing strategy. This is equivalent to
+  /// CSS calc() function.
+  ///
+  /// Example: `SizeUnit.calc(fixed(100), percentage(50), calculationAdd)`
+  /// creates a size that is 100px + 50% of the container.
   const factory SizeUnit.calc(
     SizeUnit a,
     SizeUnit b,
@@ -779,6 +839,10 @@ abstract class SizeUnit {
     required LayoutSize viewportSize,
   });
 
+  /// Converts the size unit to a code string representation.
+  ///
+  /// Returns a string that represents this size unit in code form,
+  /// useful for debugging and serialization.
   String toCodeString();
 }
 
@@ -917,9 +981,18 @@ abstract class PositionUnit {
     required LayoutAxis direction,
   });
 
+  /// Converts the position unit to a code string representation.
+  ///
+  /// Returns a string that represents this position unit in code form,
+  /// useful for debugging and serialization.
   String toCodeString();
 }
 
+/// Defines a mathematical operation for combining two numeric values.
+///
+/// Used with calculated size and position units to specify how values
+/// should be combined. Common operations include addition, subtraction,
+/// multiplication, and division.
 typedef CalculationOperation = double Function(double a, double b);
 
 /// Adds two values: a + b
@@ -952,6 +1025,7 @@ class SizeCalculated extends SizeUnit {
   /// The mathematical operation to perform.
   final CalculationOperation operation;
 
+  /// Creates a calculated size unit with the specified operands and operation.
   const SizeCalculated(this.first, this.second, this.operation);
 
   @override
@@ -2160,6 +2234,14 @@ class SpacingChildSize implements SpacingUnit {
   }
 }
 
+/// Extension providing arithmetic operators for position units.
+///
+/// Adds convenient operator overloads for combining position units using
+/// mathematical operations. These operators create calculated position units
+/// that evaluate to the combined result at layout time.
+///
+/// Example: `PositionUnit.zero + PositionUnit.fixed(10)` creates a position
+/// that is 10 pixels from the reference point.
 extension PositionUnitExtension on PositionUnit {
   /// Adds two position units together.
   PositionUnit operator +(PositionUnit other) {
