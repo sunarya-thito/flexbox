@@ -58,7 +58,7 @@ flutter:
 
 topics:
 - flexbox
-- CSS
+- css
 - layout
 - 2D-scrolling
 - flex-wrap
