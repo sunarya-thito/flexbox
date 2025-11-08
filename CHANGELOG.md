@@ -1,3 +1,47 @@
+## 1.0.1
+
+- **BREAKING**: Renamed internal classes to public API with consistent naming
+  conventions:
+  - Alignment classes:
+    - `DirectionalBoxAlignment` → `BoxAlignmentDirectional`
+    - `_EvenSpacingAlignment` → `BoxAlignmentSpacing`
+    - `_StretchBoxAlignment` → `BoxAlignmentContentStretch`
+    - `_BaselineBoxAlignment` → `BoxAlignmentGeometryBaseline`
+  - Size unit classes:
+    - `_CalculatedSize` → `SizeCalculated`
+    - `_ConstrainedSize` → `SizeConstraint`
+    - `_FixedSize` → `SizeFixed`
+    - `_SizeViewportSizeReference` → `SizeViewport`
+    - `_MinContent` → `SizeMinContent`
+    - `_MaxContent` → `SizeMaxContent`
+    - `_FitContent` → `SizeFitContent`
+  - Position unit classes:
+    - `_CalculatedPosition` → `PositionCalculated`
+    - `_FixedPosition` → `PositionFixed`
+    - `_ViewportSizeReference` → `PositionViewportSize`
+    - `_ContentSizeReference` → `PositionContentSize`
+    - `_ChildSizeReference` → `PositionChildSize`
+    - `_BoxOffset` → `PositionOffset`
+    - `_ScrollOffset` → `PositionScroll`
+    - `_ContentOverflow` → `PositionOverflow`
+    - `_ContentUnderflow` → `PositionUnderflow`
+    - `_ViewportEndBound` → `PositionViewportEndBound`
+    - `_CrossPosition` → `PositionCross`
+    - `_ConstrainedPosition` → `PositionConstraint`
+  - Spacing unit classes:
+    - `DirectionalEdgeSpacing` → `EdgeSpacingDirectional`
+    - `_FixedSpacing` → `SpacingFixed`
+    - `_SpacingViewportSizeReference` → `SpacingViewport`
+    - `_CalculatedSpacing` → `SpacingCalculated`
+    - `_ConstrainedSpacing` → `SpacingConstraint`
+    - `_ChildSizeSpacing` → `SpacingChildSize`
+- Added `flexiblebox_eval.dart` library export for evaluation system access
+- Added comprehensive documentation to all public classes, methods, and
+  properties across the entire codebase
+- Added documentation to extension methods in `flexiblebox_extensions.dart` and
+  `flexiblebox_flutter.dart`
+- Fixed README.md code block formatting inconsistencies
+
 ## 1.0.0
 
 - Added `Scrollbars` widget with customizable scrollbar UI for FlexBox
