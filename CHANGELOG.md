@@ -1,5 +1,19 @@
 ## 1.0.1
 
+- **NEW**: Added comprehensive `WidgetExtension` providing fluent API for widget
+  configuration in flexbox layouts:
+  - Sizing methods: `.width()`, `.height()`, `.sized()`, `.minWidth()`,
+    `.maxWidth()`, `.minHeight()`, `.maxHeight()`, `.minSized()`, `.maxSized()`,
+    `.constrained()`, `.aspectRatio()`
+  - Flex behavior: `.flexGrow()`, `.flexShrink()`
+  - Positioning: `.top()`, `.left()`, `.bottom()`, `.right()`, `.positioned()`,
+    `.position()`
+  - Alignment: `.selfAligned()`
+  - Layout control: `.paintOrder()`, `.key()`, `.id()`, `.asFlexItem`,
+    `.asAbsoluteItem`
+  - All methods support method chaining for declarative widget configuration
+  - Automatically wraps widgets in `FlexItem` or `AbsoluteItem` as needed
+  - Optimizes wrapper nesting when multiple extensions are chained
 - **BREAKING**: Renamed internal classes to public API with consistent naming
   conventions:
   - Alignment classes:

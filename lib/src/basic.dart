@@ -8,7 +8,7 @@ import 'package:flexiblebox/src/layout.dart';
 /// its absolutely positioned descendants. Similar to CSS positioning contexts, this
 /// determines which parent an absolutely positioned child will be positioned relative to.
 ///
-/// Used in conjunction with [LayoutBehavior.absolute] and position properties 
+/// Used in conjunction with [LayoutBehavior.absolute] and position properties
 /// (top, left, right, bottom) to establish the positioning hierarchy.
 enum PositionType {
   /// Does not establish a positioning context (default).

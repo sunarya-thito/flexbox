@@ -232,7 +232,9 @@ class RenderLayoutBox extends RenderBox
     RenderBox? child = firstChild;
     while (child != null) {
       final childParentData = child.parentData as LayoutBoxParentData;
-      if (childParentData.layoutData.key == key) {
+      if (childParentData.layoutData.key == key ||
+          (childParentData.layoutData.key is ValueKey &&
+              (childParentData.layoutData.key as ValueKey).value == key)) {
         return RenderBoxChildLayout(child, this);
       }
       child = childParentData.nextSibling;

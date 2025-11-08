@@ -5,6 +5,7 @@ import 'package:demo/cases/case_align_self_row.dart';
 import 'package:demo/cases/case_builder.dart';
 import 'package:demo/cases/case_column.dart';
 import 'package:demo/cases/case_column_reverse.dart';
+import 'package:demo/cases/case_extension.dart';
 import 'package:demo/cases/case_flex_wrap_column.dart';
 import 'package:demo/cases/case_flex_wrap_column_reverse.dart';
 import 'package:demo/cases/case_flex_wrap_reverse_column.dart';
@@ -262,6 +263,7 @@ final testCases = [
   CaseIndexFinder(),
   CaseBuilder(),
   CaseRotated(),
+  CaseExtension(),
 ];
 late HighlighterTheme darkHighlighterTheme;
 void main(List<String> args) async {

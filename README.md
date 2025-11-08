@@ -394,6 +394,89 @@ FlexItem(
 )
 ```
 
+### Widget Extensions
+
+The `WidgetExtension` provides a fluent, chainable API for configuring widget properties in flexbox layouts. Instead of wrapping widgets in `FlexItem` or `AbsoluteItem`, you can use extension methods directly on any widget.
+
+```dart
+import 'package:flexiblebox/flexiblebox_extensions.dart';
+
+// Fluent API for widget configuration
+Container(color: Colors.blue)
+  .width(100.size)
+  .height(50.size)
+  .flexGrow(1)
+  .selfAligned(BoxAlignment.center);
+
+// Equivalent to:
+FlexItem(
+  width: 100.size,
+  height: 50.size,
+  flexGrow: 1,
+  alignSelf: BoxAlignment.center,
+  child: Container(color: Colors.blue),
+);
+```
+
+#### Available Extension Methods
+
+**Sizing:**
+- `.width(SizeUnit)` - Sets widget width
+- `.height(SizeUnit)` - Sets widget height
+- `.sized({SizeUnit? width, SizeUnit? height})` - Sets both dimensions
+- `.minWidth(SizeUnit)` / `.maxWidth(SizeUnit)` - Width constraints
+- `.minHeight(SizeUnit)` / `.maxHeight(SizeUnit)` - Height constraints
+- `.minSized({...})` / `.maxSized({...})` - Combined constraints
+- `.constrained({...})` - Comprehensive size constraints
+- `.aspectRatio(double)` - Maintains aspect ratio
+
+**Flex Behavior:**
+- `.flexGrow(double)` - Sets flex grow factor
+- `.flexShrink(double)` - Sets flex shrink factor
+
+**Positioning:**
+- `.top(PositionUnit)` / `.left(PositionUnit)` - Edge offsets
+- `.bottom(PositionUnit)` / `.right(PositionUnit)` - Edge offsets
+- `.positioned({...})` - Multiple edge offsets
+- `.position(PositionType)` - Position type (absolute/relative)
+
+**Alignment:**
+- `.selfAligned(BoxAlignmentGeometry)` - Individual alignment
+
+**Layout Control:**
+- `.paintOrder(int)` - Z-index stacking order
+- `.key(Key)` / `.id(Object)` - Key assignment
+- `.asFlexItem` - Explicitly wrap as FlexItem
+- `.asAbsoluteItem` - Explicitly wrap as AbsoluteItem
+
+#### Chaining Example
+
+Extension methods can be chained for a clean, declarative syntax:
+
+```dart
+FlexBox(
+  direction: FlexDirection.row,
+  children: [
+    // Fixed-size sidebar
+    Container(color: Colors.grey)
+      .width(200.size)
+      .height(100.percent.relativeSize),
+    
+    // Flexible content area
+    Container(color: Colors.white)
+      .flexGrow(1)
+      .minWidth(300.size)
+      .selfAligned(BoxAlignment.stretch),
+    
+    // Absolutely positioned overlay
+    Icon(Icons.close)
+      .asAbsoluteItem
+      .positioned(top: 10.position, right: 10.position)
+      .paintOrder(100),
+  ],
+)
+```
+
 ## Layout Properties
 
 ### Direction
@@ -458,7 +541,8 @@ FlexItem(
 - `PositionUnit.zero`: Zero position (equivalent to `0.position`)
 - `PositionUnit.viewportSize`: Full viewport size along the axis
 - `PositionUnit.contentSize`: Total content size along the axis
-- `PositionUnit.childSize`: Size of the positioned child element
+- `PositionUnit.childSize([Object? key])`: Size of the positioned child element
+  or another child by its key
 - `PositionUnit.boxOffset`: Offset from the box's natural position
 - `PositionUnit.scrollOffset`: Current scroll offset
 - `PositionUnit.contentOverflow`: Amount content overflows the viewport

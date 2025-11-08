@@ -883,6 +883,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
         double biggestLineCrossSize = 0.0;
         ChildLayout? child = line.firstChild;
         ChildLayout? lastChild = line.lastChild;
+        double adjustMainSize = 0.0;
         while (child != null && child != lastChild) {
           if (child.layoutData.behavior == LayoutBehavior.absolute) {
             child = child.nextSibling;
@@ -925,6 +926,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
                   child.layoutData.flexGrow / line.totalFlexGrow;
               double growth = availableMainSpace * growFactor;
               newSize += growth;
+              adjustMainSize += growth;
             } else if (availableMainSpace < 0.0 &&
                 line.totalShrinkFactor > 0.0) {
               double childShrink =
@@ -933,6 +935,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               double shrinkFactor = childShrink / line.totalShrinkFactor;
               double shrinkage = availableMainSpace * shrinkFactor;
               newSize += shrinkage;
+              adjustMainSize += shrinkage;
             }
             double maxNewSize = childCache.maxMainSize ?? double.infinity;
             double minNewSize = childCache.minMainSize ?? 0.0;
@@ -974,7 +977,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
           // line.crossSize = biggestLineCrossSize;
           double lineCrossSize = biggestLineCrossSize;
           line.crossSize = lineCrossSize;
-          line.mainSize += frozenMainSize;
+          line.mainSize += frozenMainSize + adjustMainSize;
         }
       }
 
