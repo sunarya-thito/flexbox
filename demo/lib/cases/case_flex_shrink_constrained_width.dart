@@ -38,7 +38,7 @@ class CaseFlexShrinkConstrainedWidth extends TestCase {
               key: key3,
               flexShrink: 1.0,
               width: SizeUnit.fixed(200),
-              minWidth: SizeUnit.fixed(80),
+              minWidth: SizeUnit.fixed(120),
               maxWidth: SizeUnit.fixed(160),
               height: SizeUnit.fixed(100),
               child: Box(3),

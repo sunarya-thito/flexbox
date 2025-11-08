@@ -396,7 +396,9 @@ FlexItem(
 
 ### Widget Extensions
 
-The `WidgetExtension` provides a fluent, chainable API for configuring widget properties in flexbox layouts. Instead of wrapping widgets in `FlexItem` or `AbsoluteItem`, you can use extension methods directly on any widget.
+The `WidgetExtension` provides a fluent, chainable API for configuring widget
+properties in flexbox layouts. Instead of wrapping widgets in `FlexItem` or
+`AbsoluteItem`, you can use extension methods directly on any widget.
 
 ```dart
 import 'package:flexiblebox/flexiblebox_extensions.dart';
@@ -421,6 +423,7 @@ FlexItem(
 #### Available Extension Methods
 
 **Sizing:**
+
 - `.width(SizeUnit)` - Sets widget width
 - `.height(SizeUnit)` - Sets widget height
 - `.sized({SizeUnit? width, SizeUnit? height})` - Sets both dimensions
@@ -431,19 +434,23 @@ FlexItem(
 - `.aspectRatio(double)` - Maintains aspect ratio
 
 **Flex Behavior:**
+
 - `.flexGrow(double)` - Sets flex grow factor
 - `.flexShrink(double)` - Sets flex shrink factor
 
 **Positioning:**
+
 - `.top(PositionUnit)` / `.left(PositionUnit)` - Edge offsets
 - `.bottom(PositionUnit)` / `.right(PositionUnit)` - Edge offsets
 - `.positioned({...})` - Multiple edge offsets
 - `.position(PositionType)` - Position type (absolute/relative)
 
 **Alignment:**
+
 - `.selfAligned(BoxAlignmentGeometry)` - Individual alignment
 
 **Layout Control:**
+
 - `.paintOrder(int)` - Z-index stacking order
 - `.key(Key)` / `.id(Object)` - Key assignment
 - `.asFlexItem` - Explicitly wrap as FlexItem

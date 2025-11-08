@@ -793,16 +793,8 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               ) ??
               0.0,
       };
-      childCache.mainBasisSize = _clampNullableDouble(
-        resolvedMainSize,
-        resolvedMinMainSize,
-        resolvedMaxMainSize,
-      );
-      childCache.crossSize = _clampNullableDouble(
-        resolvedCrossSize,
-        resolvedMinCrossSize,
-        resolvedMaxCrossSize,
-      );
+      childCache.mainBasisSize = resolvedMainSize;
+      childCache.crossSize = resolvedCrossSize;
       childCache.maxMainSize = resolvedMaxMainSize;
       childCache.minMainSize = resolvedMinMainSize;
       childCache.maxCrossSize = resolvedMaxCrossSize;
@@ -921,12 +913,13 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
 
           if (!childCache.frozen) {
             double newSize = childCache.mainBasisSize ?? 0.0;
+            double mainAdjustment = 0.0;
             if (availableMainSpace > 0.0 && line.totalFlexGrow > 0.0) {
               double growFactor =
                   child.layoutData.flexGrow / line.totalFlexGrow;
               double growth = availableMainSpace * growFactor;
               newSize += growth;
-              adjustMainSize += growth;
+              mainAdjustment += growth;
             } else if (availableMainSpace < 0.0 &&
                 line.totalShrinkFactor > 0.0) {
               double childShrink =
@@ -935,7 +928,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               double shrinkFactor = childShrink / line.totalShrinkFactor;
               double shrinkage = availableMainSpace * shrinkFactor;
               newSize += shrinkage;
-              adjustMainSize += shrinkage;
+              mainAdjustment += shrinkage;
             }
             double maxNewSize = childCache.maxMainSize ?? double.infinity;
             double minNewSize = childCache.minMainSize ?? 0.0;
@@ -963,6 +956,7 @@ class FlexLayoutHandle extends LayoutHandle<FlexLayout> {
               break;
             }
             childCache.mainFlexSize = newSize;
+            adjustMainSize += mainAdjustment;
           }
           if (childCache.crossSize != null) {
             biggestLineCrossSize = max(
