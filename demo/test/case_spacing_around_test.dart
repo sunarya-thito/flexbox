@@ -12,9 +12,14 @@ void main() {
     await tester.pumpAndSettle();
     // perform the test
     tester.expectSize(key0, Size(500.0, 200.0));
-    tester.expectRect(key1, Offset(33.333333333333336, 0.0) & Size(100.0, 100.0));
+    tester.expectRect(
+      key1,
+      Offset(33.333333333333336, 0.0) & Size(100.0, 100.0),
+    );
     tester.expectRect(key2, Offset(200.0, 0.0) & Size(100.0, 100.0));
-    tester.expectRect(key3, Offset(366.6666666666667, 0.0) & Size(100.0, 100.0));
-    
+    tester.expectRect(
+      key3,
+      Offset(366.6666666666667, 0.0) & Size(100.0, 100.0),
+    );
   });
 }

@@ -15,6 +15,5 @@ void main() {
     tester.expectRect(key1, Offset(60.0, 20.0) & Size(100.0, 100.0));
     tester.expectRect(key2, Offset(160.0, 20.0) & Size(100.0, 100.0));
     tester.expectRect(key3, Offset(260.0, 20.0) & Size(100.0, 100.0));
-    
   });
 }

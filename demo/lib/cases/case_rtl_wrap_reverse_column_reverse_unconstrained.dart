@@ -6,7 +6,8 @@ import 'package:flutter/widgets.dart';
 
 class CaseRTLWrapReverseColumnReverseUnconstrained extends TestCase {
   @override
-  String get name => 'Right-to-Left Flex Wrap Reverse Column Reverse (Unconstrained)';
+  String get name =>
+      'Right-to-Left Flex Wrap Reverse Column Reverse (Unconstrained)';
   @override
   String get path => 'case_rtl_wrap_reverse_column_reverse_unconstrained.dart';
   @override

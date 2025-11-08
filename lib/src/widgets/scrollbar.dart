@@ -339,28 +339,28 @@ class _DefaultScrollbarState extends State<DefaultScrollbar> {
 abstract class ScrollbarHandler implements Listenable {
   /// The scroll direction (horizontal or vertical).
   Axis get scrollDirection;
-  
+
   /// The scroll progress as a value between 0.0 and 1.0.
   double get scrollProgress;
-  
+
   /// The current scroll offset in pixels.
   double get scroll;
-  
+
   /// Sets the scroll progress (0.0 to 1.0) instantly.
   set scrollProgress(double value);
-  
+
   /// Animates the scroll progress to [value] over [duration] with the given [curve].
   void setScrollProgress(double value, Duration duration, Curve curve);
-  
+
   /// The maximum scroll offset in pixels.
   double get maxScroll;
-  
+
   /// The total size of the scrollable content.
   double get contentSize;
-  
+
   /// The size of the visible viewport.
   double get viewportSize;
-  
+
   /// Whether the scrollbar should be visible (true if content exceeds viewport).
   bool get shouldShowScrollbar => contentSize > viewportSize;
 
