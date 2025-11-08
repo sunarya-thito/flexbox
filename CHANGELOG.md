@@ -1,13 +1,14 @@
 ## 1.0.1
 
 - **FIX**: Corrected flex shrink algorithm to properly handle size constraints
-  - Fixed issue where flex shrink calculations were incorrectly constrained during
-    initial basis size calculation instead of after flex adjustments
+  - Fixed issue where flex shrink calculations were incorrectly constrained
+    during initial basis size calculation instead of after flex adjustments
   - Removed premature clamping of `mainBasisSize` and `crossSize` with min/max
     constraints, allowing the flex algorithm to work correctly
   - Fixed `adjustMainSize` calculation to accumulate actual size changes rather
     than intended changes, preventing incorrect flex distribution
-  - Ensures flex shrink respects min/max constraints at the correct stage of layout
+  - Ensures flex shrink respects min/max constraints at the correct stage of
+    layout
 - **DOCS**: Improved README.md formatting for widget extension documentation
   - Added proper section headers for better organization and readability
   - Improved line wrapping in widget extension descriptions
