@@ -1,3 +1,16 @@
+## 1.0.2
+
+- **NEW**: Added `SizeUnit.relative(double percentage)` to create size units
+  relative to the parent's size (Alternative to using `SizeUnit.calculated` for
+  common relative sizing scenarios)
+- **NEW**: Added `PositionUnit.relative(double factor)` to create position units
+  relative to the parent's size for easier relative positioning within
+  containers (Alternative to using `PositionUnit.calculated` for common relative
+  positioning scenarios)
+- **NEW**: Added `SpacingUnit.relative(double percentage)` to create spacing
+  units relative to the parent's size (Alternative to using
+  `SpacingUnit.calculated` for common relative spacing scenarios)
+
 ## 1.0.1
 
 - **FIX**: Corrected flex shrink algorithm to properly handle size constraints
