@@ -810,6 +810,9 @@ abstract class SizeUnit {
   /// Sizes to match the viewport size.
   static const SizeUnit viewportSize = SizeViewport();
 
+  /// Size relative to the parent's size by a percentage.
+  const factory SizeUnit.relative(double percentage) = SizeRelative;
+
   /// Creates a const size unit.
   ///
   /// This is the base constructor for all size unit implementations.
@@ -948,6 +951,11 @@ abstract class PositionUnit {
   ///
   /// The optional [key] parameter can reference a specific child element.
   const factory PositionUnit.childSize([Object? key]) = PositionChildSize;
+
+  /// Creates a position unit relative to parent element's size.
+  ///
+  /// The [factor] scales the parent's size to determine the position.
+  const factory PositionUnit.relative(double factor) = PositionRelative;
 
   /// Creates a constrained position unit that clamps values between min and max.
   ///
@@ -1986,6 +1994,9 @@ abstract class SpacingUnit {
   /// Creates a fixed spacing with the specified value.
   const factory SpacingUnit.fixed(double value) = SpacingFixed;
 
+  /// Creates a relative spacing unit with the specified factor.
+  const factory SpacingUnit.relative(double factor) = SpacingRelative;
+
   /// Creates a constrained spacing with min/max bounds.
   const factory SpacingUnit.constrained({
     required SpacingUnit spacing,
@@ -2556,4 +2567,94 @@ class OverflowBounds {
 
   /// Returns true if there is overflow to the right of the viewport.
   bool get hasRightOverflow => right > 0;
+}
+
+/// A position unit that represents a position relative to the parent size.
+///
+/// This position unit calculates its value as a fraction of the parent's
+/// viewport size along the specified axis. For example, a factor of 0.5
+/// positions the element at 50% of the parent's size.
+class PositionRelative extends PositionUnit {
+  /// The relative factor (0.0 to 1.0) of the parent's size.
+  final double factor;
+
+  /// Creates a relative position unit with the specified [factor].
+  const PositionRelative(this.factor);
+
+  @override
+  String toCodeString() => 'relative($factor)';
+
+  @override
+  double computePosition({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required LayoutAxis direction,
+  }) {
+    double size = switch (direction) {
+      LayoutAxis.horizontal => parent.viewportSize.width,
+      LayoutAxis.vertical => parent.viewportSize.height,
+    };
+    return size * factor;
+  }
+}
+
+/// A size unit that represents a size relative to the parent size.
+///
+/// This size unit calculates its value as a fraction of the parent's
+/// viewport size along the specified axis. For example, a factor of 0.5
+/// sizes the element to 50% of the parent's size.
+class SizeRelative extends SizeUnit {
+  /// The relative factor (0.0 to 1.0) of the parent's size.
+  final double factor;
+
+  /// Creates a relative size unit with the specified [factor].
+  const SizeRelative(this.factor);
+
+  @override
+  String toCodeString() => 'relative($factor)';
+
+  @override
+  double computeSize({
+    required ParentLayout parent,
+    required ChildLayout child,
+    required LayoutHandle layoutHandle,
+    required LayoutAxis axis,
+    required LayoutSize contentSize,
+    required LayoutSize viewportSize,
+  }) {
+    double size = switch (axis) {
+      LayoutAxis.horizontal => parent.viewportSize.width,
+      LayoutAxis.vertical => parent.viewportSize.height,
+    };
+    return size * factor;
+  }
+}
+
+/// A spacing unit that represents a spacing relative to the parent size.
+///
+/// This spacing unit calculates its value as a fraction of the parent's
+/// viewport size along the specified axis. For example, a factor of 0.5
+/// results in spacing equal to 50% of the parent's size.
+class SpacingRelative implements SpacingUnit {
+  /// The relative factor (0.0 to 1.0) of the parent's size.
+  final double factor;
+
+  /// Creates a relative spacing unit with the specified [factor].
+  const SpacingRelative(this.factor);
+
+  @override
+  String toCodeString() => 'relative($factor)';
+
+  @override
+  double computeSpacing({
+    required ParentLayout parent,
+    required LayoutAxis axis,
+    required double viewportSize,
+  }) {
+    double size = switch (axis) {
+      LayoutAxis.horizontal => parent.viewportSize.width,
+      LayoutAxis.vertical => parent.viewportSize.height,
+    };
+    return size * factor;
+  }
 }

@@ -198,6 +198,20 @@ class Parser {
           return SizeUnit.maxContent;
         } else if (token.text == 'fitContent') {
           return SizeUnit.fitContent;
+        } else if (token.text == 'relative') {
+          if (peek().type == TokenType.lparen) {
+            advance();
+            final percentageToken = advance();
+            if (percentageToken.type != TokenType.number) {
+              throw 'Expected number for relative percentage';
+            }
+            final percentage = double.parse(percentageToken.text);
+            if (advance().type != TokenType.rparen) {
+              throw 'Expected )';
+            }
+            return SizeUnit.relative(percentage);
+          }
+          throw 'Expected ( after relative';
         }
         throw 'Unknown identifier: ${token.text}';
       case TokenType.lparen:
@@ -277,6 +291,20 @@ class Parser {
             return SpacingUnit.childSize(arg);
           }
           return SpacingUnit.childSize(null);
+        } else if (token.text == 'relative') {
+          if (peek().type == TokenType.lparen) {
+            advance();
+            final factorToken = advance();
+            if (factorToken.type != TokenType.number) {
+              throw 'Expected number for relative factor';
+            }
+            final factor = double.parse(factorToken.text);
+            if (advance().type != TokenType.rparen) {
+              throw 'Expected )';
+            }
+            return SpacingUnit.relative(factor);
+          }
+          throw 'Expected ( after relative';
         }
         throw 'Unknown identifier: ${token.text}';
       case TokenType.lparen:
@@ -358,6 +386,20 @@ class Parser {
             return PositionUnit.childSize(arg);
           }
           return PositionUnit.childSize(null);
+        } else if (token.text == 'relative') {
+          if (peek().type == TokenType.lparen) {
+            advance();
+            final factorToken = advance();
+            if (factorToken.type != TokenType.number) {
+              throw 'Expected number for relative factor';
+            }
+            final factor = double.parse(factorToken.text);
+            if (advance().type != TokenType.rparen) {
+              throw 'Expected )';
+            }
+            return PositionUnit.relative(factor);
+          }
+          throw 'Expected ( after relative';
         } else if (token.text == 'boxOffset') {
           return PositionUnit.boxOffset;
         } else if (token.text == 'scrollOffset') {
