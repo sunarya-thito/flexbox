@@ -1,6 +1,6 @@
 name: flexiblebox
 description: "Complete CSS Flexbox implementation for Flutter. Features flex grow/shrink, alignment, wrapping, RTL support, absolute positioning, and scrolling."
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/sunarya-thito/flexbox
 
 environment:

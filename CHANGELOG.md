@@ -1,3 +1,7 @@
+## 1.0.3
+- **NEW**: Added `debugFillProperties` override to all widgets to provide
+  better debugging experience
+
 ## 1.0.2
 
 - **NEW**: Added `SizeUnit.relative(double percentage)` to create size units
