@@ -9,6 +9,9 @@ export 'src/widgets/widget.dart';
 export 'src/rendering.dart';
 export 'src/widgets/rotated.dart';
 export 'src/widgets/scrollbar.dart';
+export 'src/hero/hero.dart';
+export 'src/hero/scope.dart';
+export 'src/hero/data.dart';
 
 /// Extension methods for converting Flutter's [EdgeInsetsGeometry] to flexbox [EdgeSpacingGeometry].
 ///
