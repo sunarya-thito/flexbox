@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:data_widget/data_widget.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/constraints.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -48,6 +49,13 @@ class ScrollTrackGesture extends StatelessWidget {
       },
       child: child,
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<Duration>('jumpDuration', jumpDuration));
+    properties.add(DiagnosticsProperty<Curve>('jumpCurve', jumpCurve));
   }
 }
 
@@ -95,6 +103,17 @@ class ScrollThumbGesture extends StatelessWidget {
         }
       },
       child: child,
+    );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      ObjectFlagProperty<ValueChanged<bool>>.has(
+        'isDraggingChanged',
+        isDraggingChanged,
+      ),
     );
   }
 }
@@ -195,6 +214,19 @@ class ScrollTrack extends StatelessWidget {
       },
     );
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<Duration>('jumpDuration', jumpDuration));
+    properties.add(DiagnosticsProperty<Curve>('jumpCurve', jumpCurve));
+    properties.add(
+      ObjectFlagProperty<ValueChanged<bool>>.has(
+        'isDraggingChanged',
+        isDraggingChanged,
+      ),
+    );
+  }
 }
 
 /// A default implementation of a scrollbar with customizable appearance.
@@ -285,6 +317,35 @@ class DefaultScrollbar extends StatefulWidget {
 
   @override
   State<DefaultScrollbar> createState() => _DefaultScrollbarState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DoubleProperty('minThumbLength', minThumbLength));
+    properties.add(
+      DiagnosticsProperty<Decoration>('thumbDecoration', thumbDecoration),
+    );
+    properties.add(
+      DiagnosticsProperty<Decoration>('trackDecoration', trackDecoration),
+    );
+    properties.add(
+      DiagnosticsProperty<Decoration>(
+        'thumbActiveDecoration',
+        thumbActiveDecoration,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<Decoration>(
+        'trackActiveDecoration',
+        trackActiveDecoration,
+      ),
+    );
+    properties.add(DiagnosticsProperty<EdgeInsetsGeometry>('margin', margin));
+    properties.add(DiagnosticsProperty<EdgeInsetsGeometry>('padding', padding));
+    properties.add(DiagnosticsProperty<Duration>('fadeDuration', fadeDuration));
+    properties.add(DiagnosticsProperty<Duration>('jumpDuration', jumpDuration));
+    properties.add(DiagnosticsProperty<Curve>('jumpCurve', jumpCurve));
+  }
 }
 
 class _DefaultScrollbarState extends State<DefaultScrollbar> {
@@ -632,6 +693,39 @@ class Scrollbars extends StatefulWidget {
 
   @override
   State<Scrollbars> createState() => _ScrollbarsState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      DiagnosticsProperty<Widget>('verticalScrollbar', verticalScrollbar),
+    );
+    properties.add(
+      DiagnosticsProperty<Widget>('horizontalScrollbar', horizontalScrollbar),
+    );
+    properties.add(DiagnosticsProperty<Widget>('corner', corner));
+    properties.add(
+      DiagnosticsProperty<bool>(
+        'verticalScrollbarPadsContent',
+        verticalScrollbarPadsContent,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>(
+        'horizontalScrollbarPadsContent',
+        horizontalScrollbarPadsContent,
+      ),
+    );
+    properties.add(
+      DoubleProperty('verticalScrollbarThickness', verticalScrollbarThickness),
+    );
+    properties.add(
+      DoubleProperty(
+        'horizontalScrollbarThickness',
+        horizontalScrollbarThickness,
+      ),
+    );
+  }
 }
 
 class _ScrollbarsNotifier with ChangeNotifier {

@@ -3,6 +3,7 @@ import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/scrollable.dart';
 import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flexiblebox/src/widgets/fallback.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -416,6 +417,24 @@ class _DirectAbsoluteItem extends ParentDataWidget<LayoutBoxParentData>
   /// when this widget is used incorrectly (not within a LayoutBox).
   @override
   Type get debugTypicalAncestorWidgetClass => LayoutBoxWidget;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(IntProperty('paintOrder', paintOrder));
+    properties.add(DiagnosticsProperty<SizeUnit>('width', width));
+    properties.add(DiagnosticsProperty<SizeUnit>('height', height));
+    properties.add(DiagnosticsProperty<SizeUnit>('minWidth', minWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxWidth', maxWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('minHeight', minHeight));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxHeight', maxHeight));
+    properties.add(DiagnosticsProperty<PositionUnit>('top', top));
+    properties.add(DiagnosticsProperty<PositionUnit>('left', left));
+    properties.add(DiagnosticsProperty<PositionUnit>('bottom', bottom));
+    properties.add(DiagnosticsProperty<PositionUnit>('right', right));
+    properties.add(DoubleProperty('aspectRatio', aspectRatio));
+    properties.add(DiagnosticsProperty<Key>('layoutKey', layoutKey));
+  }
 }
 
 /// A builder variant of [AbsoluteItem] that allows dynamic child construction.
@@ -536,6 +555,24 @@ class _BuilderAbsoluteItem extends StatelessWidget implements AbsoluteItem {
       layoutKey: key,
       child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(ObjectFlagProperty<dynamic>.has('builder', builder));
+    properties.add(IntProperty('paintOrder', paintOrder));
+    properties.add(DiagnosticsProperty<SizeUnit>('width', width));
+    properties.add(DiagnosticsProperty<SizeUnit>('height', height));
+    properties.add(DiagnosticsProperty<SizeUnit>('minWidth', minWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxWidth', maxWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('minHeight', minHeight));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxHeight', maxHeight));
+    properties.add(DiagnosticsProperty<PositionUnit>('top', top));
+    properties.add(DiagnosticsProperty<PositionUnit>('left', left));
+    properties.add(DiagnosticsProperty<PositionUnit>('bottom', bottom));
+    properties.add(DiagnosticsProperty<PositionUnit>('right', right));
+    properties.add(DoubleProperty('aspectRatio', aspectRatio));
   }
 }
 
@@ -734,6 +771,49 @@ class LayoutBoxViewport extends MultiChildRenderObjectWidget {
       renderObject.markNeedsPaint();
     }
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(EnumProperty<TextDirection>('textDirection', textDirection));
+    properties.add(DiagnosticsProperty<bool>('reversePaint', reversePaint));
+    properties.add(
+      EnumProperty<Axis>('mainScrollDirection', mainScrollDirection),
+    );
+    properties.add(
+      DiagnosticsProperty<ViewportOffset>('horizontal', horizontal),
+    );
+    properties.add(DiagnosticsProperty<ViewportOffset>('vertical', vertical));
+    properties.add(
+      EnumProperty<AxisDirection>(
+        'horizontalAxisDirection',
+        horizontalAxisDirection,
+      ),
+    );
+    properties.add(
+      EnumProperty<AxisDirection>(
+        'verticalAxisDirection',
+        verticalAxisDirection,
+      ),
+    );
+    properties.add(DiagnosticsProperty<Layout>('layout', layout));
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>(
+        'horizontalOverflow',
+        horizontalOverflow,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>('verticalOverflow', verticalOverflow),
+    );
+    properties.add(
+      DiagnosticsProperty<TextBaseline>('textBaseline', textBaseline),
+    );
+    properties.add(
+      DiagnosticsProperty<BorderRadiusGeometry>('borderRadius', borderRadius),
+    );
+    properties.add(EnumProperty<Clip>('clipBehavior', clipBehavior));
+  }
 }
 
 /// A flexible layout container that supports scrolling and custom layout algorithms.
@@ -912,6 +992,69 @@ class LayoutBoxWidget extends StatefulWidget {
 
   @override
   State<LayoutBoxWidget> createState() => _LayoutBoxWidgetState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      EnumProperty<TextDirection>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+      ),
+    );
+    properties.add(DiagnosticsProperty<bool>('reversePaint', reversePaint));
+    properties.add(DiagnosticsProperty<Layout>('layout', layout));
+    properties.add(
+      DiagnosticsProperty<ScrollController>(
+        'verticalController',
+        verticalController,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<ScrollController>(
+        'horizontalController',
+        horizontalController,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>(
+        'horizontalOverflow',
+        horizontalOverflow,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>('verticalOverflow', verticalOverflow),
+    );
+    properties.add(
+      DiagnosticsProperty<DiagonalDragBehavior>(
+        'diagonalDragBehavior',
+        diagonalDragBehavior,
+      ),
+    );
+    properties.add(
+      EnumProperty<Axis>('mainScrollDirection', mainScrollDirection),
+    );
+    properties.add(
+      DiagnosticsProperty<TextBaseline>('textBaseline', textBaseline),
+    );
+    properties.add(
+      DiagnosticsProperty<BorderRadiusGeometry>('borderRadius', borderRadius),
+    );
+    properties.add(EnumProperty<Clip>('clipBehavior', clipBehavior));
+    properties.add(
+      DiagnosticsProperty<bool>(
+        'reverseHorizontalScroll',
+        reverseHorizontalScroll,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>(
+        'reverseVerticalScroll',
+        reverseVerticalScroll,
+      ),
+    );
+  }
 }
 
 class _LayoutBoxWidgetState extends State<LayoutBoxWidget> {

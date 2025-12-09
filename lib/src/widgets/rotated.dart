@@ -91,6 +91,19 @@ class RotatedWidget extends SingleChildRenderObjectWidget {
       renderObject.markNeedsPaint();
     }
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DoubleProperty('angle', angle));
+    properties.add(
+      EnumProperty<FilterQuality>(
+        'filterQuality',
+        filterQuality,
+        defaultValue: null,
+      ),
+    );
+  }
 }
 
 /// Render object that handles the rotation transformation and layout of [RotatedWidget].

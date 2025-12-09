@@ -1,6 +1,7 @@
 import 'package:flexiblebox/flexiblebox_dart.dart';
 import 'package:flexiblebox/flexiblebox_flutter.dart';
 import 'package:flexiblebox/src/constraints.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 // hidden from public API
@@ -276,6 +277,14 @@ class LayoutBoxBuilder extends StatelessWidget {
         final box = (constraints as BoxConstraintsWithData<LayoutBox>).data;
         return builder(context, box);
       },
+    );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      ObjectFlagProperty<LayoutBoxWidgetBuilder>.has('builder', builder),
     );
   }
 }

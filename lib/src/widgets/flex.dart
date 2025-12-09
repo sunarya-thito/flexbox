@@ -3,6 +3,7 @@ import 'package:flexiblebox/src/layout.dart';
 import 'package:flexiblebox/src/layout/flex.dart';
 import 'package:flexiblebox/src/widgets/builder.dart';
 import 'package:flexiblebox/src/widgets/fallback.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// A widget that configures flex properties for an individual child within a [FlexBox].
@@ -408,6 +409,31 @@ class DirectFlexItem extends ParentDataWidget<LayoutBoxParentData>
   /// when this widget is used incorrectly.
   @override
   Type get debugTypicalAncestorWidgetClass => FlexBox;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(IntProperty('paintOrder', paintOrder));
+    properties.add(DiagnosticsProperty<SizeUnit>('width', width));
+    properties.add(DiagnosticsProperty<SizeUnit>('height', height));
+    properties.add(DiagnosticsProperty<SizeUnit>('minWidth', minWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxWidth', maxWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('minHeight', minHeight));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxHeight', maxHeight));
+    properties.add(DoubleProperty('flexGrow', flexGrow));
+    properties.add(DoubleProperty('flexShrink', flexShrink));
+    properties.add(DoubleProperty('aspectRatio', aspectRatio));
+    properties.add(DiagnosticsProperty<PositionUnit>('top', top));
+    properties.add(DiagnosticsProperty<PositionUnit>('left', left));
+    properties.add(DiagnosticsProperty<PositionUnit>('bottom', bottom));
+    properties.add(DiagnosticsProperty<PositionUnit>('right', right));
+    properties.add(EnumProperty<PositionType>('position', position));
+    properties.add(
+      DiagnosticsProperty<BoxAlignmentGeometry>('alignSelf', alignSelf),
+    );
+    properties.add(DiagnosticsProperty<bool>('needLayoutBox', needLayoutBox));
+    properties.add(DiagnosticsProperty<Key>('layoutKey', layoutKey));
+  }
 }
 
 /// A builder variant of [FlexItem] that allows dynamic child construction.
@@ -550,6 +576,30 @@ class BuilderFlexItem extends StatelessWidget implements FlexItem {
       layoutKey: key,
       needLayoutBox: true,
       child: FallbackWidget(child: LayoutBoxBuilder(builder: builder)),
+    );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(ObjectFlagProperty<dynamic>.has('builder', builder));
+    properties.add(IntProperty('paintOrder', paintOrder));
+    properties.add(DiagnosticsProperty<SizeUnit>('width', width));
+    properties.add(DiagnosticsProperty<SizeUnit>('height', height));
+    properties.add(DiagnosticsProperty<SizeUnit>('minWidth', minWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxWidth', maxWidth));
+    properties.add(DiagnosticsProperty<SizeUnit>('minHeight', minHeight));
+    properties.add(DiagnosticsProperty<SizeUnit>('maxHeight', maxHeight));
+    properties.add(DoubleProperty('flexGrow', flexGrow));
+    properties.add(DoubleProperty('flexShrink', flexShrink));
+    properties.add(DoubleProperty('aspectRatio', aspectRatio));
+    properties.add(DiagnosticsProperty<PositionUnit>('top', top));
+    properties.add(DiagnosticsProperty<PositionUnit>('left', left));
+    properties.add(DiagnosticsProperty<PositionUnit>('bottom', bottom));
+    properties.add(DiagnosticsProperty<PositionUnit>('right', right));
+    properties.add(EnumProperty<PositionType>('position', position));
+    properties.add(
+      DiagnosticsProperty<BoxAlignmentGeometry>('alignSelf', alignSelf),
     );
   }
 }
@@ -900,6 +950,179 @@ class FlexBox extends StatelessWidget {
         justifyContent: justifyContent,
       ),
       children: children,
+    );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      DiagnosticsProperty<FlexDirection>(
+        'direction',
+        direction,
+        defaultValue: FlexDirection.row,
+        tooltip: 'The direction of the main axis for this flex container.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<FlexWrap>(
+        'wrap',
+        wrap,
+        defaultValue: FlexWrap.none,
+        tooltip:
+            "Controls how flex items wrap when they exceed the container's size.",
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<int>(
+        'maxItemsPerLine',
+        maxItemsPerLine,
+        defaultValue: null,
+        tooltip:
+            'The maximum number of items allowed per line when wrapping is enabled.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<int>(
+        'maxLines',
+        maxLines,
+        defaultValue: null,
+        tooltip:
+            'The maximum number of lines allowed when wrapping is enabled.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<EdgeSpacingGeometry>(
+        'padding',
+        padding,
+        defaultValue: EdgeSpacing.zero,
+        tooltip: 'The internal padding applied to the flex container.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<SpacingUnit>(
+        'rowGap',
+        rowGap,
+        defaultValue: SpacingUnit.zero,
+        tooltip: 'The horizontal spacing between adjacent flex items.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<SpacingUnit>(
+        'columnGap',
+        columnGap,
+        defaultValue: SpacingUnit.zero,
+        tooltip: 'The vertical spacing between adjacent flex items.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxAlignmentGeometry>(
+        'alignItems',
+        alignItems,
+        defaultValue: BoxAlignmentGeometry.start,
+        tooltip: 'The default cross-axis alignment for all child items.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxAlignmentContent>(
+        'alignContent',
+        alignContent,
+        defaultValue: BoxAlignmentContent.start,
+        tooltip:
+            "The alignment of the flex container's lines when wrapping is enabled.",
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BoxAlignmentBase>(
+        'justifyContent',
+        justifyContent,
+        defaultValue: BoxAlignmentBase.start,
+        tooltip: 'The main-axis alignment for all child items.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<TextDirection>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+        tooltip: 'The text direction for resolving directional properties.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>(
+        'reversePaint',
+        reversePaint,
+        defaultValue: false,
+        tooltip: 'Whether to reverse the paint order of children.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<ScrollController>(
+        'horizontalController',
+        horizontalController,
+        defaultValue: null,
+        tooltip:
+            'Controller for horizontal scrolling when horizontal overflow is enabled.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<ScrollController>(
+        'verticalController',
+        verticalController,
+        defaultValue: null,
+        tooltip:
+            'Controller for vertical scrolling when vertical overflow is enabled.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>(
+        'horizontalOverflow',
+        horizontalOverflow,
+        defaultValue: LayoutOverflow.hidden,
+        tooltip: 'How to handle content that exceeds the horizontal bounds.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<LayoutOverflow>(
+        'verticalOverflow',
+        verticalOverflow,
+        defaultValue: LayoutOverflow.hidden,
+        tooltip: 'How to handle content that exceeds the vertical bounds.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<DiagonalDragBehavior>(
+        'diagonalDragBehavior',
+        diagonalDragBehavior,
+        defaultValue: DiagonalDragBehavior.free,
+        tooltip: 'Controls how diagonal drag gestures are interpreted.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<TextBaseline>(
+        'textBaseline',
+        textBaseline,
+        defaultValue: null,
+        tooltip:
+            'The text baseline to use for aligning text within the layout.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<Clip>(
+        'clipBehavior',
+        clipBehavior,
+        defaultValue: Clip.hardEdge,
+        tooltip: 'How to clip the content when it overflows the bounds.',
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<BorderRadiusGeometry>(
+        'borderRadius',
+        borderRadius,
+        defaultValue: null,
+        tooltip:
+            "The border radius applied to the container's background and clipping.",
+      ),
     );
   }
 }
