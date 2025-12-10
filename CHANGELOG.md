@@ -1,3 +1,6 @@
+## 1.0.4
+- **NEW**: Added toString and equality check on basic types
+
 ## 1.0.3
 - **NEW**: Added `debugFillProperties` override to all widgets to provide
   better debugging experience
