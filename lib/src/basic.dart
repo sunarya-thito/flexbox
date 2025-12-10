@@ -401,6 +401,19 @@ class BoxAlignmentContentStretch extends BoxAlignmentContent {
   }) {
     return max(childSize, contentSize);
   }
+
+  @override
+  String toString() {
+    return 'BoxAlignmentContentStretch()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BoxAlignmentContentStretch;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// Fixed-position box alignment that doesn't consider text direction.
@@ -455,6 +468,20 @@ class BoxAlignment extends BoxAlignmentBase {
     double center = (viewportSize - contentSize) / 2.0;
     return center + center * value;
   }
+
+  @override
+  String toString() {
+    return 'BoxAlignment($value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BoxAlignment && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// Baseline alignment for text-containing elements.
@@ -490,6 +517,19 @@ class BoxAlignmentGeometryBaseline extends BoxAlignmentGeometry {
   bool needsBaseline({required ParentLayout parent, required LayoutAxis axis}) {
     return true;
   }
+
+  @override
+  String toString() {
+    return 'BoxAlignmentGeometryBaseline()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BoxAlignmentGeometryBaseline;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// Text-direction-aware box alignment that adapts to locale.
@@ -555,6 +595,20 @@ class BoxAlignmentDirectional extends BoxAlignmentBase {
     };
     return center + center * value;
   }
+
+  @override
+  String toString() {
+    return 'BoxAlignmentDirectional($value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BoxAlignmentDirectional && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// Spacing-based box alignment for distributing items with gaps.
@@ -659,6 +713,22 @@ class BoxAlignmentSpacing extends BoxAlignmentBase {
       additionalEndSpacing: flexUnit * aroundEnd,
     );
   }
+
+  @override
+  String toString() {
+    return 'BoxAlignmentSpacing(start: $aroundStart, end: $aroundEnd)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BoxAlignmentSpacing &&
+        other.aroundStart == aroundStart &&
+        other.aroundEnd == aroundEnd;
+  }
+
+  @override
+  int get hashCode => Object.hash(aroundStart, aroundEnd);
 }
 
 /// Controls overflow behavior and scrollability of a layout container.
@@ -1079,6 +1149,23 @@ class SizeCalculated extends SizeUnit {
     );
     return operation(first, second);
   }
+
+  @override
+  String toString() {
+    return 'SizeCalculated(first: $first, second: $second, operation: $operation)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SizeCalculated &&
+        other.first == first &&
+        other.second == second &&
+        other.operation == operation;
+  }
+
+  @override
+  int get hashCode => Object.hash(first, second, operation);
 }
 
 /// A position unit that performs calculations between two other position units.
@@ -1137,6 +1224,23 @@ class PositionCalculated implements PositionUnit {
     );
     return operation(first, second);
   }
+
+  @override
+  String toString() {
+    return 'PositionCalculated(first: $first, second: $second, operation: $operation)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionCalculated &&
+        other.first == first &&
+        other.second == second &&
+        other.operation == operation;
+  }
+
+  @override
+  int get hashCode => Object.hash(first, second, operation);
 }
 
 /// A position unit that represents a fixed, unchanging offset value.
@@ -1162,6 +1266,20 @@ class PositionFixed implements PositionUnit {
   }) {
     return value;
   }
+
+  @override
+  String toString() {
+    return 'PositionFixed($value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionFixed && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// A position unit that represents the full viewport size along an axis.
@@ -1191,6 +1309,19 @@ class PositionViewportSize implements PositionUnit {
       LayoutAxis.vertical => parent.viewportSize.height,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionViewportSize()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionViewportSize;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the total content size along an axis.
@@ -1220,6 +1351,19 @@ class PositionContentSize implements PositionUnit {
       LayoutAxis.vertical => parent.contentSize.height,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionContentSize()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionContentSize;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the size of a child element.
@@ -1270,6 +1414,20 @@ class PositionChildSize implements PositionUnit {
       LayoutAxis.vertical => otherChild.size.height,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionChildSize($key)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionChildSize && other.key == key;
+  }
+
+  @override
+  int get hashCode => key.hashCode;
 }
 
 /// A position unit representing the scroll offset position (named 'boxOffset' in expressions).
@@ -1299,6 +1457,19 @@ class PositionOffset implements PositionUnit {
       LayoutAxis.vertical => parent.scrollOffsetY,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionOffset()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionOffset;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the current scroll offset.
@@ -1329,6 +1500,19 @@ class PositionScroll implements PositionUnit {
       LayoutAxis.vertical => parent.scrollOffsetY,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionScroll()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionScroll;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the amount content overflows the viewport.
@@ -1363,6 +1547,19 @@ class PositionOverflow implements PositionUnit {
       },
     );
   }
+
+  @override
+  String toString() {
+    return 'PositionOverflow()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionOverflow;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the amount of empty space when content is smaller than viewport.
@@ -1397,6 +1594,19 @@ class PositionUnderflow implements PositionUnit {
       },
     );
   }
+
+  @override
+  String toString() {
+    return 'PositionUnderflow()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionUnderflow;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that represents the end boundary of the viewport.
@@ -1426,6 +1636,19 @@ class PositionViewportEndBound implements PositionUnit {
       LayoutAxis.vertical => parent.contentSize.height + parent.scrollOffsetY,
     };
   }
+
+  @override
+  String toString() {
+    return 'PositionViewportEndBound()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PositionViewportEndBound;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A position unit that evaluates another position unit on the cross axis.
@@ -1464,6 +1687,20 @@ class PositionCross implements PositionUnit {
       },
     );
   }
+
+  @override
+  String toString() {
+    return 'PositionCross(position: $position)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionCross && other.position == position;
+  }
+
+  @override
+  int get hashCode => position.hashCode;
 }
 
 /// A position unit that constrains another position unit between minimum and maximum bounds.
@@ -1529,6 +1766,23 @@ class PositionConstraint implements PositionUnit {
     );
     return pos.clamp(minPos, maxPos);
   }
+
+  @override
+  String toString() {
+    return 'PositionConstraint(position: $position, min: $min, max: $max)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionConstraint &&
+        other.position == position &&
+        other.min == min &&
+        other.max == max;
+  }
+
+  @override
+  int get hashCode => Object.hash(position, min, max);
 }
 
 /// A size unit that constrains another size unit between minimum and maximum bounds.
@@ -1606,6 +1860,23 @@ class SizeConstraint extends SizeUnit {
     );
     return sz.clamp(minSz, maxSz);
   }
+
+  @override
+  String toString() {
+    return 'SizeConstraint(size: $size, min: $min, max: $max)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SizeConstraint &&
+        other.size == size &&
+        other.min == min &&
+        other.max == max;
+  }
+
+  @override
+  int get hashCode => Object.hash(size, min, max);
 }
 
 /// A size unit that represents a fixed, unchanging size value.
@@ -1634,6 +1905,20 @@ class SizeFixed extends SizeUnit {
   }) {
     return value;
   }
+
+  @override
+  String toString() {
+    return 'SizeFixed($value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SizeFixed && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// A size unit that matches the viewport size along the specified axis.
@@ -1664,6 +1949,19 @@ class SizeViewport extends SizeUnit {
     // if result is infinite, it might be coming from intrinsic sizing
     return result.isFinite ? result : 0.0;
   }
+
+  @override
+  String toString() {
+    return 'SizeViewport()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SizeViewport;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A size unit that sizes to the minimum intrinsic size of the content.
@@ -1697,6 +1995,19 @@ class SizeMinContent extends SizeUnit {
       LayoutAxis.vertical => child.getMinIntrinsicHeight(viewportSize.width),
     };
   }
+
+  @override
+  String toString() {
+    return 'SizeMinContent()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SizeMinContent;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A size unit that sizes to the maximum intrinsic size of the content.
@@ -1730,6 +2041,19 @@ class SizeMaxContent extends SizeUnit {
       LayoutAxis.vertical => child.getMaxIntrinsicHeight(viewportSize.width),
     };
   }
+
+  @override
+  String toString() {
+    return 'SizeMaxContent()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SizeMaxContent;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A size unit that fits the content within the available space.
@@ -1769,6 +2093,19 @@ class SizeFitContent extends SizeUnit {
       LayoutAxis.vertical => cachedSize.height,
     };
   }
+
+  @override
+  String toString() {
+    return 'SizeFitContent()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SizeFitContent;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// Abstract base class for edge spacing geometry with directional awareness.
@@ -1854,9 +2191,28 @@ class EdgeSpacing extends EdgeSpacingGeometry {
 
   /// Returns this EdgeSpacing as-is since it's already absolute.
   @override
+  @override
   EdgeSpacing resolve(LayoutTextDirection direction) {
     return this;
   }
+
+  @override
+  String toString() {
+    return 'EdgeSpacing(left: $left, top: $top, right: $right, bottom: $bottom)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is EdgeSpacing &&
+        other.left == left &&
+        other.top == top &&
+        other.right == right &&
+        other.bottom == bottom;
+  }
+
+  @override
+  int get hashCode => Object.hash(left, top, right, bottom);
 }
 
 /// Defines directional spacing values for the edges of a rectangle.
@@ -1923,6 +2279,24 @@ class EdgeSpacingDirectional extends EdgeSpacingGeometry {
       );
     }
   }
+
+  @override
+  String toString() {
+    return 'EdgeSpacingDirectional(start: $start, top: $top, end: $end, bottom: $bottom)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is EdgeSpacingDirectional &&
+        other.start == start &&
+        other.top == top &&
+        other.end == end &&
+        other.bottom == bottom;
+  }
+
+  @override
+  int get hashCode => Object.hash(start, top, end, bottom);
 }
 
 /// Abstract base class for spacing units used in margins, padding, and gaps.
@@ -2059,6 +2433,20 @@ class SpacingFixed implements SpacingUnit {
   }) {
     return value;
   }
+
+  @override
+  String toString() {
+    return 'SpacingFixed($value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpacingFixed && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// A spacing unit that matches the viewport size along the specified axis.
@@ -2080,6 +2468,19 @@ class SpacingViewport implements SpacingUnit {
   }) {
     return viewportSize;
   }
+
+  @override
+  String toString() {
+    return 'SpacingViewport()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SpacingViewport;
+  }
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A spacing unit that performs calculations between two other spacing units.
@@ -2137,6 +2538,23 @@ class SpacingCalculated implements SpacingUnit {
     );
     return operation(first, second);
   }
+
+  @override
+  String toString() {
+    return 'SpacingCalculated(first: $first, second: $second, operation: $operation)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpacingCalculated &&
+        other.first == first &&
+        other.second == second &&
+        other.operation == operation;
+  }
+
+  @override
+  int get hashCode => Object.hash(first, second, operation);
 }
 
 /// A spacing unit that constrains another spacing unit within min/max bounds.
@@ -2201,6 +2619,23 @@ class SpacingConstraint implements SpacingUnit {
     );
     return val.clamp(minVal, maxVal);
   }
+
+  @override
+  String toString() {
+    return 'SpacingConstraint(spacing: $spacing, min: $min, max: $max)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpacingConstraint &&
+        other.spacing == spacing &&
+        other.min == min &&
+        other.max == max;
+  }
+
+  @override
+  int get hashCode => Object.hash(spacing, min, max);
 }
 
 /// A spacing unit that references the size of a child element.
@@ -2243,6 +2678,20 @@ class SpacingChildSize implements SpacingUnit {
       LayoutAxis.vertical => otherChild.size.height,
     };
   }
+
+  @override
+  String toString() {
+    return 'SpacingChildSize($key)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpacingChildSize && other.key == key;
+  }
+
+  @override
+  int get hashCode => key.hashCode;
 }
 
 /// Extension providing arithmetic operators for position units.
@@ -2596,6 +3045,20 @@ class PositionRelative extends PositionUnit {
     };
     return size * factor;
   }
+
+  @override
+  String toString() {
+    return 'PositionRelative($factor)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PositionRelative && other.factor == factor;
+  }
+
+  @override
+  int get hashCode => factor.hashCode;
 }
 
 /// A size unit that represents a size relative to the parent size.
@@ -2628,6 +3091,20 @@ class SizeRelative extends SizeUnit {
     };
     return size * factor;
   }
+
+  @override
+  String toString() {
+    return 'SizeRelative($factor)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SizeRelative && other.factor == factor;
+  }
+
+  @override
+  int get hashCode => factor.hashCode;
 }
 
 /// A spacing unit that represents a spacing relative to the parent size.
@@ -2657,4 +3134,18 @@ class SpacingRelative implements SpacingUnit {
     };
     return size * factor;
   }
+
+  @override
+  String toString() {
+    return 'SpacingRelative($factor)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpacingRelative && other.factor == factor;
+  }
+
+  @override
+  int get hashCode => factor.hashCode;
 }
